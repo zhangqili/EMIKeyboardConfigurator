@@ -1,0 +1,13 @@
+{
+    "toolbar_connect": "连接",
+    "toolbar_save": "保存",
+    "toolbar_advance": "高级",
+    "toolbar_device_reset": "复位设备",
+    "toolbar_device_factory_reset": "恢复出厂设置",
+    "toolbar_settings": "设置",
+
+    "main_tabs_performance": "性能",
+    "main_tabs_keymap": "映射",
+    "main_tabs_rgb": "灯效",
+    "main_tabs_debug": "调试"
+}

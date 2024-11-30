@@ -22,4 +22,9 @@ tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+keyboard_controller = { path = "./keyboard_controller" }
+trinity_keypad_controller = { path = "./controllers/trinity_keypad_controller" }
+oholeo_keyboard_controller = { path = "./controllers/oholeo_keyboard_controller" }
+zellia_80_controller = { path = "./controllers/zellia_80_controller" }
+ansi_104_sample_controller = { path = "./controllers/ansi_104_sample_controller" }
 

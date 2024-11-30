@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "emikeyboardconfigurator",
+        "title": "EMIKeyboardConfigurator",
         "width": 800,
         "height": 600
       }

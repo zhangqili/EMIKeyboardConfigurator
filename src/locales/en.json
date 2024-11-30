@@ -1,0 +1,13 @@
+{
+    "toolbar_connect": "Connect",
+    "toolbar_save": "Save",
+    "toolbar_advance": "Advance",
+    "toolbar_device_reset": "Reset device",
+    "toolbar_device_factory_reset": "Factory reset",
+    "toolbar_settings": "Settings",
+
+    "main_tabs_performance": "Performance",
+    "main_tabs_keymap": "Keymap",
+    "main_tabs_rgb": "RGB",
+    "main_tabs_debug": "Debug"
+}

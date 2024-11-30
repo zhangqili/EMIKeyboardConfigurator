@@ -1,18 +1,28 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { useOsTheme, darkTheme, NConfigProvider } from 'naive-ui'
+import Application from './components/Application.vue';
+import Main from './components/Main.vue';
 
 const greetMsg = ref("");
 const name = ref("");
+const theme = computed(() => (useOsTheme().value === 'dark' ? darkTheme : null));
 
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   greetMsg.value = await invoke("greet", { name: name.value });
 }
+
 </script>
 
 <template>
-  <main class="container">
+  <n-config-provider :theme="theme">
+    <Application>
+      <Main/>
+    </Application>
+  </n-config-provider>
+  <!--   <main class="container">
     <h1>Welcome to Tauri + Vue</h1>
 
     <div class="row">
@@ -33,7 +43,7 @@ async function greet() {
       <button type="submit">Greet</button>
     </form>
     <p>{{ greetMsg }}</p>
-  </main>
+  </main> -->
 </template>
 
 <style scoped>
@@ -44,7 +54,6 @@ async function greet() {
 .logo.vue:hover {
   filter: drop-shadow(0 0 2em #249b73);
 }
-
 </style>
 <style>
 :root {
@@ -123,6 +132,7 @@ button {
 button:hover {
   border-color: #396cd8;
 }
+
 button:active {
   border-color: #396cd8;
   background-color: #e8e8e8;
@@ -152,9 +162,9 @@ button {
     color: #ffffff;
     background-color: #0f0f0f98;
   }
+
   button:active {
     background-color: #0f0f0f69;
   }
 }
-
 </style>
