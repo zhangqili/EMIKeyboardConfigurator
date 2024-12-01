@@ -16,6 +16,15 @@ const minHeight = computed(() => {
   return `${(maxY + 1) * 54}px`; // 添加偏移量以确保足够空间
 });
 
+
+function handleMouseDown(event : MouseEvent, index: number) {
+  if (event.buttons === 1) {
+    keyButtonClick(index);
+  } else {
+
+  }
+}
+
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     keyButtonClick(index);
@@ -32,7 +41,7 @@ function keyButtonClick(index: number) {
 
 <template>
   <div class="keyboard no-select" :style="{ minHeight: minHeight }">
-    <Key v-for="(key, index) in props.keys" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" @click="keyButtonClick(index)" :key="index" :x="key.x" :y="key.y"
+    <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" @click="keyButtonClick(index)" :key="index" :x="key.x" :y="key.y"
       :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
       :rotation-angle="key.rotation_angle" :labels="key.labels" />
   </div>
@@ -44,9 +53,4 @@ function keyButtonClick(index: number) {
   padding: 10px;
 }
 
-.no-select {
-  user-select: none; /* 禁止文本选择 */
-  -webkit-user-select: none; /* 兼容 Safari */
-  -ms-user-select: none; /* 兼容旧版 IE */
-}
 </style>

@@ -1,9 +1,10 @@
 ;''
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } from 'naive-ui'
+import { NSpace } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
+import KeyboardTracker from './KeyboardTracker.vue';
 
 const { t } = useI18n();
 
@@ -38,6 +39,7 @@ const layers =
         :label="item.label"
       />
     </n-radio-group>
+    <KeyboardTracker></KeyboardTracker>
   </NSpace>
 </template>
 

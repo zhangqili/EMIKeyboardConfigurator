@@ -2,10 +2,10 @@
 
 // Enum for KeyMode
 export enum KeyMode {
-    KeyDigitalMode = "D",
-    KeyAnalogNormalMode = "AN",
-    KeyAnalogRapidMode = "ART",
-    KeyAnalogSpeedMode = "AS",
+    KeyDigitalMode = "KeyDigitalMode",
+    KeyAnalogNormalMode = "KeyAnalogNormalMode",
+    KeyAnalogRapidMode = "KeyAnalogRapidMode",
+    KeyAnalogSpeedMode = "KeyAnalogSpeedMode",
 }
 
 // Enum for CalibrationMode
@@ -13,6 +13,19 @@ export enum CalibrationMode {
     KeyNoCalibration = "KeyNoCalibration",
     KeyAutoCalibrationPositive = "KeyAutoCalibrationPositive",
     KeyAutoCalibrationNegative = "KeyAutoCalibrationNegative",
+}
+
+export enum RGBMode {
+    RgbModeFixed = "RgbModeFixed",
+    RgbModeStatic = "RgbModeStatic",
+    RgbModeCycle = "RgbModeCycle",
+    RgbModeLinear = "RgbModeLinear",
+    RgbModeTrigger = "RgbModeTrigger",
+    RgbModeString = "RgbModeString",
+    RgbModeFadingString = "RgbModeFadingString",
+    RgbModeDiamondRipple = "RgbModeDiamondRipple",
+    RgbModeFadingDiamondRipple = "RgbModeFadingDiamondRipple",
+    RgbModeJelly = "RgbModeJelly",
 }
 
 // Interface for AdvancedKey
@@ -40,21 +53,14 @@ export interface IAdvancedKey {
 
 // Generic color interfaces
 export interface Srgb {
-    r: number;
-    g: number;
-    b: number;
-}
-
-export interface Hsv {
-    h: number; // Hue
-    s: number; // Saturation
-    v: number; // Value (brightness)
+    red: number;
+    green: number;
+    blue: number;
 }
 
 // Interface for RGBConfig
 export interface IRGBConfig {
-    mode: number;
+    mode: RGBMode;
     rgb: Srgb;
-    hsv: Hsv;
     speed: number;
 }

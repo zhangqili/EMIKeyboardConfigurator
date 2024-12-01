@@ -11,6 +11,7 @@ declare module 'vue' {
     DebugPanel: typeof import('./src/components/DebugPanel.vue')['default']
     Key: typeof import('./src/components/Key.vue')['default']
     KeyboardRender: typeof import('./src/components/KeyboardRender.vue')['default']
+    KeyboardTracker: typeof import('./src/components/KeyboardTracker.vue')['default']
     KeymapPanel: typeof import('./src/components/KeymapPanel.vue')['default']
     KleConverter: typeof import('./src/components/KleConverter.vue')['default']
     Main: typeof import('./src/components/Main.vue')['default']

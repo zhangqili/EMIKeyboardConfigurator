@@ -195,7 +195,7 @@ impl TrinityKeypadController {
         }
         send_buf[2] = 0x02;
         for (i, item) in self.rgb_configs.iter().enumerate() {
-            send_buf[3 + 8 * i] = item.mode;
+            send_buf[3 + 8 * i] = item.mode as u8;
             send_buf[4 + 8 * i] = item.rgb.red;
             send_buf[5 + 8 * i] = item.rgb.green;
             send_buf[6 + 8 * i] = item.rgb.blue;

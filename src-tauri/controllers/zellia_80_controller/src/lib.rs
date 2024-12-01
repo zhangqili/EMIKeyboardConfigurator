@@ -17,13 +17,13 @@ pub const PID: u16 = 0xFFFF;
 pub struct Zellia80Controller {
     #[serde(skip)]
     pub device: Option<hidapi::HidDevice>,
-    #[serde_as(as = "[_; 87]")]
-    pub advanced_keys: [AdvancedKey; 87],
+    #[serde_as(as = "[_; 88]")]
+    pub advanced_keys: [AdvancedKey; 88],
     pub rgb_switch: bool,
-    #[serde_as(as = "[_; 87]")]
-    pub rgb_configs: [RGBConfig; 87],
-    #[serde_as(as = "[[_; 87]; 5]")]
-    pub keymap: [[u16; 87]; 5],
+    #[serde_as(as = "[_; 88]")]
+    pub rgb_configs: [RGBConfig; 88],
+    #[serde_as(as = "[[_; 88]; 5]")]
+    pub keymap: [[u16; 88]; 5],
 }
 
 impl Clone for Zellia80Controller {
@@ -61,10 +61,10 @@ impl Default for Zellia80Controller {
                 lower_deadzone: 0.2,
                 upper_bound: 4096.0,
                 lower_bound: 0.0,
-            }; 87], // 使用 `Default` 初始化数组
+            }; 88], // 使用 `Default` 初始化数组
             rgb_switch: true,
             rgb_configs: std::array::from_fn(|_| RGBConfig::default()),
-            keymap: [[0 as u16; 87]; 5],
+            keymap: [[0 as u16; 88]; 5],
         }
     }
 }

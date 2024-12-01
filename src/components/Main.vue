@@ -4,7 +4,8 @@ import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
 import * as apis from '../apis/api'
-import { IAdvancedKey, IRGBConfig, KeyMode } from "../apis/interface";
+import { CalibrationMode, IAdvancedKey, IRGBConfig, KeyMode, RGBMode, Srgb } from "../apis/interface";
+import { rgbToHex } from "../apis/utils";
 
 const { t } = useI18n();
 const message = useMessage();
@@ -16,8 +17,30 @@ const key_containers = computed(() => {
   switch (tab_selection.value) {
     case "performance": {
       keys.forEach((item, index) => {
-        item.labels = item.labels.map(() => "");
-        item.labels[0] = advanced_keys.value[index].mode.toString();
+        const advanced_key = advanced_keys.value[index];
+        if (advanced_key != undefined) {
+          item.labels = item.labels.map(() => "");
+          item.labels[0] = keyModeDisplayMap[advanced_key.mode];
+          switch (advanced_key.mode) {
+            case KeyMode.KeyAnalogNormalMode: {
+              item.labels[3] = `↓${Math.round(advanced_key.activation_value * 1000) / 10}\t`;
+              break;
+            }
+            case KeyMode.KeyAnalogRapidMode: {
+              item.labels[3] = `↓${Math.round(advanced_key.trigger_distance * 1000) / 10}\t↑${Math.round(advanced_key.release_distance * 1000) / 10}`;
+              item.labels[7] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
+              break;
+            }
+            case KeyMode.KeyAnalogSpeedMode: {
+              item.labels[3] = `↓${Math.round(advanced_key.trigger_speed * 1000) / 10}\t↑${Math.round(advanced_key.release_speed * 1000) / 10}`;
+              item.labels[7] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
+              break;
+            }
+            default: {
+              break;
+            }
+          }
+        }
       })
       break;
     }
@@ -33,7 +56,9 @@ const key_containers = computed(() => {
     case "rgb": {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
-        item.labels[0] = rgb_configs.value[index].mode.toString();
+        item.labels[0] = rgbModeDisplayMap[rgb_configs.value[index].mode];
+        item.labels[3] = `${Math.round(rgb_configs.value[index].speed * 1000)}\t`;
+        item.labels[9] = rgbToHex(rgb_configs.value[index].rgb);
       })
       break;
     }
@@ -59,7 +84,38 @@ const keyboard = ref({
   text: JSON.stringify(kle.Serial.deserialize([]), null, 2),
 });
 var advanced_keys = ref<IAdvancedKey[]>([]);
+const advanced_key = ref<IAdvancedKey>({
+  value: 0,
+  state: false,
+  raw: 0,
+  maximum: 0,
+  minimum: 0,
+  mode: KeyMode.KeyAnalogRapidMode,
+  calibration_mode: CalibrationMode.KeyNoCalibration,
+  activation_value: 0.5,
+  phantom_lower_deadzone: 0.2,
+  trigger_distance: 0.08,
+  release_distance: 0.08,
+  schmitt_parameter: 0.01,
+  trigger_speed: 0.01,
+  release_speed: 0.01,
+  upper_deadzone: 0.04,
+  lower_deadzone: 0.2,
+  upper_bound: 4096.0,
+  lower_bound: 0
+});
+
 var rgb_configs = ref<IRGBConfig[]>([]);
+const rgb_config = ref<IRGBConfig>({
+  mode: RGBMode.RgbModeFixed,
+  rgb: {
+    red: 163,
+    green: 55,
+    blue: 252
+  },
+  speed: 0.005,
+});
+
 var keymap = ref<number[][] | undefined>(undefined);
 
 var devices = ref<{ label: string; value: number }[]>([]);
@@ -75,6 +131,26 @@ const advanced_options = [
     key: ''
   }
 ]
+
+const keyModeDisplayMap: Record<KeyMode, string> = {
+  [KeyMode.KeyDigitalMode]: "Digital",
+  [KeyMode.KeyAnalogNormalMode]: "Trad",
+  [KeyMode.KeyAnalogRapidMode]: "RT",
+  [KeyMode.KeyAnalogSpeedMode]: "Speed",
+};
+
+const rgbModeDisplayMap: Record<RGBMode, string> = {
+  [RGBMode.RgbModeFixed]: "Fixed",
+  [RGBMode.RgbModeStatic]: "Static",
+  [RGBMode.RgbModeCycle]: "Cycle",
+  [RGBMode.RgbModeLinear]: "Linear",
+  [RGBMode.RgbModeTrigger]: "Trigger",
+  [RGBMode.RgbModeString]: "String",
+  [RGBMode.RgbModeFadingString]: "Fading\nString",
+  [RGBMode.RgbModeDiamondRipple]: "Diamond\nRipple",
+  [RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
+  [RGBMode.RgbModeJelly]: "Jelly",
+};
 
 function renderKeyboardFromJson(json_str: string) {
   var layout = JSON.parse(json_str);
@@ -111,6 +187,7 @@ async function getController() {
   advanced_keys.value = await apis.get_advanced_keys();
   keymap.value = await apis.get_keymap();
   rgb_configs.value = await apis.get_rgb_configs();
+  //console.log(rgb_configs.value);
 }
 
 async function handleUpdateValue(_value: string, option: SelectOption) {
@@ -126,27 +203,20 @@ function applyToSelectedKey(id: number) {
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
     case "performance": {
-      advanced_keys.value[id].mode = KeyMode.KeyAnalogNormalMode;
+      advanced_keys.value[id] = JSON.parse(JSON.stringify(advanced_key.value));
       break;
     }
     case "keymap": {
-      keys[id].labels = keys[id].labels.map(() => "");
-      keys[id].labels[0] = advanced_keys.value[id].mode;
       break;
     }
     case "rgb": {
-      keys[id].labels = keys[id].labels.map(() => "");
-      keys[id].labels[0] = advanced_keys.value[id].mode;
+      rgb_configs.value[id] = JSON.parse(JSON.stringify(rgb_config.value));
       break;
     }
     case "debug": {
-      keys[id].labels = keys[id].labels.map(() => "");
-      keys[id].labels[0] = advanced_keys.value[id].mode;
       break;
     }
     default: {
-      keys[id].labels = keys[id].labels.map(() => "");
-      keys[id].labels[0] = advanced_keys.value[id].mode;
       break;
     }
   }
@@ -212,9 +282,9 @@ onMounted(async () => {
               <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
             </n-layout-header>
             <n-layout-content>
-              <PerformancePanel v-if="tab_selection == 'performance'" />
+              <PerformancePanel v-if="tab_selection == 'performance'" v-model:advanced_key="advanced_key" />
               <KeymapPanel v-if="tab_selection == 'keymap'" />
-              <RGBPanel v-if="tab_selection == 'rgb'" />
+              <RGBPanel v-if="tab_selection == 'rgb'" v-model:rgb_config="rgb_config" />
               <DebugPanel v-if="tab_selection == 'debug'" />
             </n-layout-content>
             <n-layout-footer>

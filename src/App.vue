@@ -14,12 +14,14 @@ async function greet() {
   greetMsg.value = await invoke("greet", { name: name.value });
 }
 
+window.addEventListener("contextmenu", (e) => e.preventDefault(), false);
 </script>
 
 <template>
   <n-config-provider :theme="theme">
     <Application>
-      <Main/>
+      <Main>
+      </Main>
     </Application>
   </n-config-provider>
   <!--   <main class="container">
@@ -166,5 +168,12 @@ button {
   button:active {
     background-color: #0f0f0f69;
   }
+}
+
+
+.no-select {
+  user-select: none; /* 禁止文本选择 */
+  -webkit-user-select: none; /* 兼容 Safari */
+  -ms-user-select: none; /* 兼容旧版 IE */
 }
 </style>

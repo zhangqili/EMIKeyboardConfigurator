@@ -66,7 +66,7 @@ const rotation = computed(() => {
       <!-- Render Labels -->
       <!-- Labels rendering -->
       <div class="keylabels" style="left: 8px; top: 4px; width: 40px; height: 40px; padding: 3px;">
-        <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize3'">
+        <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
           <div :style="sizeLabel">{{ label }}</div>
         </div>
       </div>
@@ -134,12 +134,9 @@ const rotation = computed(() => {
 .keylabel9,
 .keylabel10,
 .keylabel11 {
-  top: 100%;
-  margin-top: -1px;
-  font-size: 10px !important;
-  max-height: 1em !important;
-  white-space: nowrap;
-  overflow: hidden;
+  margin-top: 40px;
+  font-size: 9px !important;
+
 }
 
 /* Horizontal  alignment */
