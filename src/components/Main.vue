@@ -1,17 +1,59 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, nextTick, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
-import { useMessage, SelectOption, NMessageProvider, darkTheme, useOsTheme, NConfigProvider, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
+import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
 import * as apis from '../apis/api'
-import { invoke } from '@tauri-apps/api/core';
-import { IAdvancedKey, IRGBConfig } from "../apis/interface";
+import { IAdvancedKey, IRGBConfig, KeyMode } from "../apis/interface";
 
 const { t } = useI18n();
 const message = useMessage();
 const sidebarWidth = ref(10); // 初始化宽度
 const tab_selection = ref<string | null>("performance");
-const keys = ref([]);
+const keyboard_keys = ref<kle.Key[]>([]);
+const key_containers = computed(() => {
+  var keys = keyboard_keys.value;
+  switch (tab_selection.value) {
+    case "performance": {
+      keys.forEach((item, index) => {
+        item.labels = item.labels.map(() => "");
+        item.labels[0] = advanced_keys.value[index].mode.toString();
+      })
+      break;
+    }
+    case "keymap": {
+      keys.forEach((item, index) => {
+        item.labels = item.labels.map(() => "");
+        if (keymap.value != undefined) {
+          item.labels[0] = keymap.value[0][index].toString();
+        }
+      })
+      break;
+    }
+    case "rgb": {
+      keys.forEach((item, index) => {
+        item.labels = item.labels.map(() => "");
+        item.labels[0] = rgb_configs.value[index].mode.toString();
+      })
+      break;
+    }
+    case "debug": {
+      keys.forEach((item) => {
+        item.labels = item.labels.map(() => "");
+        item.labels[3] = "test4";
+      })
+      break;
+    }
+    default: {
+      keys.forEach((item) => {
+        item.labels = item.labels.map(() => "");
+        item.labels[4] = "test5";
+      })
+      break;
+    }
+  }
+  return keys;
+});
 const keyboard = ref({
   json: undefined,
   text: JSON.stringify(kle.Serial.deserialize([]), null, 2),
@@ -34,7 +76,7 @@ const advanced_options = [
   }
 ]
 
-function initializeKeyboardFromJson(json_str: string) {
+function renderKeyboardFromJson(json_str: string) {
   var layout = JSON.parse(json_str);
   try {
     const parsedKeyboard = kle.Serial.deserialize(layout);
@@ -44,26 +86,16 @@ function initializeKeyboardFromJson(json_str: string) {
   }
 }
 
-function initializeKeyboard() {
-  try {
-    //const parsedKeyboard = kle.Serial.deserialize(zellia80HELayout);
-    //updateKeyboard(parsedKeyboard);
-  } catch (error) {
-    message.error('Failed to parse keyboard layout');
-  }
-}
-
-
 function updateKeyboard(value: kle.Keyboard) {
-  value.keys.forEach((key) => {
+  value.keys.forEach((key: kle.Key) => {
     for (const prop in key) {
-      if (typeof key[prop] === "number" && !isNaN(key[prop])) {
-        key[prop] = parseFloat(key[prop].toFixed(6));
+      if (typeof (key as any)[prop] === "number" && !isNaN((key as any)[prop])) {
+        (key as any)[prop] = parseFloat((key as any)[prop].toFixed(6));
       }
     }
   });
   keyboard.value.text = JSON.stringify(value, null, 2);
-  keys.value = value.keys;
+  keyboard_keys.value = value.keys;
 }
 
 function updateSidebarWidth() {
@@ -75,15 +107,49 @@ function updateSidebarWidth() {
   });
 }
 
-async function handleUpdateValue(value: string, option: SelectOption) {
-  await apis.set_device(option.label);
-  var layout_json: string = await apis.get_layout_json();
-  console.log(layout_json);
-  initializeKeyboardFromJson(layout_json);
+async function getController() {
+  advanced_keys.value = await apis.get_advanced_keys();
+  keymap.value = await apis.get_keymap();
+  rgb_configs.value = await apis.get_rgb_configs();
 }
 
-function applyToSelectedKey(id : number) {
-  message.info(id);
+async function handleUpdateValue(_value: string, option: SelectOption) {
+  await apis.set_device(option.label as string);
+  var layout_json: string = await apis.get_layout_json();
+  //console.log(layout_json);
+  renderKeyboardFromJson(layout_json);
+  getController();
+}
+
+function applyToSelectedKey(id: number) {
+  //message.info(id.toString());
+  var keys = keyboard_keys.value;
+  switch (tab_selection.value) {
+    case "performance": {
+      advanced_keys.value[id].mode = KeyMode.KeyAnalogNormalMode;
+      break;
+    }
+    case "keymap": {
+      keys[id].labels = keys[id].labels.map(() => "");
+      keys[id].labels[0] = advanced_keys.value[id].mode;
+      break;
+    }
+    case "rgb": {
+      keys[id].labels = keys[id].labels.map(() => "");
+      keys[id].labels[0] = advanced_keys.value[id].mode;
+      break;
+    }
+    case "debug": {
+      keys[id].labels = keys[id].labels.map(() => "");
+      keys[id].labels[0] = advanced_keys.value[id].mode;
+      break;
+    }
+    default: {
+      keys[id].labels = keys[id].labels.map(() => "");
+      keys[id].labels[0] = advanced_keys.value[id].mode;
+      break;
+    }
+  }
 }
 
 onMounted(async () => {
@@ -110,7 +176,7 @@ onMounted(async () => {
         </n-gi>
         <n-gi :span="3">
           <n-flex>
-            <n-button @click="test">{{ t('toolbar_connect') }}</n-button>
+            <n-button @click="getController">{{ t('toolbar_connect') }}</n-button>
             <n-button>{{ t('toolbar_save') }}</n-button>
             <n-dropdown trigger="hover" placement="bottom-start" :options="advanced_options">
               <n-button>{{ t('toolbar_advance') }}</n-button>
@@ -143,7 +209,7 @@ onMounted(async () => {
 
           <n-layout>
             <n-layout-header>
-              <KeyboardRender :keys="keys" @select="applyToSelectedKey"/>
+              <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
             </n-layout-header>
             <n-layout-content>
               <PerformancePanel v-if="tab_selection == 'performance'" />

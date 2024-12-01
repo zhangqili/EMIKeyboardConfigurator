@@ -20,14 +20,14 @@ export function setupI18n(options: I18nOptions = { locale: 'en' }): I18n {
     messages, // Add messages directly here
   });
   //setI18nLanguage(i18n, options.locale);
-  return i18n;
+  return i18n as I18n;
 }
 
 export function setI18nLanguage(i18n: I18n, locale: string): void {
   if ((i18n.mode as string) === 'legacy') {
     i18n.global.locale = locale;
   } else {
-    i18n.global.locale.value = locale;
+    //i18n.global.locale.value = locale;
   }
 
   // Setting language for headers, example for axios

@@ -2,10 +2,10 @@
 
 // Enum for KeyMode
 export enum KeyMode {
-    KeyDigitalMode = "KeyDigitalMode",
-    KeyAnalogNormalMode = "KeyAnalogNormalMode",
-    KeyAnalogRapidMode = "KeyAnalogRapidMode",
-    KeyAnalogSpeedMode = "KeyAnalogSpeedMode",
+    KeyDigitalMode = "D",
+    KeyAnalogNormalMode = "AN",
+    KeyAnalogRapidMode = "ART",
+    KeyAnalogSpeedMode = "AS",
 }
 
 // Enum for CalibrationMode

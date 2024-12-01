@@ -2,6 +2,7 @@
 import { computed, reactive, ref, defineEmits } from "vue";
 import Key from "./Key.vue";
 import { event } from "@tauri-apps/api";
+import * as kle from "@ijprest/kle-serial";
 
 const emit = defineEmits<{
   (e: 'select', id: number): void
@@ -11,7 +12,7 @@ const props = defineProps(["keys"]);
 
 // 计算 min-height 的值，基于 keys 中 key.y 的最大值
 const minHeight = computed(() => {
-  const maxY = props.keys.length > 0 ? Math.max(...props.keys.map((key) => key.y)) : 0;
+  const maxY = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.y)) : 0;
   return `${(maxY + 1) * 54}px`; // 添加偏移量以确保足够空间
 });
 

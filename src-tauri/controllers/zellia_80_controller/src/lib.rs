@@ -180,7 +180,7 @@ impl Zellia80Controller {
 
     }
 
-    pub fn prase_buffer(&mut self, buf: &[u8]) {
-
+    pub fn prase_buffer(&mut self, _buf: &[u8]) {
+        
     }
 }
