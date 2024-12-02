@@ -6,10 +6,12 @@ import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import type { DataTableColumns } from 'naive-ui'
 import * as apis from '../apis/api';
+import { IAdvancedKey } from '../apis/interface';
 
 const { t } = useI18n();
 
-const mode = ref<number | null>(0);
+const props = defineProps<{ advanced_keys: IAdvancedKey[] }>();
+const emit = defineEmits(['update:advanced_keys']);
 
 interface AdvancedKey{
     no: number
@@ -17,10 +19,10 @@ interface AdvancedKey{
     normalized: number
 }
 
-const columns : DataTableColumns<AdvancedKey> = [
+const columns : DataTableColumns<IAdvancedKey> = [
     {
-        title : 'Key',
-        key : 'key',
+        title : 'State',
+        key : 'state',
     },
     {
         title : 'Raw Value',
@@ -28,13 +30,12 @@ const columns : DataTableColumns<AdvancedKey> = [
     },
     {
         title : 'Normalized Value',
-        key : 'normalized',
+        key : 'value',
     },
 ]
 
 onMounted(()=>{
     apis.start_debug();
-    apis.receive_data_in_background();
     console.log("onMounted");
 })
 
@@ -47,11 +48,11 @@ onUnmounted(()=>{
 
 <template>
     <n-space vertical>
-        <n-collapse>
+        <n-data-table :data="advanced_keys" :columns="columns" :bordered="false" />
+<!--         <n-collapse>
             <n-collapse-item title="Data table" name="0">
-                <n-data-table :columns="columns" :bordered="false" />
             </n-collapse-item>
-        </n-collapse>
+        </n-collapse> -->
     </n-space>
 </template>
 

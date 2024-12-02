@@ -56,6 +56,11 @@ export async function connect_device(){
     return (await invoke("connect_device")) as boolean;
 }
 
+export async function disconnect_device(){
+    return (await invoke("disconnect_device"));
+}
+
+
 export async function fetch_config(){
     return (await invoke("fetch_config"));
 }

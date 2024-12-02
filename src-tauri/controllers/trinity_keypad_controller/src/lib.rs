@@ -43,7 +43,7 @@ impl Default for TrinityKeypadController {
                 value: 0.0,
                 raw: 0.0,
                 mode: KeyMode::KeyAnalogRapidMode,
-                calibration_mode: CalibrationMode::KeyAutoCalibrationNegative,
+                calibration_mode: CalibrationMode::KeyAutoCalibrationPositive,
                 maximum: 0.0,
                 minimum: 0.0,
                 activation_value: 0.5,
@@ -55,8 +55,8 @@ impl Default for TrinityKeypadController {
                 release_speed: 0.01,
                 upper_deadzone: 0.04,
                 lower_deadzone: 0.2,
-                upper_bound: 4096.0,
-                lower_bound: 0.0,
+                upper_bound: 2600.0,
+                lower_bound: 140.0,
             }; 4], // 使用 `Default` 初始化数组
             rgb_switch: true,
             rgb_configs: std::array::from_fn(|_| RGBConfig::default()),
@@ -237,6 +237,10 @@ impl KeyboardController for TrinityKeypadController {
             }
             _default => {}
         }
+    }
+    
+    fn get_connection_state(&self) -> bool {
+        return self.device.is_some();
     }
 }
 

@@ -6,6 +6,7 @@ import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-u
 import * as apis from '../apis/api'
 import { CalibrationMode, IAdvancedKey, IRGBConfig, KeyMode, RGBMode, Srgb } from "../apis/interface";
 import { rgbToHex } from "../apis/utils";
+import { listen } from "@tauri-apps/api/event";
 
 const { t } = useI18n();
 const message = useMessage();
@@ -64,16 +65,18 @@ const key_containers = computed(() => {
       break;
     }
     case "debug": {
-      keys.forEach((item) => {
+      keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
-        item.labels[3] = "test4";
+        item.labels[0] = advanced_keys.value[index].raw.toFixed(2);
+        item.labels[3] = advanced_keys.value[index].value.toFixed(4);
+        item.labels[7] = advanced_keys.value[index].state.toString();
       })
       break;
     }
     default: {
       keys.forEach((item) => {
         item.labels = item.labels.map(() => "");
-        item.labels[4] = "test5";
+        item.labels[0] = "null";
       })
       break;
     }
@@ -178,12 +181,19 @@ function updateSidebarWidth() {
 
 async function connectCommand() {
   if (isConnected.value) {
+    await apis.disconnect_device();
     isConnected.value = false;
   }
   else {
     if (selected_device.value != undefined) {
       var result = await apis.connect_device();
       isConnected.value = result;
+      if (isConnected.value) {
+        message.success("Found device");
+      }
+      else{
+        message.error("Device not found");
+      }
       //await apis.receive_data_in_background();
     }
   }
@@ -251,6 +261,10 @@ function applyToSelectedKey(id: number) {
 
 const advanced_options = [
   {
+    label: '固化配置',
+    key: 'flash config'
+  },
+  {
     label: '复位设备',
     key: 'system reset'
   },
@@ -263,10 +277,14 @@ function handleAdvancedMenu(key: string | number) {
   if (selected_device.value != undefined) {
     switch (key) {
       case advanced_options[0].key: {
-        apis.system_reset();
+        apis.flash_config();
         break;
       }
       case advanced_options[1].key: {
+        apis.system_reset();
+        break;
+      }
+      case advanced_options[2].key: {
         apis.factory_reset();
         break;
       }
@@ -288,6 +306,16 @@ onMounted(async () => {
     value: index,
   }));
 });
+
+listen<IAdvancedKey[]>('update-value', (event) => {
+  console.log(event.payload);
+  advanced_keys.value.forEach((key, index) => {
+    key.raw = event.payload[index].raw;
+    key.value = event.payload[index].value;
+    key.state = event.payload[index].state;
+  }
+  );
+});
 </script>
 
 <template>
@@ -296,13 +324,14 @@ onMounted(async () => {
       <n-grid :x-gap="12" :y-gap="12" :cols="5">
         <n-gi>
           <n-flex>
-            <n-select @update:value="handleUpdateValue" v-model:value="selected_device" v-model:options="devices"
-              filterable placeholder="Select device" />
+            <n-select @update:value="handleUpdateValue" :disabled="isConnected" v-model:value="selected_device"
+              v-model:options="devices" filterable placeholder="Select device" />
           </n-flex>
         </n-gi>
         <n-gi :span="3">
           <n-flex>
-            <n-button @click="connectCommand">{{ isConnected ? "Disconnect" : t('toolbar_connect') }}</n-button>
+            <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? "Disconnect" :
+              t('toolbar_connect') }}</n-button>
             <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
             <n-dropdown :disabled="!isConnected" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
               :options="advanced_options">
@@ -342,7 +371,7 @@ onMounted(async () => {
               <PerformancePanel v-if="tab_selection == 'performance'" v-model:advanced_key="advanced_key" />
               <KeymapPanel v-if="tab_selection == 'keymap'" />
               <RGBPanel v-if="tab_selection == 'rgb'" v-model:rgb_config="rgb_config" />
-              <DebugPanel v-if="tab_selection == 'debug'" />
+              <DebugPanel v-if="tab_selection == 'debug'" v-model:advanced_keys="advanced_keys"/>
             </n-layout-content>
             <n-layout-footer>
 

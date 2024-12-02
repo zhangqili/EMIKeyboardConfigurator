@@ -13,6 +13,7 @@ pub trait KeyboardController : Send{
     fn connect(&mut self, path: &CString);
     fn disconnect(&mut self);
     fn prase_buffer(&mut self, buf: &[u8]);
+    fn get_connection_state(&self) -> bool;
 
     fn get_advanced_keys(&self) -> Vec<AdvancedKey>;
     fn set_advanced_keys(&mut self, keys : Vec<AdvancedKey>);

@@ -168,15 +168,19 @@ impl KeyboardController for OholeoKeyboardController {
     }
     
     fn start_debug(&self) {
-        todo!()
+        //todo!()
     }
     
     fn stop_debug(&self) {
-        todo!()
+        //todo!()
     }
     
     fn prase_buffer(&mut self, _buf: &[u8]) {
         todo!()
+    }
+    
+    fn get_connection_state(&self) -> bool {
+        return false;
     }
 }
 
