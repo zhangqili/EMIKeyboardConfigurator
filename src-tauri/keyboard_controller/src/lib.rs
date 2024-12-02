@@ -6,12 +6,13 @@ pub mod advancedkey;
 pub mod rgb;
 
 pub trait KeyboardController : Send{
-    fn transmit_data(&self);
     fn detect(&self) -> Vec<CString>;
     fn write(&self, buf: &[u8]) -> usize;
     fn read(&self, buf: &mut [u8]) -> usize ;
+    fn read_timeout(&self, buf: &mut [u8], timeout: i32) -> usize;
     fn connect(&mut self, path: &CString);
     fn disconnect(&mut self);
+    fn prase_buffer(&mut self, buf: &[u8]);
 
     fn get_advanced_keys(&self) -> Vec<AdvancedKey>;
     fn set_advanced_keys(&mut self, keys : Vec<AdvancedKey>);
@@ -22,6 +23,14 @@ pub trait KeyboardController : Send{
     fn get_keymap(&self) -> Vec<Vec<u16>>;
     fn set_keymap(&mut self, keymap : Vec<Vec<u16>>);
 
+    
+    fn fetch_config(&self);
+    fn save_config(&self);
+    fn flash_config(&self);
+    fn system_reset(&self);
+    fn factory_reset(&self);
+    fn start_debug(&self);
+    fn stop_debug(&self);
     fn get_layout_json(&mut self) -> String;
 }
 

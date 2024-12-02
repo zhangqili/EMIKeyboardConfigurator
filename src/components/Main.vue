@@ -12,6 +12,7 @@ const message = useMessage();
 const sidebarWidth = ref(10); // 初始化宽度
 const tab_selection = ref<string | null>("performance");
 const keyboard_keys = ref<kle.Key[]>([]);
+const isConnected = ref<boolean>(false);
 const key_containers = computed(() => {
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
@@ -119,18 +120,8 @@ const rgb_config = ref<IRGBConfig>({
 var keymap = ref<number[][] | undefined>(undefined);
 
 var devices = ref<{ label: string; value: number }[]>([]);
-const selected_device = ref(null);
+const selected_device = ref(undefined);
 
-const advanced_options = [
-  {
-    label: '复位设备',
-    key: ''
-  },
-  {
-    label: '恢复出厂设置',
-    key: ''
-  }
-]
 
 const keyModeDisplayMap: Record<KeyMode, string> = {
   [KeyMode.KeyDigitalMode]: "Digital",
@@ -151,6 +142,8 @@ const rgbModeDisplayMap: Record<RGBMode, string> = {
   [RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
   [RGBMode.RgbModeJelly]: "Jelly",
 };
+
+
 
 function renderKeyboardFromJson(json_str: string) {
   var layout = JSON.parse(json_str);
@@ -181,6 +174,40 @@ function updateSidebarWidth() {
       sidebarWidth.value = tabsNavWrapper.clientWidth;
     }
   });
+}
+
+async function connectCommand() {
+  if (isConnected.value) {
+    isConnected.value = false;
+  }
+  else {
+    if (selected_device.value != undefined) {
+      var result = await apis.connect_device();
+      isConnected.value = result;
+      //await apis.receive_data_in_background();
+    }
+  }
+}
+
+async function saveCommand() {
+  if (selected_device.value != undefined) {
+    apis.set_advanced_keys(advanced_keys.value);
+    if (keymap.value != undefined) {
+      apis.set_keymap(keymap.value);
+    }
+    apis.set_rgb_configs(rgb_configs.value);
+    var result = await apis.save_config();
+    console.log(result);
+
+  }
+}
+
+async function flashCommand() {
+  if (selected_device.value != undefined) {
+    var result = await apis.flash_config();
+    console.log(result);
+
+  }
 }
 
 async function getController() {
@@ -222,6 +249,35 @@ function applyToSelectedKey(id: number) {
   }
 }
 
+const advanced_options = [
+  {
+    label: '复位设备',
+    key: 'system reset'
+  },
+  {
+    label: '恢复出厂设置',
+    key: 'factory reset'
+  }
+]
+function handleAdvancedMenu(key: string | number) {
+  if (selected_device.value != undefined) {
+    switch (key) {
+      case advanced_options[0].key: {
+        apis.system_reset();
+        break;
+      }
+      case advanced_options[1].key: {
+        apis.factory_reset();
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+
+  }
+}
+
 onMounted(async () => {
   //initializeKeyboard();
   updateSidebarWidth();
@@ -246,10 +302,11 @@ onMounted(async () => {
         </n-gi>
         <n-gi :span="3">
           <n-flex>
-            <n-button @click="getController">{{ t('toolbar_connect') }}</n-button>
-            <n-button>{{ t('toolbar_save') }}</n-button>
-            <n-dropdown trigger="hover" placement="bottom-start" :options="advanced_options">
-              <n-button>{{ t('toolbar_advance') }}</n-button>
+            <n-button @click="connectCommand">{{ isConnected ? "Disconnect" : t('toolbar_connect') }}</n-button>
+            <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
+            <n-dropdown :disabled="!isConnected" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
+              :options="advanced_options">
+              <n-button :disabled="!isConnected">{{ t('toolbar_advance') }}</n-button>
             </n-dropdown>
           </n-flex>
         </n-gi>

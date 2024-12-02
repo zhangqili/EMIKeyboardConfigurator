@@ -52,3 +52,42 @@ export async function get_layout_json(){
     return (await invoke("get_layout_json")) as string;
 }
 
+export async function connect_device(){
+    return (await invoke("connect_device")) as boolean;
+}
+
+export async function fetch_config(){
+    return (await invoke("fetch_config"));
+}
+
+export async function save_config(){
+    return (await invoke("save_config"));
+}
+
+export async function flash_config(){
+    return (await invoke("flash_config"));
+}
+
+export async function system_reset(){
+    return (await invoke("system_reset"));
+}
+
+export async function factory_reset(){
+    return (await invoke("factory_reset"));
+}
+
+export async function start_debug(){
+    return (await invoke("start_debug"));
+}
+
+export async function stop_debug(){
+    return (await invoke("stop_debug"));
+}
+
+export async function receive_data(){
+    return (await invoke("receive_data"));
+}
+
+export async function receive_data_in_background(){
+    return (await invoke("receive_data_in_background"));
+}

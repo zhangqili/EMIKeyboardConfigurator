@@ -24,6 +24,7 @@ pub struct TrinityKeypadController {
 impl Clone for TrinityKeypadController {
     fn clone(&self) -> Self {
         TrinityKeypadController {
+            //device: Some(hidapi::HidApi::new().unwrap().open_path(self.device.as_ref().unwrap().get_device_info().unwrap().path()).unwrap()),
             device: None,
             advanced_keys: self.advanced_keys.clone(),
             rgb_switch: self.rgb_switch.clone(),
@@ -83,11 +84,6 @@ impl Default for TrinityKeypadController {
 }
 
 impl KeyboardController for TrinityKeypadController {
-    fn transmit_data(&self) {
-        self.send_advanced_keys();
-        self.send_rgb_configs();
-        self.send_keymap();
-    }
     fn detect(&self) -> Vec<CString> {
         let mut paths: Vec<CString> = Vec::new();
         let api = hidapi::HidApi::new().unwrap();
@@ -116,7 +112,15 @@ impl KeyboardController for TrinityKeypadController {
     fn read(&self, buf: &mut [u8]) -> usize {
         let mut res = 0;
         if let Some(ref dev) = self.device {
-            res = dev.read(&mut buf[..]).unwrap();
+            res = dev.read_timeout(&mut buf[..], -1).unwrap();
+        }
+        return res;
+    }
+
+    fn read_timeout(&self, buf: &mut [u8], timeout: i32) -> usize {
+        let mut res = 0;
+        if let Some(ref dev) = self.device {
+            res = dev.read_timeout(&mut buf[..], timeout).unwrap();
         }
         return res;
     }
@@ -128,43 +132,111 @@ impl KeyboardController for TrinityKeypadController {
         }
         return res;
     }
-    
+
     fn get_advanced_keys(&self) -> Vec<AdvancedKey> {
         return self.advanced_keys.to_vec();
     }
-    
-    fn set_advanced_keys(&mut self, keys : Vec<AdvancedKey>) {
+
+    fn set_advanced_keys(&mut self, keys: Vec<AdvancedKey>) {
         self.advanced_keys.copy_from_slice(&keys);
     }
-    
+
     fn get_rgb_switch(&self) -> bool {
         return self.rgb_switch;
     }
-    
-    fn set_rgb_switch(&mut self, switch : bool) {
+
+    fn set_rgb_switch(&mut self, switch: bool) {
         self.rgb_switch = switch;
     }
-    
+
     fn get_rgb_configs(&self) -> Vec<RGBConfig> {
         return self.rgb_configs.to_vec();
     }
-    
-    fn set_rgb_configs(&mut self, configs : Vec<RGBConfig>) {
+
+    fn set_rgb_configs(&mut self, configs: Vec<RGBConfig>) {
         self.rgb_configs.copy_from_slice(&configs);
     }
-    
+
     fn get_keymap(&self) -> Vec<Vec<u16>> {
         return self.keymap.iter().map(|layer| layer.to_vec()).collect();
     }
-    
-    fn set_keymap(&mut self, keymap : Vec<Vec<u16>>) {
+
+    fn set_keymap(&mut self, keymap: Vec<Vec<u16>>) {
         for (i, layer) in keymap.iter().enumerate() {
             self.keymap[i].copy_from_slice(&layer);
         }
     }
 
+    fn fetch_config(&self) {
+        todo!()
+    }
+
+    fn save_config(&self) {
+        self.send_advanced_keys();
+        self.send_rgb_configs();
+        self.send_keymap();
+    }
+
+    fn flash_config(&self) {
+        let mut send_buf = [0u8; 64];
+        send_buf[0] = 0x01;
+        send_buf[1] = 0x80;
+        let res = self.write(&send_buf);
+        debug!("Wrote Save Command: {:?} byte(s)", res);
+    }
+
+    fn system_reset(&self) {
+        let mut send_buf = [0u8; 64];
+        send_buf[0] = 0x01;
+        send_buf[1] = 0x81;
+        let res = self.write(&send_buf);
+        debug!("Wrote System Reset Command: {:?} byte(s)", res);
+    }
+
+    fn factory_reset(&self) {
+        let mut send_buf = [0u8; 64];
+        send_buf[0] = 0x01;
+        send_buf[1] = 0x82;
+        let res = self.write(&send_buf);
+        debug!("Wrote Factory Reset Command: {:?} byte(s)", res);
+    }
+
     fn get_layout_json(&mut self) -> String {
         return include_str!("trinity-keypad-layout.json").to_string();
+    }
+
+    fn start_debug(&self) {
+        let mut buf = [0u8; 64];
+        buf[0] = 0x01;
+        buf[1] = 0xB0;
+        buf[2] = 0x01;
+        self.write(&buf);
+    }
+
+    fn stop_debug(&self) {
+        let mut buf = [0u8; 64];
+        buf[0] = 0x01;
+        buf[1] = 0xB0;
+        buf[2] = 0x00;
+        self.write(&buf);
+    }
+    
+    fn prase_buffer(&mut self, buf: &[u8]) {
+        match buf[1] {
+            1 => {}
+            0xFF => {
+                for i in 0..4 {
+                    let bytes = [
+                        buf[2 + 4 * i],
+                        buf[3 + 4 * i],
+                        buf[4 + 4 * i],
+                        buf[5 + 4 * i],
+                    ];
+                    self.advanced_keys[i].update_raw(&f32::from_le_bytes(bytes));
+                }
+            }
+            _default => {}
+        }
     }
 }
 
@@ -199,7 +271,7 @@ impl TrinityKeypadController {
             send_buf[4 + 8 * i] = item.rgb.red;
             send_buf[5 + 8 * i] = item.rgb.green;
             send_buf[6 + 8 * i] = item.rgb.blue;
-            send_buf[7 + 8 * i] = item.speed as u8;
+            send_buf[7 + 8 * i] = (item.speed * 100.0) as u8;
         }
         {
             let res = self.write(&send_buf);
@@ -224,45 +296,4 @@ impl TrinityKeypadController {
         }
     }
 
-    pub fn save(&self) {
-        let mut send_buf = [0u8; 64];
-        send_buf[0] = 0x01;
-        send_buf[1] = 0x80;
-        let res = self.write(&send_buf);
-        debug!("Wrote Save Command: {:?} byte(s)", res);
-    }
-
-    pub fn system_reset(&self) {
-        let mut send_buf = [0u8; 64];
-        send_buf[0] = 0x01;
-        send_buf[1] = 0x81;
-        let res = self.write(&send_buf);
-        debug!("Wrote System Reset Command: {:?} byte(s)", res);
-    }
-
-    pub fn factory_reset(&self) {
-        let mut send_buf = [0u8; 64];
-        send_buf[0] = 0x01;
-        send_buf[1] = 0x82;
-        let res = self.write(&send_buf);
-        debug!("Wrote Factory Reset Command: {:?} byte(s)", res);
-    }
-
-    pub fn prase_buffer(&mut self, buf: &[u8]) {
-        match buf[1] {
-            1 => {}
-            0xFF => {
-                for i in 0..4 {
-                    let bytes = [
-                        buf[2 + 4 * i],
-                        buf[3 + 4 * i],
-                        buf[4 + 4 * i],
-                        buf[5 + 4 * i],
-                    ];
-                    self.advanced_keys[i].update_raw(&f32::from_le_bytes(bytes));
-                }
-            }
-            _default => {}
-        }
-    }
 }

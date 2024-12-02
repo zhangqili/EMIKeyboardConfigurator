@@ -70,24 +70,9 @@ impl Default for Zellia80Controller {
 }
 
 impl KeyboardController for Zellia80Controller {
-    fn transmit_data(&self) {
-        self.send_advanced_keys();
-        self.send_rgb_configs();
-        self.send_keymap();
-    }
     fn detect(&self) -> Vec<CString> {
-        let mut paths: Vec<CString> = Vec::new();
-        let api = hidapi::HidApi::new().unwrap();
-
-        for device in api.device_list() {
-            if device.product_id() == PID
-                && device.vendor_id() == VID
-                && device.interface_number() == 2
-            {
-                paths.push(CString::from(device.path()));
-            }
-        }
-        return paths;
+        let mut _paths: Vec<CString> = Vec::new();
+        return _paths;
     }
     fn connect(&mut self, path: &CString) {
         let api = hidapi::HidApi::new().unwrap();
@@ -103,7 +88,15 @@ impl KeyboardController for Zellia80Controller {
     fn read(&self, buf: &mut [u8]) -> usize {
         let mut res = 0;
         if let Some(ref dev) = self.device {
-            res = dev.read(&mut buf[..]).unwrap();
+            res = dev.read_timeout(&mut buf[..], -1).unwrap();
+        }
+        return res;
+    }
+
+    fn read_timeout(&self, buf: &mut [u8], timeout: i32) -> usize {
+        let mut res = 0;
+        if let Some(ref dev) = self.device {
+            res = dev.read_timeout(&mut buf[..], timeout).unwrap();
         }
         return res;
     }
@@ -152,6 +145,38 @@ impl KeyboardController for Zellia80Controller {
 
     fn get_layout_json(&mut self) -> String {
         return include_str!("zellia-80-layout.json").to_string();
+    }
+    
+    fn fetch_config(&self) {
+        todo!()
+    }
+    
+    fn save_config(&self) {
+        todo!()
+    }
+    
+    fn flash_config(&self) {
+        todo!()
+    }
+    
+    fn system_reset(&self) {
+        todo!()
+    }
+    
+    fn factory_reset(&self) {
+        todo!()
+    }
+    
+    fn start_debug(&self) {
+        todo!()
+    }
+    
+    fn stop_debug(&self) {
+        todo!()
+    }
+    
+    fn prase_buffer(&mut self, _buf: &[u8]) {
+        todo!()
     }
 }
 

@@ -1,10 +1,11 @@
 ;''
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import type { DataTableColumns } from 'naive-ui'
+import * as apis from '../apis/api';
 
 const { t } = useI18n();
 
@@ -30,6 +31,17 @@ const columns : DataTableColumns<AdvancedKey> = [
         key : 'normalized',
     },
 ]
+
+onMounted(()=>{
+    apis.start_debug();
+    apis.receive_data_in_background();
+    console.log("onMounted");
+})
+
+onUnmounted(()=>{
+    apis.stop_debug();
+    console.log("onUnmounted");
+})
 
 </script>
 
