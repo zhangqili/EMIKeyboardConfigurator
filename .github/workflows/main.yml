@@ -1,0 +1,43 @@
+name: release
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      # 获取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+      # 设置 Node.js 环境
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+      # 安装依赖
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+      # 构建 Tauri 应用
+      - name: Build Tauri app
+        run: pnpm tauri build
+    
+      # 删除旧的 release（清空 GitHub 上的 release）
+      - name: Delete old release assets
+        run: |
+          curl -X DELETE \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/releases"
+     
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          tag_name: latest build
+          files: |
+            src-tauri/target/release/*.exe   # 添加您的文件路径
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token 用于发布
