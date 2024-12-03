@@ -322,14 +322,10 @@ listen<IAdvancedKey[]>('update-value', (event) => {
   <n-layout position="absolute">
     <n-layout-header style="height: 80px; padding: 24px" bordered>
       <n-grid :x-gap="12" :y-gap="12" :cols="5">
-        <n-gi>
+        <n-gi :span="4">
           <n-flex>
-            <n-select @update:value="handleUpdateValue" :disabled="isConnected" v-model:value="selected_device"
+            <n-select @update:value="handleUpdateValue" style="max-width: 200px;" :disabled="isConnected" v-model:value="selected_device"
               v-model:options="devices" filterable placeholder="Select device" />
-          </n-flex>
-        </n-gi>
-        <n-gi :span="3">
-          <n-flex>
             <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? "Disconnect" :
               t('toolbar_connect') }}</n-button>
             <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
