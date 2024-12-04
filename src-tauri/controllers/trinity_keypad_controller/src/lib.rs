@@ -2,7 +2,8 @@ use advancedkey::{AdvancedKey, CalibrationMode, KeyMode};
 use keyboard_controller::KeyboardController;
 use keyboard_controller::*;
 use log::debug;
-use rgb::RGBConfig;
+use palette::Srgb;
+use rgb::{RGBConfig, RGBMode};
 use serde::{Deserialize, Serialize};
 use std::ffi::CString;
 
@@ -59,7 +60,13 @@ impl Default for TrinityKeypadController {
                 lower_bound: 140.0,
             }; 4], // 使用 `Default` 初始化数组
             rgb_switch: true,
-            rgb_configs: std::array::from_fn(|_| RGBConfig::default()),
+            rgb_configs: [
+                RGBConfig{
+                    mode: RGBMode::RgbModeLinear,
+                    rgb: Srgb::from_components((163,55,252)),
+                    speed: 0.02
+                }; 4
+            ],
             keymap: [
                 [
                     KeyCode::Z as u16,
@@ -225,14 +232,27 @@ impl KeyboardController for TrinityKeypadController {
         match buf[1] {
             1 => {}
             0xFF => {
+
                 for i in 0..4 {
-                    let bytes = [
-                        buf[2 + 4 * i],
-                        buf[3 + 4 * i],
-                        buf[4 + 4 * i],
-                        buf[5 + 4 * i],
+                    let key_index = buf[2 + 10 * i] as usize;
+                    if key_index >= self.advanced_keys.len() {
+                        continue;
+                    }
+                    self.advanced_keys[key_index].state = buf[3 + 10 * i] > 0;
+                    let raw_bytes = [
+                        buf[4 + 0 + 10 * i],
+                        buf[4 + 1 + 10 * i],
+                        buf[4 + 2 + 10 * i],
+                        buf[4 + 3 + 10 * i],
                     ];
-                    self.advanced_keys[i].update_raw(&f32::from_le_bytes(bytes));
+                    let value_bytes = [
+                        buf[4 + 4 + 10 * i],
+                        buf[4 + 5 + 10 * i],
+                        buf[4 + 6 + 10 * i],
+                        buf[4 + 7 + 10 * i],
+                    ];
+                    self.advanced_keys[key_index].raw = f32::from_le_bytes(raw_bytes);
+                    self.advanced_keys[key_index].value = f32::from_le_bytes(value_bytes);
                 }
             }
             _default => {}

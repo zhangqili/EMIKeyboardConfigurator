@@ -30,12 +30,12 @@ const key_containers = computed(() => {
             }
             case KeyMode.KeyAnalogRapidMode: {
               item.labels[3] = `↓${Math.round(advanced_key.trigger_distance * 1000) / 10}\t↑${Math.round(advanced_key.release_distance * 1000) / 10}`;
-              item.labels[7] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
+              item.labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
               break;
             }
             case KeyMode.KeyAnalogSpeedMode: {
               item.labels[3] = `↓${Math.round(advanced_key.trigger_speed * 1000) / 10}\t↑${Math.round(advanced_key.release_speed * 1000) / 10}`;
-              item.labels[7] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
+              item.labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
               break;
             }
             default: {
@@ -68,8 +68,8 @@ const key_containers = computed(() => {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         item.labels[0] = advanced_keys.value[index].raw.toFixed(2);
-        item.labels[3] = advanced_keys.value[index].value.toFixed(4);
-        item.labels[7] = advanced_keys.value[index].state.toString();
+        item.labels[3] = advanced_keys.value[index].value.toFixed(3);
+        item.labels[6] = advanced_keys.value[index].state.toString();
       })
       break;
     }
@@ -308,7 +308,7 @@ onMounted(async () => {
 });
 
 listen<IAdvancedKey[]>('update-value', (event) => {
-  console.log(event.payload);
+  //console.log(event.payload);
   advanced_keys.value.forEach((key, index) => {
     key.raw = event.payload[index].raw;
     key.value = event.payload[index].value;

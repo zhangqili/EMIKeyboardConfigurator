@@ -132,6 +132,7 @@ pub enum KeyCode {
     MouseBack = 0xa9,
     MouseWheelUp = 0xaa,
     MouseWheelDown = 0xab,
+    FN = 0xac,
 }
 
 pub enum KeyModifier

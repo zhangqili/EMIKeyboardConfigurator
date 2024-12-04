@@ -25,10 +25,13 @@ jobs:
     
       # 删除旧的 release（清空 GitHub 上的 release）
       - name: Delete old release assets
+        shell: bash
         run: |
-          curl -X DELETE \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/releases"
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases"
+          $headers = @{
+            "Authorization" = "token ${{ secrets.GITHUB_TOKEN }}"
+          }
+          Invoke-RestMethod -Uri $uri -Method Delete -Headers $headers
      
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2

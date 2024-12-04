@@ -36,12 +36,12 @@ const columns : DataTableColumns<IAdvancedKey> = [
 
 onMounted(()=>{
     apis.start_debug();
-    console.log("onMounted");
+    //console.log("onMounted");
 })
 
 onUnmounted(()=>{
     apis.stop_debug();
-    console.log("onUnmounted");
+    //console.log("onUnmounted");
 })
 
 </script>

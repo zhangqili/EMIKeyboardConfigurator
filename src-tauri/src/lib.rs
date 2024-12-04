@@ -1,6 +1,6 @@
 use ansi_104_sample_controller::ANSI104SampleController;
 use keyboard_controller::{
-    advancedkey::{self, AdvancedKey},
+    advancedkey::{AdvancedKey},
     rgb::RGBConfig,
     KeyboardController,
 };
@@ -163,6 +163,7 @@ fn connect_device(app: AppHandle, device_handle: State<Arc<Mutex<Option<Box<dyn 
                     let res = controller.read_timeout(&mut buf[..], 1);
                     controller.prase_buffer(&buf);
                     if res>0 {
+                        //println!("{:?}",buf);
                         let advancedkeys = controller.get_advanced_keys();
                         //println!("{}", advancedkeys[0].raw);
                         app.emit("update-value", advancedkeys).unwrap();
@@ -172,6 +173,7 @@ fn connect_device(app: AppHandle, device_handle: State<Arc<Mutex<Option<Box<dyn 
                         break;
                     }
                 }
+                drop(lock);
                 thread::sleep(Duration::from_millis(1));
             }
         });
@@ -268,7 +270,7 @@ fn receive_data(device_handle: State<Arc<Mutex<Option<Box<dyn KeyboardController
 fn receive_data_in_background(
     device_handle: State<Arc<Mutex<Option<Box<dyn KeyboardController>>>>>,
 ) {
-    let device_handle = device_handle.inner().clone(); // 克隆Arc以便在新线程中使用
+    let _device_handle = device_handle.inner().clone(); // 克隆Arc以便在新线程中使用
 
 }
 
