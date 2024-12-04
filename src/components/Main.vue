@@ -235,6 +235,13 @@ async function handleUpdateValue(_value: string, option: SelectOption) {
   getController();
 }
 
+function applyToAllKeys() {
+  
+  advanced_keys.value.forEach((item, index) => {
+    applyToSelectedKey(index);
+    });
+}
+
 function applyToSelectedKey(id: number) {
   //message.info(id.toString());
   var keys = keyboard_keys.value;
@@ -335,14 +342,16 @@ listen<IAdvancedKey[]>('update-value', (event) => {
             </n-dropdown>
           </n-flex>
         </n-gi>
-        <n-gi>
+        <n-gi :span="1">
           <n-flex justify="end">
+<!--             <n-button >Import</n-button>
+            <n-button >Export</n-button> -->
             <n-button>{{ t('toolbar_settings') }}</n-button>
           </n-flex>
         </n-gi>
       </n-grid>
     </n-layout-header>
-    <n-layout has-sider position="absolute" style="top: 80px;">
+    <n-layout has-sider position="absolute" style="top: 80px;" >
       <n-layout position="absolute" content-style="padding: 0px;">
 
         <n-layout has-sider position="absolute">
@@ -362,6 +371,7 @@ listen<IAdvancedKey[]>('update-value', (event) => {
           <n-layout>
             <n-layout-header>
               <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
+              <n-button @click="applyToAllKeys">Apply to all</n-button>
             </n-layout-header>
             <n-layout-content>
               <PerformancePanel v-if="tab_selection == 'performance'" v-model:advanced_key="advanced_key" />

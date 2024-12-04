@@ -322,7 +322,7 @@ pub fn run() {
             receive_data,
             receive_data_in_background
         ])
-        .manage::<Arc<Mutex<Option<Box<dyn KeyboardController>>>>>(Arc::new(Mutex::new(None)))
+        .manage::<Arc<Mutex<Option<Box<dyn KeyboardController>>>>>(Arc::new(Mutex::new(Some(Box::new(ANSI104SampleController::default())))))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
