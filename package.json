@@ -13,6 +13,7 @@
     "@ijprest/kle-serial": "^0.15.1",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-shell": "^2.0.1",
+    "emi-keyboard-controller": "link:emi-keyboard-controller",
     "tinycolor2": "^1.6.0",
     "unplugin-auto-import": "^0.18.6",
     "unplugin-vue-components": "^0.27.5",

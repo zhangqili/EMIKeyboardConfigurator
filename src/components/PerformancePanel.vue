@@ -4,11 +4,11 @@ import { computed, reactive, ref, watch } from 'vue'
 import { NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import { CalibrationMode, IAdvancedKey, KeyMode } from '../apis/interface';
+import * as ekc from 'emi-keyboard-controller';
 
 const { t } = useI18n();
 
-const props = defineProps<{ advanced_key: IAdvancedKey }>();
+const props = defineProps<{ advanced_key: ekc.IAdvancedKey }>();
 const emit = defineEmits(['update:advanced_key']);
 
 /*
@@ -34,9 +34,9 @@ const advanced_key = ref<IAdvancedKey>({
 });
 */
 
-const mode = computed<KeyMode>({
+const mode = computed<ekc.KeyMode>({
   get: () => props.advanced_key.mode,
-  set: (value: KeyMode) => {
+  set: (value: ekc.KeyMode) => {
     props.advanced_key.mode = value;
   },
 });
@@ -86,19 +86,19 @@ const release_speed = computed<number>({
 const modes =
   [
     {
-      value: KeyMode.KeyDigitalMode,
+      value: ekc.KeyMode.KeyDigitalMode,
       label: 'Digital'
     },
     {
-      value: KeyMode.KeyAnalogNormalMode,
+      value: ekc.KeyMode.KeyAnalogNormalMode,
       label: 'Analog Normal'
     },
     {
-      value: KeyMode.KeyAnalogRapidMode,
+      value: ekc.KeyMode.KeyAnalogRapidMode,
       label: 'Analog Rapid'
     },
     {
-      value: KeyMode.KeyAnalogSpeedMode,
+      value: ekc.KeyMode.KeyAnalogSpeedMode,
       label: 'Analog Speed'
     }
   ].map((s) => {
@@ -113,28 +113,28 @@ const modes =
       <n-radio-button v-for="mode in modes" :key="mode.value" :value="mode.value" :label="mode.label" />
     </n-radio-group>
     <n-form inline label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-      <n-form-item v-if="mode === KeyMode.KeyAnalogNormalMode" label="Activation Distance">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" label="Activation Distance">
         <n-input-number v-model:value="activation_value" placeholder="Activation Distance" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogNormalMode" label="Deactivation Distance">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" label="Deactivation Distance">
         <n-input-number placeholder="Deactivation Distance" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogRapidMode" label="Trigger Distance">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" label="Trigger Distance">
         <n-input-number v-model:value="trigger_distance" placeholder="Trigger Distance" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogRapidMode" label="Release Distance">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" label="Release Distance">
         <n-input-number v-model:value="release_distance" placeholder="Release Distance" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogSpeedMode" label="Trigger Speed">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Trigger Speed">
         <n-input-number v-model:value="trigger_speed" placeholder="Trigger Speed" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogSpeedMode" label="Release Speed">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Release Speed">
         <n-input-number v-model:value="release_speed" placeholder="Release Speed" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogRapidMode || mode === KeyMode.KeyAnalogSpeedMode" label="Upper Deadzone">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Upper Deadzone">
         <n-input-number v-model:value="upper_deadzone" placeholder="Upper Deadzone" :min="0" :max="100" />
       </n-form-item>
-      <n-form-item v-if="mode === KeyMode.KeyAnalogRapidMode || mode === KeyMode.KeyAnalogSpeedMode" label="Lower Deadzone">
+      <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Lower Deadzone">
         <n-input-number v-model:value="lower_deadzone" placeholder="Lower Deadzone" :min="0" :max="100" />
       </n-form-item>
     </n-form>

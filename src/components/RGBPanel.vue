@@ -4,13 +4,13 @@ import { computed, ref } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import { IRGBConfig, RGBMode, Srgb } from '../apis/interface';
+import * as ekc from 'emi-keyboard-controller';
 import { rgbToHex } from '../apis/utils';
 import tinycolor from "tinycolor2";
 
 const { t } = useI18n();
 
-const props = defineProps<{ rgb_config: IRGBConfig }>();
+const props = defineProps<{ rgb_config: ekc.IRGBConfig }>();
 const emit = defineEmits(['update:rgb_config']);
 
 const speed = computed<number>({
@@ -20,9 +20,9 @@ const speed = computed<number>({
   },
 });
 
-const mode = computed<RGBMode>({
+const mode = computed<ekc.RGBMode>({
   get: () => props.rgb_config.mode,
-  set: (value: RGBMode) => {
+  set: (value: ekc.RGBMode) => {
     props.rgb_config.mode = value;
   },
 });
@@ -40,43 +40,43 @@ const color = computed<string>({
 const modes =
   [
     {
-      value: RGBMode.RgbModeFixed,
+      value: ekc.RGBMode.RgbModeFixed,
       label: 'Fixed'
     },
     {
-      value: RGBMode.RgbModeStatic,
+      value: ekc.RGBMode.RgbModeStatic,
       label: 'Static'
     },
     {
-      value: RGBMode.RgbModeCycle,
+      value: ekc.RGBMode.RgbModeCycle,
       label: 'Cycle'
     },
     {
-      value: RGBMode.RgbModeLinear,
+      value: ekc.RGBMode.RgbModeLinear,
       label: 'Linear'
     },
     {
-      value: RGBMode.RgbModeLinear,
+      value: ekc.RGBMode.RgbModeTrigger,
       label: 'Trigger'
     },
     {
-      value: RGBMode.RgbModeString,
+      value: ekc.RGBMode.RgbModeString,
       label: 'String'
     },
     {
-      value: RGBMode.RgbModeFadingString,
+      value: ekc.RGBMode.RgbModeFadingString,
       label: 'Fading String'
     },
     {
-      value: RGBMode.RgbModeDiamondRipple,
+      value: ekc.RGBMode.RgbModeDiamondRipple,
       label: 'Diamond Ripple'
     },
     {
-      value: RGBMode.RgbModeFadingDiamondRipple,
+      value: ekc.RGBMode.RgbModeFadingDiamondRipple,
       label: 'Fading Diamond Ripple'
     },
     {
-      value: RGBMode.RgbModeJelly,
+      value: ekc.RGBMode.RgbModeJelly,
       label: 'Jelly'
     },
   ].map((s) => {
