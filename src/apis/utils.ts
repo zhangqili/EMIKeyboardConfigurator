@@ -1,4 +1,4 @@
-import { Srgb } from "./interface";
+import { Srgb } from "./old_interface";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键

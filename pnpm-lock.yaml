@@ -17,6 +17,9 @@ importers:
       '@tauri-apps/plugin-shell':
         specifier: ^2.0.1
         version: 2.0.1
+      emi-keyboard-controller:
+        specifier: link:emi-keyboard-controller
+        version: link:emi-keyboard-controller
       tinycolor2:
         specifier: ^1.6.0
         version: 1.6.0

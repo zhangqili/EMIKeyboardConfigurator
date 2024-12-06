@@ -6,11 +6,11 @@ import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import type { DataTableColumns } from 'naive-ui'
 import * as apis from '../apis/api';
-import { IAdvancedKey } from '../apis/interface';
+import * as ekc from 'emi-keyboard-controller';
 
 const { t } = useI18n();
 
-const props = defineProps<{ advanced_keys: IAdvancedKey[] }>();
+const props = defineProps<{ advanced_keys: ekc.IAdvancedKey[] }>();
 const emit = defineEmits(['update:advanced_keys']);
 
 interface AdvancedKey{
@@ -19,7 +19,7 @@ interface AdvancedKey{
     normalized: number
 }
 
-const columns : DataTableColumns<IAdvancedKey> = [
+const columns : DataTableColumns<ekc.IAdvancedKey> = [
     {
         title : 'State',
         key : 'state',

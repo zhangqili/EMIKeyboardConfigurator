@@ -1,0 +1,19 @@
+{
+  "name": "emi-keyboard-controller",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/w3c-web-hid": "^1.0.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2"
+  }
+}

@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
 import * as apis from '../apis/api'
-import { CalibrationMode, IAdvancedKey, IRGBConfig, KeyMode, RGBMode, Srgb } from "../apis/interface";
+import * as ekc from "emi-keyboard-controller";
 import { rgbToHex } from "../apis/utils";
 import { listen } from "@tauri-apps/api/event";
 
@@ -24,16 +24,16 @@ const key_containers = computed(() => {
           item.labels = item.labels.map(() => "");
           item.labels[0] = keyModeDisplayMap[advanced_key.mode];
           switch (advanced_key.mode) {
-            case KeyMode.KeyAnalogNormalMode: {
+            case ekc.KeyMode.KeyAnalogNormalMode: {
               item.labels[3] = `↓${Math.round(advanced_key.activation_value * 1000) / 10}\t`;
               break;
             }
-            case KeyMode.KeyAnalogRapidMode: {
+            case ekc.KeyMode.KeyAnalogRapidMode: {
               item.labels[3] = `↓${Math.round(advanced_key.trigger_distance * 1000) / 10}\t↑${Math.round(advanced_key.release_distance * 1000) / 10}`;
               item.labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
               break;
             }
-            case KeyMode.KeyAnalogSpeedMode: {
+            case ekc.KeyMode.KeyAnalogSpeedMode: {
               item.labels[3] = `↓${Math.round(advanced_key.trigger_speed * 1000) / 10}\t↑${Math.round(advanced_key.release_speed * 1000) / 10}`;
               item.labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
               break;
@@ -87,15 +87,15 @@ const keyboard = ref({
   json: undefined,
   text: JSON.stringify(kle.Serial.deserialize([]), null, 2),
 });
-var advanced_keys = ref<IAdvancedKey[]>([]);
-const advanced_key = ref<IAdvancedKey>({
+var advanced_keys = ref<ekc.IAdvancedKey[]>([]);
+const advanced_key = ref<ekc.IAdvancedKey>({
   value: 0,
   state: false,
   raw: 0,
   maximum: 0,
   minimum: 0,
-  mode: KeyMode.KeyAnalogRapidMode,
-  calibration_mode: CalibrationMode.KeyNoCalibration,
+  mode: ekc.KeyMode.KeyAnalogRapidMode,
+  calibration_mode: ekc.CalibrationMode.KeyNoCalibration,
   activation_value: 0.5,
   phantom_lower_deadzone: 0.2,
   trigger_distance: 0.08,
@@ -109,9 +109,9 @@ const advanced_key = ref<IAdvancedKey>({
   lower_bound: 0
 });
 
-var rgb_configs = ref<IRGBConfig[]>([]);
-const rgb_config = ref<IRGBConfig>({
-  mode: RGBMode.RgbModeFixed,
+var rgb_configs = ref<ekc.IRGBConfig[]>([]);
+const rgb_config = ref<ekc.IRGBConfig>({
+  mode: ekc.RGBMode.RgbModeFixed,
   rgb: {
     red: 163,
     green: 55,
@@ -126,24 +126,24 @@ var devices = ref<{ label: string; value: number }[]>([]);
 const selected_device = ref(undefined);
 
 
-const keyModeDisplayMap: Record<KeyMode, string> = {
-  [KeyMode.KeyDigitalMode]: "Digital",
-  [KeyMode.KeyAnalogNormalMode]: "Trad",
-  [KeyMode.KeyAnalogRapidMode]: "RT",
-  [KeyMode.KeyAnalogSpeedMode]: "Speed",
+const keyModeDisplayMap: Record<ekc.KeyMode, string> = {
+  [ekc.KeyMode.KeyDigitalMode]: "Digital",
+  [ekc.KeyMode.KeyAnalogNormalMode]: "Trad",
+  [ekc.KeyMode.KeyAnalogRapidMode]: "RT",
+  [ekc.KeyMode.KeyAnalogSpeedMode]: "Speed",
 };
 
-const rgbModeDisplayMap: Record<RGBMode, string> = {
-  [RGBMode.RgbModeFixed]: "Fixed",
-  [RGBMode.RgbModeStatic]: "Static",
-  [RGBMode.RgbModeCycle]: "Cycle",
-  [RGBMode.RgbModeLinear]: "Linear",
-  [RGBMode.RgbModeTrigger]: "Trigger",
-  [RGBMode.RgbModeString]: "String",
-  [RGBMode.RgbModeFadingString]: "Fading\nString",
-  [RGBMode.RgbModeDiamondRipple]: "Diamond\nRipple",
-  [RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
-  [RGBMode.RgbModeJelly]: "Jelly",
+const rgbModeDisplayMap: Record<ekc.RGBMode, string> = {
+  [ekc.RGBMode.RgbModeFixed]: "Fixed",
+  [ekc.RGBMode.RgbModeStatic]: "Static",
+  [ekc.RGBMode.RgbModeCycle]: "Cycle",
+  [ekc.RGBMode.RgbModeLinear]: "Linear",
+  [ekc.RGBMode.RgbModeTrigger]: "Trigger",
+  [ekc.RGBMode.RgbModeString]: "String",
+  [ekc.RGBMode.RgbModeFadingString]: "Fading\nString",
+  [ekc.RGBMode.RgbModeDiamondRipple]: "Diamond\nRipple",
+  [ekc.RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
+  [ekc.RGBMode.RgbModeJelly]: "Jelly",
 };
 
 
@@ -314,7 +314,7 @@ onMounted(async () => {
   }));
 });
 
-listen<IAdvancedKey[]>('update-value', (event) => {
+listen<ekc.IAdvancedKey[]>('update-value', (event) => {
   //console.log(event.payload);
   advanced_keys.value.forEach((key, index) => {
     key.raw = event.payload[index].raw;
