@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "cd emi-keyboard-controller && pnpm install && pnpm run build && cd .. && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
