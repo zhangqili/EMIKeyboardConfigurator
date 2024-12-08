@@ -5,81 +5,60 @@ import { NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import * as ekc from 'emi-keyboard-controller';
+import { storeToRefs } from 'pinia';
+import { useMainStore } from '../store/main';
 
 const { t } = useI18n();
 
-const props = defineProps<{ advanced_key: ekc.IAdvancedKey }>();
-const emit = defineEmits(['update:advanced_key']);
-
-/*
-const advanced_key = ref<IAdvancedKey>({
-  value: 0,
-  state: false,
-  raw: 0,
-  maximum: 0,
-  minimum: 0,
-  mode: KeyMode.KeyAnalogRapidMode,
-  calibration_mode: CalibrationMode.KeyNoCalibration,
-  activation_value: 0.5,
-  phantom_lower_deadzone: 0.2,
-  trigger_distance: 0.08,
-  release_distance: 0.08,
-  schmitt_parameter: 0.01,
-  trigger_speed: 0.01,
-  release_speed: 0.01,
-  upper_deadzone: 0.04,
-  lower_deadzone: 0.2,
-  upper_bound: 4096.0,
-  lower_bound: 0
-});
-*/
+const store = useMainStore();
+const {advanced_key} = storeToRefs(store);
 
 const mode = computed<ekc.KeyMode>({
-  get: () => props.advanced_key.mode,
+  get: () => advanced_key.value.mode,
   set: (value: ekc.KeyMode) => {
-    props.advanced_key.mode = value;
+    advanced_key.value.mode = value;
   },
 });
 const activation_value = computed<number>({
-  get: () => (Math.round(props.advanced_key.activation_value * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.activation_value * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.activation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.activation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const trigger_distance = computed<number>({
-  get: () => (Math.round(props.advanced_key.trigger_distance * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.trigger_distance * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.trigger_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.trigger_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const release_distance = computed<number>({
-  get: () => (Math.round(props.advanced_key.release_distance * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.release_distance * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.release_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.release_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const upper_deadzone = computed<number>({
-  get: () => (Math.round(props.advanced_key.upper_deadzone * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.upper_deadzone * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.upper_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.upper_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const lower_deadzone = computed<number>({
-  get: () => (Math.round(props.advanced_key.lower_deadzone * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.lower_deadzone * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.lower_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.lower_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const trigger_speed = computed<number>({
-  get: () => (Math.round(props.advanced_key.trigger_speed * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.trigger_speed * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.trigger_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.trigger_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const release_speed = computed<number>({
-  get: () => (Math.round(props.advanced_key.release_speed * 1000) / 10),
+  get: () => (Math.round(advanced_key.value.release_speed * 1000) / 10),
   set: (value: number) => {
-    props.advanced_key.release_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advanced_key.value.release_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 

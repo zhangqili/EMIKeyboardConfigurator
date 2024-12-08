@@ -1,4 +1,4 @@
-import { Srgb } from "./old_interface";
+import { KeyCode, KeyMode, KeyModifier, RGBMode, Srgb } from "emi-keyboard-controller";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键
@@ -132,4 +132,237 @@ export function rgbToHex(rgb: Srgb): string {
   const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
 
   return `#${toHex(rgb.red)}${toHex(rgb.green)}${toHex(rgb.blue)}`;
+}
+
+
+export const keyModeDisplayMap: Record<KeyMode, string> = {
+  [KeyMode.KeyDigitalMode]: "Digital",
+  [KeyMode.KeyAnalogNormalMode]: "Trad",
+  [KeyMode.KeyAnalogRapidMode]: "RT",
+  [KeyMode.KeyAnalogSpeedMode]: "Speed",
+};
+
+export const rgbModeDisplayMap: Record<RGBMode, string> = {
+  [RGBMode.RgbModeFixed]: "Fixed",
+  [RGBMode.RgbModeStatic]: "Static",
+  [RGBMode.RgbModeCycle]: "Cycle",
+  [RGBMode.RgbModeLinear]: "Linear",
+  [RGBMode.RgbModeTrigger]: "Trigger",
+  [RGBMode.RgbModeString]: "String",
+  [RGBMode.RgbModeFadingString]: "Fading\nString",
+  [RGBMode.RgbModeDiamondRipple]: "Diamond\nRipple",
+  [RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
+  [RGBMode.RgbModeJelly]: "Jelly",
+};
+
+export const keyCodeToKeyName: { [key in KeyCode]: string } = {
+  [KeyCode.NoEvent]: 'No Event',
+  [KeyCode.ErrorOverflow]: 'Error Overflow',
+  [KeyCode.PostFail]: 'Post Fail',
+  [KeyCode.ErrorUndefined]: 'Error Undefined',
+
+  [KeyCode.A]: 'A',
+  [KeyCode.B]: 'B',
+  [KeyCode.C]: 'C',
+  [KeyCode.D]: 'D',
+  [KeyCode.E]: 'E',
+  [KeyCode.F]: 'F',
+  [KeyCode.G]: 'G',
+  [KeyCode.H]: 'H',
+  [KeyCode.I]: 'I',
+  [KeyCode.J]: 'J',
+  [KeyCode.K]: 'K',
+  [KeyCode.L]: 'L',
+  [KeyCode.M]: 'M',
+  [KeyCode.N]: 'N',
+  [KeyCode.O]: 'O',
+  [KeyCode.P]: 'P',
+  [KeyCode.Q]: 'Q',
+  [KeyCode.R]: 'R',
+  [KeyCode.S]: 'S',
+  [KeyCode.T]: 'T',
+  [KeyCode.U]: 'U',
+  [KeyCode.V]: 'V',
+  [KeyCode.W]: 'W',
+  [KeyCode.X]: 'X',
+  [KeyCode.Y]: 'Y',
+  [KeyCode.Z]: 'Z',
+
+  [KeyCode.Key1]: '1',
+  [KeyCode.Key2]: '2',
+  [KeyCode.Key3]: '3',
+  [KeyCode.Key4]: '4',
+  [KeyCode.Key5]: '5',
+  [KeyCode.Key6]: '6',
+  [KeyCode.Key7]: '7',
+  [KeyCode.Key8]: '8',
+  [KeyCode.Key9]: '9',
+  [KeyCode.Key0]: '0',
+
+  [KeyCode.Enter]: 'Enter',
+  [KeyCode.Escape]: 'Escape',
+  [KeyCode.Backspace]: 'Backspace',
+  [KeyCode.Tab]: 'Tab',
+
+  [KeyCode.Spacebar]: 'Spacebar',
+  [KeyCode.Minus]: '-',
+  [KeyCode.Equal]: '=',
+  [KeyCode.LeftBrace]: '[',
+  [KeyCode.RightBrace]: ']',
+  [KeyCode.Backslash]: '\\',
+  [KeyCode.NonUsHash]: '#',
+  [KeyCode.Semicolon]: ';',
+  [KeyCode.Apostrophe]: "'",
+  [KeyCode.Grave]: '`',
+  [KeyCode.Comma]: ',',
+  [KeyCode.Dot]: '.',
+  [KeyCode.Slash]: '/',
+
+  [KeyCode.CapsLock]: 'Caps Lock',
+  [KeyCode.F1]: 'F1',
+  [KeyCode.F2]: 'F2',
+  [KeyCode.F3]: 'F3',
+  [KeyCode.F4]: 'F4',
+  [KeyCode.F5]: 'F5',
+  [KeyCode.F6]: 'F6',
+  [KeyCode.F7]: 'F7',
+  [KeyCode.F8]: 'F8',
+  [KeyCode.F9]: 'F9',
+  [KeyCode.F10]: 'F10',
+  [KeyCode.F11]: 'F11',
+  [KeyCode.F12]: 'F12',
+  [KeyCode.PrintScreen]: 'Print Screen',
+  [KeyCode.ScrollLock]: 'Scroll Lock',
+  [KeyCode.Pause]: 'Pause',
+
+  [KeyCode.Insert]: 'Insert',
+  [KeyCode.Home]: 'Home',
+  [KeyCode.PageUp]: 'Page Up',
+  [KeyCode.Delete]: 'Delete',
+  [KeyCode.End]: 'End',
+  [KeyCode.PageDown]: 'Page Down',
+  [KeyCode.RightArrow]: '→',
+  [KeyCode.LeftArrow]: '←',
+  [KeyCode.DownArrow]: '↓',
+  [KeyCode.UpArrow]: '↑',
+
+  [KeyCode.NumLock]: 'Num Lock',
+  [KeyCode.KeypadDivide]: 'Keypad /',
+  [KeyCode.KeypadMultiply]: 'Keypad *',
+  [KeyCode.KeypadMinus]: 'Keypad -',
+  [KeyCode.KeypadPlus]: 'Keypad +',
+  [KeyCode.KeypadEnter]: 'Keypad Enter',
+  [KeyCode.Keypad1]: 'Keypad 1',
+  [KeyCode.Keypad2]: 'Keypad 2',
+  [KeyCode.Keypad3]: 'Keypad 3',
+  [KeyCode.Keypad4]: 'Keypad 4',
+  [KeyCode.Keypad5]: 'Keypad 5',
+  [KeyCode.Keypad6]: 'Keypad 6',
+  [KeyCode.Keypad7]: 'Keypad 7',
+  [KeyCode.Keypad8]: 'Keypad 8',
+  [KeyCode.Keypad9]: 'Keypad 9',
+  [KeyCode.Keypad0]: 'Keypad 0',
+  [KeyCode.KeypadDot]: 'Keypad .',
+
+  [KeyCode.NonUsBackslash]: 'Non US Backslash',
+  [KeyCode.Application]: 'Application',
+  [KeyCode.Power]: 'Power',
+  [KeyCode.KeypadEqual]: 'Keypad =',
+
+  [KeyCode.F13]: 'F13',
+  [KeyCode.F14]: 'F14',
+  [KeyCode.F15]: 'F15',
+  [KeyCode.F16]: 'F16',
+  [KeyCode.F17]: 'F17',
+  [KeyCode.F18]: 'F18',
+  [KeyCode.F19]: 'F19',
+  [KeyCode.F20]: 'F20',
+  [KeyCode.F21]: 'F21',
+  [KeyCode.F22]: 'F22',
+  [KeyCode.F23]: 'F23',
+  [KeyCode.F24]: 'F24',
+
+  [KeyCode.Execute]: 'Execute',
+  [KeyCode.Help]: 'Help',
+  [KeyCode.Menu]: 'Menu',
+  [KeyCode.Select]: 'Select',
+  [KeyCode.Stop]: 'Stop',
+  [KeyCode.Again]: 'Again',
+  [KeyCode.Undo]: 'Undo',
+  [KeyCode.Cut]: 'Cut',
+  [KeyCode.Copy]: 'Copy',
+  [KeyCode.Paste]: 'Paste',
+  [KeyCode.Find]: 'Find',
+  [KeyCode.Mute]: 'Mute',
+  [KeyCode.VolumeUp]: 'Volume Up',
+  [KeyCode.VolumeDown]: 'Volume Down',
+
+  [KeyCode.LockingCapsLock]: 'Locking Caps Lock',
+  [KeyCode.LockingNumLock]: 'Locking Num Lock',
+  [KeyCode.LockingScrollLock]: 'Locking Scroll Lock',
+
+  [KeyCode.KeypadComma]: 'Keypad ,',
+  [KeyCode.KeypadEqualSign]: 'Keypad =',
+  [KeyCode.Intl1]: 'Intl1',
+  [KeyCode.Intl2]: 'Intl2',
+  [KeyCode.Intl3]: 'Intl3',
+  [KeyCode.Intl4]: 'Intl4',
+  [KeyCode.Intl5]: 'Intl5',
+  [KeyCode.Intl6]: 'Intl6',
+  [KeyCode.Intl7]: 'Intl7',
+  [KeyCode.Intl8]: 'Intl8',
+  [KeyCode.Intl9]: 'Intl9',
+  [KeyCode.Lang1]: 'Lang1',
+  [KeyCode.Lang2]: 'Lang2',
+  [KeyCode.Lang3]: 'Lang3',
+  [KeyCode.Lang4]: 'Lang4',
+  [KeyCode.Lang5]: 'Lang5',
+  [KeyCode.Lang6]: 'Lang6',
+  [KeyCode.Lang7]: 'Lang7',
+  [KeyCode.Lang8]: 'Lang8',
+  [KeyCode.Lang9]: 'Lang9',
+
+  [KeyCode.AlternateErase]: 'Alternate Erase',
+  [KeyCode.SysReqAttention]: 'SysReq Attention',
+  [KeyCode.Cancel]: 'Cancel',
+  [KeyCode.Clear]: 'Clear',
+  [KeyCode.Prior]: 'Prior',
+  [KeyCode.Return]: 'Return',
+  [KeyCode.Separator]: 'Separator',
+  [KeyCode.Out]: 'Out',
+  [KeyCode.Oper]: 'Oper',
+  [KeyCode.ClearAgain]: 'Clear Again',
+  [KeyCode.CrSelProps]: 'CrSel Props',
+  [KeyCode.ExSel]: 'ExSel',
+
+  [KeyCode.MouseLButton]: 'Mouse Left Button',
+  [KeyCode.MouseRButton]: 'Mouse Right Button',
+  [KeyCode.MouseMButton]: 'Mouse Middle Button',
+  [KeyCode.MouseForward]: 'Mouse Forward',
+  [KeyCode.MouseBack]: 'Mouse Back',
+  [KeyCode.MouseWheelUp]: 'Mouse Wheel Up',
+  [KeyCode.MouseWheelDown]: 'Mouse Wheel Down',
+  [KeyCode.FN]: 'FN',
+};
+
+export const keyModifierToKeyName: { [key in KeyModifier]: string } = {
+  [KeyModifier.KeyNoModifier]: 'No Modifier',
+  [KeyModifier.KeyLeftCtrl]: 'Left Ctrl',
+  [KeyModifier.KeyLeftShift]: 'Left Shift',
+  [KeyModifier.KeyLeftAlt]: 'Left Alt',
+  [KeyModifier.KeyLeftGui]: 'Left GUI',
+  [KeyModifier.KeyRightCtrl]: 'Right Ctrl',
+  [KeyModifier.KeyRightShift]: 'Right Shift',
+  [KeyModifier.KeyRightAlt]: 'Right Alt',
+  [KeyModifier.KeyRightGui]: 'Right GUI',
+};
+
+export function keyBindingModifierToString(keybinding: number): string {
+  var desc = "";
+  for (let i = 0; i < 8; i++) {
+    if (((keybinding >> 8) & (1 << i)) > 0) {
+      desc += keyModifierToKeyName[(1 << i) as KeyModifier] + " ";
+    }
+  }
+  return desc;
 }

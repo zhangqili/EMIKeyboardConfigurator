@@ -49,6 +49,48 @@ export interface IAdvancedKey {
     upper_bound: number;
     lower_bound: number;
 }
+export class AdvancedKey implements IAdvancedKey {
+    state: boolean;
+    value: number;
+    raw: number;
+    maximum: number;
+    minimum: number;
+
+    mode: KeyMode;
+    calibration_mode: CalibrationMode;
+    activation_value: number;
+    phantom_lower_deadzone: number;
+    trigger_distance: number;
+    release_distance: number;
+    schmitt_parameter: number;
+    trigger_speed: number;
+    release_speed: number;
+    upper_deadzone: number;
+    lower_deadzone: number;
+    upper_bound: number;
+    lower_bound: number;
+
+    constructor() {
+        this.value = 0;
+        this.state = false;
+        this.raw = 0;
+        this.maximum = 0;
+        this.minimum = 0;
+        this.mode = KeyMode.KeyAnalogRapidMode;
+        this.calibration_mode = CalibrationMode.KeyNoCalibration;
+        this.activation_value = 0.5;
+        this.phantom_lower_deadzone = 0.2;
+        this.trigger_distance = 0.08;
+        this.release_distance = 0.08;
+        this.schmitt_parameter = 0.01;
+        this.trigger_speed = 0.01;
+        this.release_speed = 0.01;
+        this.upper_deadzone = 0.04;
+        this.lower_deadzone = 0.2;
+        this.upper_bound = 4096.0;
+        this.lower_bound = 0;
+    }
+}
 
 export enum KeyCode {
     // Special Keys
@@ -91,10 +133,10 @@ export enum KeyCode {
     Key9 = 0x26, Key0 = 0x27,
 
     // Control Keys
-    Enter = 0x28, Escape = 0x29, Backspace = 0x2a, Tab = 0x2b, Spacebar = 0x2c,
+    Enter = 0x28, Escape = 0x29, Backspace = 0x2a, Tab = 0x2b,
 
     // Symbols
-    Minus = 0x2d, Equal = 0x2e, LeftBrace = 0x2f, RightBrace = 0x30,
+    Spacebar = 0x2c, Minus = 0x2d, Equal = 0x2e, LeftBrace = 0x2f, RightBrace = 0x30,
     Backslash = 0x31, NonUsHash = 0x32, Semicolon = 0x33, Apostrophe = 0x34,
     Grave = 0x35, Comma = 0x36, Dot = 0x37, Slash = 0x38,
 
@@ -175,6 +217,22 @@ export interface IRGBConfig {
     rgb: Srgb;
     speed: number;
 }
+
+export class RGBConfig implements IRGBConfig {
+    mode: RGBMode;
+    rgb: Srgb;
+    speed: number;
+    constructor(){
+        this.mode = RGBMode.RgbModeLinear;
+        this.rgb = {
+          red: 163,
+          green: 55,
+          blue: 252
+        };
+        this.speed = 0.02;
+    }
+}
+
 
 export interface IKeyboardController{
     detect(): Promise<HIDDevice[]>;

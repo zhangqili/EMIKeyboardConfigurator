@@ -7,11 +7,13 @@ import { useI18n } from "vue-i18n";
 import type { DataTableColumns } from 'naive-ui'
 import * as apis from '../apis/api';
 import * as ekc from 'emi-keyboard-controller';
+import { storeToRefs } from 'pinia';
+import { useMainStore } from '../store/main';
 
 const { t } = useI18n();
+const store = useMainStore();
+const {advanced_keys} = storeToRefs(store);
 
-const props = defineProps<{ advanced_keys: ekc.IAdvancedKey[] }>();
-const emit = defineEmits(['update:advanced_keys']);
 
 interface AdvancedKey{
     no: number

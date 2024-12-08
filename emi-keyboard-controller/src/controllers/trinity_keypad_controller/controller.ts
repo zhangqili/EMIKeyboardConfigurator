@@ -1,10 +1,10 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey } from './../../interface';
 
 const layout = `[[{"a": 7},"Z","X","C","V"]]`;
 
 export class TrinityKeypadController implements IKeyboardController {
     device: HIDDevice | undefined;
-    advanced_keys: IAdvancedKey[];
+    advanced_keys: AdvancedKey[];
     rgb_switch: boolean;
     rgb_configs: IRGBConfig[];
     keymap: number[][];

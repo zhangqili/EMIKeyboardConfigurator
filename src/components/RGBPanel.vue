@@ -7,33 +7,34 @@ import { useI18n } from "vue-i18n";
 import * as ekc from 'emi-keyboard-controller';
 import { rgbToHex } from '../apis/utils';
 import tinycolor from "tinycolor2";
+import { useMainStore } from '../store/main';
+import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();
-
-const props = defineProps<{ rgb_config: ekc.IRGBConfig }>();
-const emit = defineEmits(['update:rgb_config']);
+const store = useMainStore();
+const {rgb_config} = storeToRefs(store);
 
 const speed = computed<number>({
-  get: () => (Math.round(props.rgb_config.speed * 1000)),
+  get: () => (Math.round(rgb_config.value.speed * 1000)),
   set: (value: number) => {
-    props.rgb_config.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
+    rgb_config.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
   },
 });
 
 const mode = computed<ekc.RGBMode>({
-  get: () => props.rgb_config.mode,
+  get: () => rgb_config.value.mode,
   set: (value: ekc.RGBMode) => {
-    props.rgb_config.mode = value;
+    rgb_config.value.mode = value;
   },
 });
 
 const color = computed<string>({
-  get: () => rgbToHex(props.rgb_config.rgb),
+  get: () => rgbToHex(rgb_config.value.rgb),
   set: (value: string) => {
     var c = tinycolor(value).toRgb();
-    props.rgb_config.rgb.red = c.r;
-    props.rgb_config.rgb.green = c.g;
-    props.rgb_config.rgb.blue = c.b;
+    rgb_config.value.rgb.red = c.r;
+    rgb_config.value.rgb.green = c.g;
+    rgb_config.value.rgb.blue = c.b;
   },
 });
 

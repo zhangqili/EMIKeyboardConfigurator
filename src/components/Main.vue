@@ -5,15 +5,21 @@ import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { rgbToHex } from "../apis/utils";
+import { keyBindingModifierToString, keyCodeToKeyName, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
 import { listen } from "@tauri-apps/api/event";
+import {useMainStore} from "../store/main"
+import { storeToRefs } from "pinia";
 
 const { t } = useI18n();
+const store = useMainStore();
+const {selected_device, advanced_key, rgb_config, advanced_keys, rgb_configs, keymap, key_binding, selected_layer} = storeToRefs(store);
+
 const message = useMessage();
 const sidebarWidth = ref(10); // 初始化宽度
 const tab_selection = ref<string | null>("performance");
 const keyboard_keys = ref<kle.Key[]>([]);
 const isConnected = ref<boolean>(false);
+
 const key_containers = computed(() => {
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
@@ -50,7 +56,8 @@ const key_containers = computed(() => {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         if (keymap.value != undefined) {
-          item.labels[0] = keymap.value[0][index].toString();
+          item.labels[0] = keyBindingModifierToString(keymap.value[selected_layer.value][index]);
+          item.labels[6] = keyCodeToKeyName[(keymap.value[selected_layer.value][index] & 0xFF) as ekc.KeyCode];
         }
       })
       break;
@@ -83,70 +90,14 @@ const key_containers = computed(() => {
   }
   return keys;
 });
-const keyboard = ref({
+
+const keyboard_layout = ref({
   json: undefined,
   text: JSON.stringify(kle.Serial.deserialize([]), null, 2),
 });
-var advanced_keys = ref<ekc.IAdvancedKey[]>([]);
-const advanced_key = ref<ekc.IAdvancedKey>({
-  value: 0,
-  state: false,
-  raw: 0,
-  maximum: 0,
-  minimum: 0,
-  mode: ekc.KeyMode.KeyAnalogRapidMode,
-  calibration_mode: ekc.CalibrationMode.KeyNoCalibration,
-  activation_value: 0.5,
-  phantom_lower_deadzone: 0.2,
-  trigger_distance: 0.08,
-  release_distance: 0.08,
-  schmitt_parameter: 0.01,
-  trigger_speed: 0.01,
-  release_speed: 0.01,
-  upper_deadzone: 0.04,
-  lower_deadzone: 0.2,
-  upper_bound: 4096.0,
-  lower_bound: 0
-});
-
-var rgb_configs = ref<ekc.IRGBConfig[]>([]);
-const rgb_config = ref<ekc.IRGBConfig>({
-  mode: ekc.RGBMode.RgbModeFixed,
-  rgb: {
-    red: 163,
-    green: 55,
-    blue: 252
-  },
-  speed: 0.005,
-});
-
-var keymap = ref<number[][] | undefined>(undefined);
 
 var devices = ref<{ label: string; value: number }[]>([]);
-const selected_device = ref(undefined);
-
-
-const keyModeDisplayMap: Record<ekc.KeyMode, string> = {
-  [ekc.KeyMode.KeyDigitalMode]: "Digital",
-  [ekc.KeyMode.KeyAnalogNormalMode]: "Trad",
-  [ekc.KeyMode.KeyAnalogRapidMode]: "RT",
-  [ekc.KeyMode.KeyAnalogSpeedMode]: "Speed",
-};
-
-const rgbModeDisplayMap: Record<ekc.RGBMode, string> = {
-  [ekc.RGBMode.RgbModeFixed]: "Fixed",
-  [ekc.RGBMode.RgbModeStatic]: "Static",
-  [ekc.RGBMode.RgbModeCycle]: "Cycle",
-  [ekc.RGBMode.RgbModeLinear]: "Linear",
-  [ekc.RGBMode.RgbModeTrigger]: "Trigger",
-  [ekc.RGBMode.RgbModeString]: "String",
-  [ekc.RGBMode.RgbModeFadingString]: "Fading\nString",
-  [ekc.RGBMode.RgbModeDiamondRipple]: "Diamond\nRipple",
-  [ekc.RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
-  [ekc.RGBMode.RgbModeJelly]: "Jelly",
-};
-
-
+//const selected_device = ref(undefined);
 
 function renderKeyboardFromJson(json_str: string) {
   var layout = JSON.parse(json_str);
@@ -166,7 +117,7 @@ function updateKeyboard(value: kle.Keyboard) {
       }
     }
   });
-  keyboard.value.text = JSON.stringify(value, null, 2);
+  keyboard_layout.value.text = JSON.stringify(value, null, 2);
   keyboard_keys.value = value.keys;
 }
 
@@ -185,7 +136,7 @@ async function connectCommand() {
     isConnected.value = false;
   }
   else {
-    if (selected_device.value != undefined) {
+    if (selected_device != undefined) {
       var result = await apis.connect_device();
       isConnected.value = result;
       if (isConnected.value) {
@@ -200,7 +151,7 @@ async function connectCommand() {
 }
 
 async function saveCommand() {
-  if (selected_device.value != undefined) {
+  if (selected_device != undefined) {
     apis.set_advanced_keys(advanced_keys.value);
     if (keymap.value != undefined) {
       apis.set_keymap(keymap.value);
@@ -213,7 +164,7 @@ async function saveCommand() {
 }
 
 async function flashCommand() {
-  if (selected_device.value != undefined) {
+  if (selected_device != undefined) {
     var result = await apis.flash_config();
     console.log(result);
 
@@ -236,7 +187,6 @@ async function handleUpdateValue(_value: string, option: SelectOption) {
 }
 
 function applyToAllKeys() {
-  
   advanced_keys.value.forEach((item, index) => {
     applyToSelectedKey(index);
     });
@@ -251,6 +201,9 @@ function applyToSelectedKey(id: number) {
       break;
     }
     case "keymap": {
+      if (keymap.value != undefined) {
+        keymap.value[selected_layer.value][id] = key_binding.value;
+      }
       break;
     }
     case "rgb": {
@@ -268,20 +221,21 @@ function applyToSelectedKey(id: number) {
 
 const advanced_options = [
   {
-    label: '固化配置',
+    label: 'Flash configuration',
     key: 'flash config'
   },
   {
-    label: '复位设备',
+    label: 'System reset',
     key: 'system reset'
   },
   {
-    label: '恢复出厂设置',
+    label: 'Factory reset',
     key: 'factory reset'
   }
 ]
+
 function handleAdvancedMenu(key: string | number) {
-  if (selected_device.value != undefined) {
+  if (selected_device != undefined) {
     switch (key) {
       case advanced_options[0].key: {
         apis.flash_config();
@@ -374,10 +328,10 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
               <n-button @click="applyToAllKeys">Apply to all</n-button>
             </n-layout-header>
             <n-layout-content>
-              <PerformancePanel v-if="tab_selection == 'performance'" v-model:advanced_key="advanced_key" />
-              <KeymapPanel v-if="tab_selection == 'keymap'" />
-              <RGBPanel v-if="tab_selection == 'rgb'" v-model:rgb_config="rgb_config" />
-              <DebugPanel v-if="tab_selection == 'debug'" v-model:advanced_keys="advanced_keys"/>
+              <PerformancePanel v-if="tab_selection == 'performance'"/>
+              <KeymapPanel v-if="tab_selection == 'keymap'"/>
+              <RGBPanel v-if="tab_selection == 'rgb'"/>
+              <DebugPanel v-if="tab_selection == 'debug'"/>
             </n-layout-content>
             <n-layout-footer>
 
