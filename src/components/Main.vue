@@ -9,10 +9,22 @@ import { keyBindingModifierToString, keyCodeToKeyName, keyModeDisplayMap, rgbMod
 import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
+import { DebugDataItem } from '../apis/utils';
 
 const { t } = useI18n();
 const store = useMainStore();
-const {selected_device, advanced_key, rgb_config, advanced_keys, rgb_configs, keymap, key_binding, selected_layer} = storeToRefs(store);
+const { 
+  selected_device,
+  advanced_key, 
+  rgb_config, 
+  advanced_keys, 
+  rgb_configs, 
+  keymap, 
+  key_binding, 
+  selected_layer, 
+  debug_raw_chart_option, 
+  debug_value_chart_option 
+} = storeToRefs(store);
 
 const message = useMessage();
 const sidebarWidth = ref(10); // 初始化宽度
@@ -97,6 +109,8 @@ const keyboard_layout = ref({
 });
 
 var devices = ref<{ label: string; value: number }[]>([]);
+
+const containerRef = ref<HTMLElement | undefined>(undefined);
 //const selected_device = ref(undefined);
 
 function renderKeyboardFromJson(json_str: string) {
@@ -151,7 +165,7 @@ async function connectCommand() {
 }
 
 async function saveCommand() {
-  if (selected_device != undefined) {
+  if (isConnected.value) {
     apis.set_advanced_keys(advanced_keys.value);
     if (keymap.value != undefined) {
       apis.set_keymap(keymap.value);
@@ -164,7 +178,7 @@ async function saveCommand() {
 }
 
 async function flashCommand() {
-  if (selected_device != undefined) {
+  if (isConnected.value) {
     var result = await apis.flash_config();
     console.log(result);
 
@@ -211,6 +225,22 @@ function applyToSelectedKey(id: number) {
       break;
     }
     case "debug": {
+      if (!debug_raw_chart_option.value.series.some(item => item.id == id)) {
+        debug_raw_chart_option.value.series.push({
+          id: id,
+          name: 'KEY' + id.toString(),
+          type: 'line',
+          showSymbol: false,
+          data: Array<DebugDataItem>()
+        });
+        debug_value_chart_option.value.series.push({
+          id: id,
+          name: 'KEY' + id.toString(),
+          type: 'line',
+          showSymbol: false,
+          data: Array<DebugDataItem>()
+        });
+      }
       break;
     }
     default: {
@@ -235,7 +265,7 @@ const advanced_options = [
 ]
 
 function handleAdvancedMenu(key: string | number) {
-  if (selected_device != undefined) {
+  if (isConnected.value) {
     switch (key) {
       case advanced_options[0].key: {
         apis.flash_config();
@@ -323,7 +353,7 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
           </n-layout-sider>
 
           <n-layout>
-            <n-layout-header>
+            <n-layout-header style="position: sticky; top: 0px; z-index: 2;">
               <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
               <n-button @click="applyToAllKeys">Apply to all</n-button>
             </n-layout-header>

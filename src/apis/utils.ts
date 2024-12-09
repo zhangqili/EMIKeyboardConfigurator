@@ -124,7 +124,7 @@ export const keyboardEventToHidCodeMap: Record<string, number> = {
 export function rgbToHex(rgb: Srgb): string {
   // 检查每个颜色分量是否在有效范围内 (0-255)
   if (rgb.red < 0 || rgb.red > 255 || rgb.green < 0 || rgb.green > 255 || rgb.blue < 0 || rgb.blue > 255) {
-    console.log(rgb);
+    //console.log(rgb);
     throw new Error('RGB values must be between 0 and 255');
   }
 
@@ -365,4 +365,9 @@ export function keyBindingModifierToString(keybinding: number): string {
     }
   }
   return desc;
+}
+
+export interface DebugDataItem {
+    name: string;
+    value: [number, number];
 }

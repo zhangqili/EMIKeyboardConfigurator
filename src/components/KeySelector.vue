@@ -24,7 +24,7 @@ function handleKeyCodeClick(key: number | string | KeyCode) {
     emit('update:binding', (props.binding & 0xFF00 | key as number));
 }
 
-console.log(Object.keys(KeyCode));
+//console.log(Object.keys(KeyCode));
 
 </script>
 <template>
