@@ -43,7 +43,7 @@ const key_containers = computed(() => {
           item.labels[0] = keyModeDisplayMap[advanced_key.mode];
           switch (advanced_key.mode) {
             case ekc.KeyMode.KeyAnalogNormalMode: {
-              item.labels[3] = `↓${Math.round(advanced_key.activation_value * 1000) / 10}\t`;
+              item.labels[3] = `↓${Math.round(advanced_key.activation_value * 1000) / 10}\t↑${Math.round(advanced_key.deactivation_value * 1000) / 10}`;
               break;
             }
             case ekc.KeyMode.KeyAnalogRapidMode: {

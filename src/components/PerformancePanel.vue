@@ -25,6 +25,12 @@ const activation_value = computed<number>({
     advanced_key.value.activation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
+const deactivation_value = computed<number>({
+  get: () => (Math.round(advanced_key.value.deactivation_value * 1000) / 10),
+  set: (value: number) => {
+    advanced_key.value.deactivation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+  },
+});
 const trigger_distance = computed<number>({
   get: () => (Math.round(advanced_key.value.trigger_distance * 1000) / 10),
   set: (value: number) => {
@@ -96,7 +102,7 @@ const modes =
         <n-input-number v-model:value="activation_value" placeholder="Activation Distance" :min="0" :max="100" />
       </n-form-item>
       <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" label="Deactivation Distance">
-        <n-input-number placeholder="Deactivation Distance" :min="0" :max="100" />
+        <n-input-number v-model:value="deactivation_value" placeholder="Deactivation Distance" :min="0" :max="100" />
       </n-form-item>
       <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" label="Trigger Distance">
         <n-input-number v-model:value="trigger_distance" placeholder="Trigger Distance" :min="0" :max="100" />

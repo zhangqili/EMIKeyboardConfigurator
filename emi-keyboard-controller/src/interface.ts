@@ -38,10 +38,9 @@ export interface IAdvancedKey {
     mode: KeyMode;
     calibration_mode: CalibrationMode;
     activation_value: number;
-    phantom_lower_deadzone: number;
+    deactivation_value: number;
     trigger_distance: number;
     release_distance: number;
-    schmitt_parameter: number;
     trigger_speed: number;
     release_speed: number;
     upper_deadzone: number;
@@ -59,10 +58,9 @@ export class AdvancedKey implements IAdvancedKey {
     mode: KeyMode;
     calibration_mode: CalibrationMode;
     activation_value: number;
-    phantom_lower_deadzone: number;
+    deactivation_value: number;
     trigger_distance: number;
     release_distance: number;
-    schmitt_parameter: number;
     trigger_speed: number;
     release_speed: number;
     upper_deadzone: number;
@@ -79,10 +77,9 @@ export class AdvancedKey implements IAdvancedKey {
         this.mode = KeyMode.KeyAnalogRapidMode;
         this.calibration_mode = CalibrationMode.KeyNoCalibration;
         this.activation_value = 0.5;
-        this.phantom_lower_deadzone = 0.2;
+        this.deactivation_value = 0.49;
         this.trigger_distance = 0.08;
         this.release_distance = 0.08;
-        this.schmitt_parameter = 0.01;
         this.trigger_speed = 0.01;
         this.release_speed = 0.01;
         this.upper_deadzone = 0.04;
@@ -268,10 +265,9 @@ export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
 
     const fields = [
         key.activation_value,
-        key.phantom_lower_deadzone,
+        key.deactivation_value,
         key.trigger_distance,
         key.release_distance,
-        key.schmitt_parameter,
         key.trigger_speed,
         key.release_speed,
         key.upper_deadzone,
