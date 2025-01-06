@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName } from "../apis/utils"
-import { KeyCode, KeyModifier } from "emi-keyboard-controller"
-import { useMessage } from 'naive-ui';
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, SystemCodeToKeyName } from "../apis/utils"
+import { KeyCode, KeyModifier, LayerControlKeycode, MouseKeycode, SystemKeycode } from "emi-keyboard-controller"
+import { SelectOption, useMessage } from 'naive-ui';
 
 const message = useMessage();
 
@@ -24,188 +24,263 @@ function handleKeyCodeClick(key: number | string | KeyCode) {
     emit('update:binding', (props.binding & 0xFF00 | key as number));
 }
 
-//console.log(Object.keys(KeyCode));
+function handleFullKeyCodeClick(key: number | string | KeyCode) {
+    emit('update:binding', (key as number));
+}
+
+function handleLayerNumber(n: number | null) {
+    emit('update:binding', (Number(layer_control_value.value) << 12) | (n as number) << 8 | KeyCode.LayerControl);
+}
+
+function handleLayerControl(value: string, option: SelectOption) {
+    emit('update:binding', (Number(value) << 12) | layer_value.value << 8 | KeyCode.LayerControl);
+}
+
+const layer_options = Object.keys(LayerControlKeycode).slice(0,4).map((key) => {
+    return {
+        value: key,
+        label: LayerControlToKeyName[key as unknown as LayerControlKeycode]
+    };
+});
+const layer_value = ref(0);
+const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).toString());
 
 </script>
 <template>
-    <n-list vertical>
-        <n-list-item>
-            <n-thing title="Modifiers">
-                <n-button-group>
-                    <n-button v-for="(key, index) in Object.keys(KeyModifier)
-                        .slice(1, 9)" @click="handleKeyModifierClick(key)"
-                        :type="((props.binding >> 8) & 0xFF & (key as unknown as number)) > 0 ? 'primary' : ''">
-                        {{ keyModifierToKeyName[key as unknown as KeyModifier] }}</n-button>
-                </n-button-group>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Event">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.NoEvent, KeyCode.ErrorUndefined + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Alphabet Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.A, KeyCode.Z + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Numbertic Keys">
-            <n-button-group>
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.Key1, KeyCode.Key0 + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-                </n-button-group>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Control Keys">
-                <n-button-group>
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.Enter, KeyCode.Tab + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-                </n-button-group>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Symbols">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.Spacebar, KeyCode.Slash + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Function Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.CapsLock, KeyCode.Pause + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Navigation Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.Insert, KeyCode.UpArrow + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Keypad">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.NumLock, KeyCode.KeypadDot + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Additional Symbols and Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.NonUsBackslash, KeyCode.KeypadEqual + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Extended Function Keys">
-            <n-button-group>
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.F13, KeyCode.F24 + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-                </n-button-group>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Media and System Control Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.Execute, KeyCode.VolumeDown + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Locking Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.LockingCapsLock, KeyCode.LockingScrollLock + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="International and Language-Specific Keys">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.KeypadComma, KeyCode.Lang9 + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Additional Commands and Editing">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.AlternateErase, KeyCode.ExSel + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Mouse">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.MouseLButton, KeyCode.MouseWheelDown + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-        <n-list-item>
-            <n-thing title="Function">
-                <n-button v-for="(key, code) in Object.keys(KeyCode)
-                    //.filter(key => isNaN(Number(key)))
-                    .slice(KeyCode.FN, KeyCode.FN + 1)"
-                    :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                    @click="handleKeyCodeClick(key)">
-                    {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-            </n-thing>
-        </n-list-item>
-    </n-list>
+    <n-tabs type="segment" animated>
+        <n-tab-pane name="Normal" title="Normal">
+            <n-list vertical>
+                <n-list-item>
+                    <n-thing title="Modifiers">
+                        <n-space vertical>
+                            <n-button @click="() => { emit('update:binding', props.binding & 0xFF); }">
+                                Clear</n-button>
+                            <n-button-group>
+                                <n-button v-for="(key, index) in Object.keys(KeyModifier)
+                                    .slice(1, 9)" @click="handleKeyModifierClick(key)"
+                                    :type="((props.binding >> 8) & 0xFF & (key as unknown as number)) > 0 ? 'primary' : ''">
+                                    {{ keyModifierToKeyName[key as unknown as KeyModifier] }}</n-button>
+                            </n-button-group>
+                        </n-space>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Event">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.NoEvent, KeyCode.ErrorUndefined + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Alphabet Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.A, KeyCode.Z + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Numbertic Keys">
+                        <n-button-group>
+                            <n-button v-for="(key, code) in Object.keys(KeyCode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(KeyCode.Key1, KeyCode.Key0 + 1)"
+                                :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleKeyCodeClick(key)">
+                                {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                        </n-button-group>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Control Keys">
+                        <n-button-group>
+                            <n-button v-for="(key, code) in Object.keys(KeyCode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(KeyCode.Enter, KeyCode.Tab + 1)"
+                                :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleKeyCodeClick(key)">
+                                {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                        </n-button-group>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Symbols">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.Spacebar, KeyCode.Slash + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Function Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.CapsLock, KeyCode.Pause + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Navigation Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.Insert, KeyCode.UpArrow + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Keypad">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.NumLock, KeyCode.KeypadDot + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Additional Symbols and Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.NonUsBackslash, KeyCode.KeypadEqual + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Extended Function Keys">
+                        <n-button-group>
+                            <n-button v-for="(key, code) in Object.keys(KeyCode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(KeyCode.F13, KeyCode.F24 + 1)"
+                                :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleKeyCodeClick(key)">
+                                {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                        </n-button-group>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Media and System Control Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.Execute, KeyCode.VolumeDown + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Locking Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.LockingCapsLock, KeyCode.LockingScrollLock + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="International and Language-Specific Keys">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.KeypadComma, KeyCode.Lang9 + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Additional Commands and Editing">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.AlternateErase, KeyCode.ExSel + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Mouse">
+                        <n-button v-for="(key, code) in Object.keys(MouseKeycode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelDown + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Layer">
+                        <n-button v-for="(key, code) in Object.keys(KeyCode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(KeyCode.FN, KeyCode.FN + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="System">
+                        <n-button v-for="(key, code) in Object.keys(SystemKeycode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(SystemKeycode.SystemReset, SystemKeycode.SystemDebug + 1)"
+                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleKeyCodeClick(key)">
+                            {{ SystemCodeToKeyName[key as unknown as SystemKeycode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+            </n-list>
+        </n-tab-pane>
+        <n-tab-pane name="Others" title="others">
+            <n-list vertical>
+                <n-list-item>
+                    <n-thing title="Mouse">
+                        <n-button v-for="(key, code) in Object.keys(MouseKeycode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelDown + 1)"
+                            :type="((props.binding & 0xFF) == KeyCode.MouseCollection && ((props.binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleFullKeyCodeClick((key as unknown as number) << 8 | KeyCode.MouseCollection)">
+                            {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="Layer">
+                        <n-flex>
+                            <n-grid :cols="4">
+                                <n-gi :span="1">
+                                    <n-select :options="layer_options" @update:value="handleLayerControl" v-model:value="layer_control_value" ></n-select>
+                                </n-gi>
+                                <n-gi :span="3">
+                                    <n-input-number @update:value="handleLayerNumber" v-model:value="layer_value" max="15" min="0"></n-input-number>
+                                </n-gi>
+                            </n-grid>
+                        </n-flex>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="System">
+                        <n-button v-for="(key, code) in Object.keys(SystemKeycode)
+                            //.filter(key => isNaN(Number(key)))
+                            .slice(SystemKeycode.SystemReset, SystemKeycode.SystemDebug + 1)"
+                            :type="((props.binding & 0xFF) == KeyCode.KeySystem && ((props.binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            @click="handleFullKeyCodeClick((key as unknown as number) << 8 | KeyCode.KeySystem)">
+                            {{ SystemCodeToKeyName[key as unknown as SystemKeycode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+            </n-list>
+        </n-tab-pane>
+    </n-tabs>
 </template>
 
 <style scoped></style>

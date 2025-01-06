@@ -1,4 +1,4 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, SystemKeycode, LayerControlKeycode } from './../../interface';
 
 const layout = `[["Esc","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7","*\\n8","(\\n9",")\\n0","_\\n-","+\\n=",{"w":2},"Backspace"],[{"w":1.5},"Tab","Q","W","E","R","T","Y","U","I","O","P","{\\n[","}\\n]",{"w":1.5},"|\\n\\\\"],[{"w":1.75},"Caps Lock","A","S","D","F","G","H","J","K","L",":\\n;","\\"\\n'",{"w":2.25},"Enter"],[{"w":2},"Shift","Z","X","C","V","B","N","M","<\\n,",">\\n.","?\\n/","Shift","↑","Del"],[{"w":1.25},"Ctrl",{"w":1.25},"Win",{"w":1.25},"Alt",{"a":7,"w":6.25},"",{"a":4},"Alt","Fn","←","↓","→"]]`;
 
@@ -43,22 +43,28 @@ export class OholeoKeyboardController implements IKeyboardController {
         }));
         this.keymap = [
                 [
-                    KeyCode.Escape/*0*/, KeyCode.Key1/*1*/, KeyCode.Key2/*2*/, KeyCode.Key3/*3*/, KeyCode.Key4/*4*/, KeyCode.Key5/*5*/, KeyCode.Key6/*6*/, KeyCode.Key7/*7*/, KeyCode.Key8/*8*/, KeyCode.Key9/*9*/, KeyCode.Key0/*10*/, KeyCode.Minus/*11*/, KeyCode.Equal/*12*/, KeyCode.Backspace/*13*/,
-                    KeyCode.Tab/*14*/, KeyCode.Q/*15*/, KeyCode.W/*16*/, KeyCode.E/*17*/, KeyCode.R/*18*/, KeyCode.T/*19*/, KeyCode.Y/*20*/, KeyCode.U/*21*/, KeyCode.I/*22*/, KeyCode.O/*23*/, KeyCode.P/*24*/, KeyCode.LeftBrace/*25*/, KeyCode.RightBrace/*26*/, KeyCode.Backslash/*27*/,
-                    KeyCode.CapsLock/*28*/, KeyCode.A/*29*/, KeyCode.S/*30*/, KeyCode.D/*31*/, KeyCode.F/*32*/, KeyCode.G/*33*/, KeyCode.H/*34*/, KeyCode.J/*35*/, KeyCode.K/*36*/, KeyCode.L/*37*/, KeyCode.Semicolon/*38*/, KeyCode.Apostrophe/*39*/, KeyCode.Enter/*40*/,
-                    ((KeyModifier.KeyLeftShift) << 8)/*41*/, KeyCode.Z/*42*/, KeyCode.X/*43*/, KeyCode.C/*44*/, KeyCode.V/*45*/, KeyCode.B/*46*/, KeyCode.N/*47*/, KeyCode.M/*48*/, KeyCode.Comma/*49*/, KeyCode.Dot/*50*/, KeyCode.Slash/*51*/, ((KeyModifier.KeyRightShift) << 8)/*52*/, KeyCode.UpArrow/*53*/, KeyCode.Delete/*54*/,
-                    ((KeyModifier.KeyLeftCtrl) << 8)/*55*/, ((KeyModifier.KeyLeftGui) << 8)/*56*/, ((KeyModifier.KeyLeftAlt) << 8)/*57*/, KeyCode.Spacebar/*58*/, ((KeyModifier.KeyRightAlt) << 8)/*59*/, KeyCode.FN/*60*/, KeyCode.LeftArrow/*61*/, KeyCode.DownArrow/*62*/, KeyCode.RightArrow/*63*/,
+                    KeyCode.Escape/*0*/,    KeyCode.Key1/*1*/,  KeyCode.Key2/*2*/,  KeyCode.Key3/*3*/,  KeyCode.Key4/*4*/,  KeyCode.Key5/*5*/,  KeyCode.Key6/*6*/,  KeyCode.Key7/*7*/,  KeyCode.Key8/*8*/,  KeyCode.Key9/*9*/,  KeyCode.Key0/*10*/,     KeyCode.Minus/*11*/,        KeyCode.Equal/*12*/,        KeyCode.Backspace/*13*/,
+                    KeyCode.Tab/*14*/,      KeyCode.Q/*15*/,    KeyCode.W/*16*/,    KeyCode.E/*17*/,    KeyCode.R/*18*/,    KeyCode.T/*19*/,    KeyCode.Y/*20*/,    KeyCode.U/*21*/,    KeyCode.I/*22*/,    KeyCode.O/*23*/,    KeyCode.P/*24*/,        KeyCode.LeftBrace/*25*/,    KeyCode.RightBrace/*26*/,   KeyCode.Backslash/*27*/,
+                    KeyCode.CapsLock/*28*/, KeyCode.A/*29*/,    KeyCode.S/*30*/,    KeyCode.D/*31*/,    KeyCode.F/*32*/,    KeyCode.G/*33*/,    KeyCode.H/*34*/,    KeyCode.J/*35*/,    KeyCode.K/*36*/,    KeyCode.L/*37*/,    KeyCode.Semicolon/*38*/,KeyCode.Apostrophe/*39*/,   KeyCode.Enter/*40*/,
+                    ((KeyModifier.KeyLeftShift) << 8)/*41*/,    KeyCode.Z/*42*/,    KeyCode.X/*43*/,    KeyCode.C/*44*/,    KeyCode.V/*45*/,    KeyCode.B/*46*/,    KeyCode.N/*47*/,    KeyCode.M/*48*/,    KeyCode.Comma/*49*/,KeyCode.Dot/*50*/,      KeyCode.Slash/*51*/,        ((KeyModifier.KeyRightShift) << 8)/*52*/, KeyCode.UpArrow/*53*/, KeyCode.Delete/*54*/,
+                    ((KeyModifier.KeyLeftCtrl) << 8)/*55*/, ((KeyModifier.KeyLeftGui) << 8)/*56*/, ((KeyModifier.KeyLeftAlt) << 8)/*57*/, KeyCode.Spacebar/*58*/, ((KeyModifier.KeyRightAlt) << 8)/*59*/,   KeyCode.LayerControl | (1<<8) | (LayerControlKeycode.LayerMomentary << 12)/*60*/, KeyCode.LeftArrow/*61*/, KeyCode.DownArrow/*62*/, KeyCode.RightArrow/*63*/,
                 ],
                 [ 
-                    KeyCode.Grave, KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4, KeyCode.F5, KeyCode.F6, KeyCode.F7, KeyCode.F8, KeyCode.F9, KeyCode.F10, KeyCode.F11, KeyCode.F12, KeyCode.Backspace,
-                    KeyCode.Tab, KeyCode.Q, KeyCode.W, KeyCode.E, KeyCode.R, KeyCode.T, KeyCode.Y, KeyCode.U, KeyCode.I, KeyCode.O, KeyCode.P, KeyCode.LeftBrace, KeyCode.RightBrace, KeyCode.Backslash,
-                    KeyCode.CapsLock, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.F, KeyCode.G, KeyCode.H, KeyCode.J, KeyCode.K, KeyCode.L, KeyCode.Semicolon, KeyCode.Apostrophe, KeyCode.Enter,
-                    ((KeyModifier.KeyLeftShift) << 8), KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B, KeyCode.N, KeyCode.M, KeyCode.Comma, KeyCode.Dot, KeyCode.Slash, ((KeyModifier.KeyRightShift) << 8), KeyCode.PageUp, KeyCode.PrintScreen,
-                    ((KeyModifier.KeyLeftCtrl) << 8), ((KeyModifier.KeyLeftGui) << 8), ((KeyModifier.KeyLeftAlt) << 8), KeyCode.Spacebar, ((KeyModifier.KeyRightAlt) << 8), KeyCode.FN, KeyCode.Home, KeyCode.PageDown, KeyCode.End,
+                    KeyCode.Grave,          KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4, KeyCode.F5, KeyCode.F6, KeyCode.F7, KeyCode.F8, KeyCode.F9, KeyCode.F10, KeyCode.F11, KeyCode.F12, KeyCode.Backspace,
+                    KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.PrintScreen, KeyCode.ScrollLock, KeyCode.Pause,
+                    KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent,                         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.Insert, KeyCode.PageUp, KeyCode.LayerControl | (2<<8) | (LayerControlKeycode.LayerMomentary << 12),
+                    KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.Home, KeyCode.PageDown, KeyCode.End,
                 ],
-                Array(64).fill(0),
-                Array(64).fill(0),
-                Array(64).fill(0)
+                [ 
+                    KeyCode.KeySystem | (SystemKeycode.SystemBootloader << 8),  KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent, KeyCode.KeyTransparent,             KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemReset << 8),       KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent, KeyCode.KeyTransparent,             KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeySystem | (SystemKeycode.SystemDebug << 8),   KeyCode.KeySystem | (SystemKeycode.SystemFactoryReset << 8),KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,                                 KeyCode.KeyUser | (1 << 8),                                 KeyCode.KeyUser | (0 << 8), KeyCode.KeyUser | (0xFF << 8),  KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent, KeyCode.KeyTransparent,             KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, 
+                ],
+                Array(64).fill(KeyCode.KeyTransparent),
+                Array(64).fill(KeyCode.KeyTransparent)
         ];
 
     }

@@ -1,4 +1,4 @@
-import { KeyCode, KeyMode, KeyModifier, RGBMode, Srgb } from "emi-keyboard-controller";
+import { KeyCode, KeyMode, KeyModifier, MouseKeycode, SystemKeycode, RGBMode, Srgb, LayerControlKeycode } from "emi-keyboard-controller";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键
@@ -334,15 +334,12 @@ export const keyCodeToKeyName: { [key in KeyCode]: string } = {
   [KeyCode.ClearAgain]: 'Clear Again',
   [KeyCode.CrSelProps]: 'CrSel Props',
   [KeyCode.ExSel]: 'ExSel',
-
-  [KeyCode.MouseLButton]: 'Mouse Left Button',
-  [KeyCode.MouseRButton]: 'Mouse Right Button',
-  [KeyCode.MouseMButton]: 'Mouse Middle Button',
-  [KeyCode.MouseForward]: 'Mouse Forward',
-  [KeyCode.MouseBack]: 'Mouse Back',
-  [KeyCode.MouseWheelUp]: 'Mouse Wheel Up',
-  [KeyCode.MouseWheelDown]: 'Mouse Wheel Down',
+  [KeyCode.MouseCollection]: 'Mouse',
+  [KeyCode.LayerControl]: 'Layer Ctrl',
   [KeyCode.FN]: 'FN',
+  [KeyCode.KeyUser]: 'User',
+  [KeyCode.KeySystem]: 'System',
+  [KeyCode.KeyTransparent]: 'Transparent',
 };
 
 export const keyModifierToKeyName: { [key in KeyModifier]: string } = {
@@ -357,6 +354,41 @@ export const keyModifierToKeyName: { [key in KeyModifier]: string } = {
   [KeyModifier.KeyRightGui]: 'Right GUI',
 };
 
+export const MouseKeycodeToKeyName: { [key in MouseKeycode]: string } = {
+  [MouseKeycode.MouseLButton]: 'Mouse Left Button',
+  [MouseKeycode.MouseRButton]: 'Mouse Right Button',
+  [MouseKeycode.MouseMButton]: 'Mouse Middle Button',
+  [MouseKeycode.MouseForward]: 'Mouse Forward',
+  [MouseKeycode.MouseBack]: 'Mouse Back',
+  [MouseKeycode.MouseWheelUp]: 'Mouse Wheel Up',
+  [MouseKeycode.MouseWheelDown]: 'Mouse Wheel Down',
+};
+
+export const SystemCodeToKeyName: { [key in SystemKeycode]: string } = {
+  [SystemKeycode.SystemReset]: 'System Reset',
+  [SystemKeycode.SystemFactoryReset]: 'Factory Reset',
+  [SystemKeycode.SystemSave]: 'Save to flash',
+  [SystemKeycode.SystemBootloader]: 'Jump to Bootloader',
+  [SystemKeycode.SystemDebug]: 'Debug',
+};
+
+export const LayerControlToKeyName: { [key in LayerControlKeycode]: string } = {
+  [LayerControlKeycode.LayerMomentary]: 'Temporarily switch to',
+  [LayerControlKeycode.LayerTurnOn]: 'Turn on',
+  [LayerControlKeycode.LayerTurnOff]: 'Turn off',
+  [LayerControlKeycode.LayerToggle]: 'Toggle',
+};
+
+export function layoutControlToString(keybinding: number): string {
+  var desc = "";
+  for (let i = 0; i < 8; i++) {
+    if (((keybinding >> 8) & (1 << i)) > 0) {
+      desc += keyModifierToKeyName[(1 << i) as KeyModifier] + " ";
+    }
+  }
+  return desc;
+}
+
 export function keyBindingModifierToString(keybinding: number): string {
   var desc = "";
   for (let i = 0; i < 8; i++) {
@@ -365,6 +397,38 @@ export function keyBindingModifierToString(keybinding: number): string {
     }
   }
   return desc;
+}
+
+export function keyCodeToString(keycode: number): {mainString: string, subString: string} {
+  var mainString = "";
+  var subString = "";
+  var modifier = (keycode >> 8) & 0xFF;
+  var code = (keycode) & 0xFF;
+  if (code < KeyCode.ExSel || code == KeyCode.KeyTransparent) 
+  {
+    mainString = keyCodeToKeyName[code as KeyCode];
+    subString = keyBindingModifierToString(keycode);
+  }
+  else
+  {
+    switch (code)
+    {
+      case KeyCode.MouseCollection:
+        mainString = MouseKeycodeToKeyName[modifier as MouseKeycode];
+        break;
+      case KeyCode.LayerControl:
+        subString = LayerControlToKeyName[((modifier >> 4) & 0x0F) as LayerControlKeycode];
+        mainString = "Layer" + ((modifier) & 0x0F).toString();
+        break;
+      case KeyCode.KeySystem:
+        mainString = SystemCodeToKeyName[modifier as SystemKeycode];
+        break;
+      case KeyCode.KeyUser:
+        mainString = "User " + modifier.toString();
+        break;
+    }
+  }
+  return {mainString: mainString, subString: subString};
 }
 
 export interface DebugDataItem {

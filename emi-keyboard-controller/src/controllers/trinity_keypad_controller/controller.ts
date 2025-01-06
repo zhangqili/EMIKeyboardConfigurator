@@ -1,4 +1,4 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode } from './../../interface';
 
 const layout = `[[{"a": 7},"Z","X","C","V"]]`;
 
@@ -51,14 +51,42 @@ export class TrinityKeypadController implements IKeyboardController {
                 KeyCode.F12,
                 (KeyCode.F2 | ((KeyModifier.KeyLeftShift) << 8)),
                 KeyCode.F2,
-                0,
-                0,
+                KeyCode.LayerControl | ((2) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                KeyCode.LayerControl | ((1) << 8) | (LayerControlKeycode.LayerToggle << 12),
                 KeyCode.Escape,
-                KeyCode.MouseWheelUp,
-                KeyCode.MouseWheelDown,
+                KeyCode.MouseCollection | ((MouseKeycode.MouseWheelUp) << 8),
+                KeyCode.MouseCollection | ((MouseKeycode.MouseWheelDown) << 8),
             ],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyUser | (0 << 8),
+                KeyCode.LayerControl | ((1) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+            ],
+            [
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.LayerControl | ((2) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                KeyCode.KeyUser | (0 << 8),
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+                KeyCode.KeyTransparent,
+            ]
         ];
 
     }

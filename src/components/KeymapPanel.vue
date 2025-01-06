@@ -8,7 +8,7 @@ import KeyboardTracker from './KeyboardTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName } from "../apis/utils";
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString } from "../apis/utils";
 import { KeyCode } from 'emi-keyboard-controller';
 
 const { t } = useI18n();
@@ -59,7 +59,6 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 }
 
 </script>
-
 <template>
   <n-flex vertical>
     <n-radio-group v-model:value="selected_layer">
@@ -70,7 +69,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
         @mousedown="(event : MouseEvent) => handleMouseDown(event, index + advanced_keys.length)"
         @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index + advanced_keys.length)"
         :width="1" :height="1" :x=index
-        :labels="[keyBindingModifierToString(binding),,,,,,keyCodeToKeyName[(binding & 0xff) as KeyCode]]" />
+        :labels="[keyCodeToString(binding).subString,,,,,,keyCodeToString(binding).mainString]" />
     </div>
     <KeyboardTracker v-model:binding="key_binding" v-on:update:binding="updateBinding"></KeyboardTracker>
     <KeySelector v-model:binding="key_binding" v-on:update:binding="updateBinding"></KeySelector>

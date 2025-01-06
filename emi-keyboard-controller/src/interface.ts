@@ -178,14 +178,12 @@ export enum KeyCode {
     Prior = 0x9d, Return = 0x9e, Separator = 0x9f, Out = 0xa0, Oper = 0xa1,
     ClearAgain = 0xa2, CrSelProps = 0xa3, ExSel = 0xa4,
 
-    MouseLButton = 0xa5,
-    MouseRButton = 0xa6,
-    MouseMButton = 0xa7,
-    MouseForward = 0xa8,
-    MouseBack = 0xa9,
-    MouseWheelUp = 0xaa,
-    MouseWheelDown = 0xab,
+    MouseCollection = 0xa5,
+    LayerControl = 0xa6,
     FN = 0xac,
+    KeyUser = 0xFD,
+    KeySystem = 0xFE,
+    KeyTransparent = 0xFF,
 }
 
 export enum KeyModifier {
@@ -199,6 +197,29 @@ export enum KeyModifier {
     KeyRightShift = 0x20,
     KeyRightAlt = 0x40,
     KeyRightGui = 0x80,
+}
+
+export enum MouseKeycode {
+    MouseLButton = 0,
+    MouseRButton = 1,
+    MouseMButton = 2,
+    MouseForward = 3,
+    MouseBack = 4,
+    MouseWheelUp = 5,
+    MouseWheelDown = 6,
+}
+export enum SystemKeycode {
+    SystemReset = 0,
+    SystemFactoryReset = 1,
+    SystemSave = 2,
+    SystemBootloader = 3,
+    SystemDebug = 4,
+}
+export enum LayerControlKeycode {
+    LayerMomentary = 0,
+    LayerTurnOn = 1,
+    LayerTurnOff = 2,
+    LayerToggle = 3,
 }
 
 // Generic color interfaces

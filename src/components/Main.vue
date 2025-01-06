@@ -5,7 +5,7 @@ import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { keyBindingModifierToString, keyCodeToKeyName, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
+import { keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
 import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
@@ -68,8 +68,9 @@ const key_containers = computed(() => {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         if (keymap.value != undefined) {
-          item.labels[0] = keyBindingModifierToString(keymap.value[selected_layer.value][index]);
-          item.labels[6] = keyCodeToKeyName[(keymap.value[selected_layer.value][index] & 0xFF) as ekc.KeyCode];
+          var strings = keyCodeToString(keymap.value[selected_layer.value][index]);
+          item.labels[0] = strings.subString;
+          item.labels[6] = strings.mainString;
         }
       })
       break;
