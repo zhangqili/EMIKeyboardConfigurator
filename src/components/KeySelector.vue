@@ -220,26 +220,6 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                             {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
                     </n-thing>
                 </n-list-item>
-                <n-list-item>
-                    <n-thing title="Layer">
-                        <n-button v-for="(key, code) in Object.keys(KeyCode)
-                            //.filter(key => isNaN(Number(key)))
-                            .slice(KeyCode.FN, KeyCode.FN + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                            @click="handleKeyCodeClick(key)">
-                            {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
-                    </n-thing>
-                </n-list-item>
-                <n-list-item>
-                    <n-thing title="System">
-                        <n-button v-for="(key, code) in Object.keys(SystemKeycode)
-                            //.filter(key => isNaN(Number(key)))
-                            .slice(SystemKeycode.SystemReset, SystemKeycode.SystemDebug + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                            @click="handleKeyCodeClick(key)">
-                            {{ SystemCodeToKeyName[key as unknown as SystemKeycode] }}</n-button>
-                    </n-thing>
-                </n-list-item>
             </n-list>
         </n-tab-pane>
         <n-tab-pane name="Others" title="others">
@@ -272,7 +252,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                     <n-thing title="System">
                         <n-button v-for="(key, code) in Object.keys(SystemKeycode)
                             //.filter(key => isNaN(Number(key)))
-                            .slice(SystemKeycode.SystemReset, SystemKeycode.SystemDebug + 1)"
+                            .slice(0, 10)"
                             :type="((props.binding & 0xFF) == KeyCode.KeySystem && ((props.binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeyCodeClick((key as unknown as number) << 8 | KeyCode.KeySystem)">
                             {{ SystemCodeToKeyName[key as unknown as SystemKeycode] }}</n-button>

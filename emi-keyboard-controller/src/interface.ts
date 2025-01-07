@@ -214,6 +214,11 @@ export enum SystemKeycode {
     SystemSave = 2,
     SystemBootloader = 3,
     SystemDebug = 4,
+    SystemResetToDefault = 5,
+    SystemConfig0 = 0x10,
+    SystemConfig1 = 0x11,
+    SystemConfig2 = 0x12,
+    SystemConfig3 = 0x13,
 }
 export enum LayerControlKeycode {
     LayerMomentary = 0,

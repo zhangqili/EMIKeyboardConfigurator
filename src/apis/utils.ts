@@ -370,6 +370,11 @@ export const SystemCodeToKeyName: { [key in SystemKeycode]: string } = {
   [SystemKeycode.SystemSave]: 'Save to flash',
   [SystemKeycode.SystemBootloader]: 'Jump to Bootloader',
   [SystemKeycode.SystemDebug]: 'Debug',
+  [SystemKeycode.SystemResetToDefault]: 'Reset to Default',
+  [SystemKeycode.SystemConfig0]: 'Config 0',
+  [SystemKeycode.SystemConfig1]: 'Config 1',
+  [SystemKeycode.SystemConfig2]: 'Config 2',
+  [SystemKeycode.SystemConfig3]: 'Config 3',
 };
 
 export const LayerControlToKeyName: { [key in LayerControlKeycode]: string } = {

@@ -153,7 +153,7 @@ export class Zellia80Controller implements IKeyboardController {
     }
     flash_config(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = 0x81;
+        send_buf[0] = 0x80;
         let res = this.write(send_buf);
         console.log("Wrote Save Command: {:?} byte(s)", res);
     }
