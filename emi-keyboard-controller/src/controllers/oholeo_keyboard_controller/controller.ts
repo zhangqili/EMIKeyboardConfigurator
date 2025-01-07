@@ -26,7 +26,7 @@ export class OholeoKeyboardController implements IKeyboardController {
             release_distance: 0.08,
             trigger_speed: 0.01,
             release_speed: 0.01,
-            upper_deadzone: 0.04,
+            upper_deadzone: 0.00,
             lower_deadzone: 0.2,
             upper_bound: 2600.0,
             lower_bound: 140.0,
@@ -229,8 +229,8 @@ export class OholeoKeyboardController implements IKeyboardController {
             console.log("Wrote RGB Configs: {:?} byte(s)", res);
         }
         send_buf[1] = 0x02;
-        
-        for (var i = 0; i < 10; i+=1){
+        const rgb_page_num = Math.ceil(this.rgb_configs.length / 7);
+        for (var i = 0; i < rgb_page_num; i+=1){
             for (var j = 0; j < 7; j+=1){
                 let dataView = new DataView(send_buf.buffer);
                 send_buf[2] = (i * 7);
@@ -242,6 +242,10 @@ export class OholeoKeyboardController implements IKeyboardController {
                     send_buf[3 + 2 + 8 * j] = item.rgb.green;
                     send_buf[3 + 3 + 8 * j] = item.rgb.blue;
                     dataView.setFloat32(3 + 4 + 8 * j,item.speed,true);
+                }
+                else
+                {
+                    break;
                 }
             }
             let res = this.write(send_buf);
@@ -261,25 +265,34 @@ export class OholeoKeyboardController implements IKeyboardController {
     }
 
     send_keymap() {
+        const layer_page_length = 16;
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0xFF;
         send_buf[1] = 0x03;
         let dataView = new DataView(send_buf.buffer);        
         this.keymap.forEach((layer,i) => {
-            console.log("{:?}",i);
+            //console.log("{:?}",i);
             send_buf[2] = i; //layer_index
-            for (var j = 0; j < 4; j+=1) {
-                let layer_seg = layer.slice((j*16),((j+1)*16)); // 转换 `u16` 为 `u8` 数组（小端序）
-                console.log(layer_seg);
-                console.log(j*16);
-                console.log(((j+1)*16));
-                send_buf[3] = j;//layer_page_index
+            for (var index = 0; index < layer.length; index+=layer_page_length) {
+                var layer_seg;
+                if (index + layer_page_length > layer.length) {
+                    layer_seg = layer.slice(index,layer.length); 
+                }
+                else
+                {
+                    layer_seg = layer.slice(index,index+layer_page_length); 
+                }
+                // 转换 `u16` 为 `u8` 数组（小端序）
+                //console.log(layer_seg);
+                //console.log(j*16);
+                //console.log(((j+1)*16));
+                send_buf[3] = index;//layer_page_index
                 layer_seg.forEach((value,k) => {
-                    console.log(4 + k * 2);
+                    //console.log(4 + k * 2);
                     dataView.setUint16(4 + k * 2,value,true);
                 });
-                console.log("{:?}",layer_seg);
-                console.log("{:?}",send_buf);
+                //console.log("{:?}",layer_seg);
+                //console.log("{:?}",send_buf);
                 let res = this.write(send_buf);
                 console.log("Wrote Keymap: {:?} byte(s)", res);
             }

@@ -82,7 +82,7 @@ export class AdvancedKey implements IAdvancedKey {
         this.release_distance = 0.08;
         this.trigger_speed = 0.01;
         this.release_speed = 0.01;
-        this.upper_deadzone = 0.04;
+        this.upper_deadzone = 0.00;
         this.lower_deadzone = 0.2;
         this.upper_bound = 4096.0;
         this.lower_bound = 0;
