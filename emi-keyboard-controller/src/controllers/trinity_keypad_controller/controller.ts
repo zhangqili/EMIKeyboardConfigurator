@@ -113,6 +113,7 @@ export class TrinityKeypadController implements IKeyboardController {
             result = (await device.open()) == undefined
         }
         if (result) {
+            this.request_config();
             this.device.addEventListener("inputreport", (event : HIDInputReportEvent) => {
                 const { data, device, reportId } = event;
                 this.prase_buffer(new Uint8Array(data.buffer));
@@ -210,6 +211,11 @@ export class TrinityKeypadController implements IKeyboardController {
         send_buf[0] = 0x82;
         let res = this.write(send_buf);
         console.log("Wrote Factory Reset Command: {:?} byte(s)", res);
+    }
+    request_config(): void {
+        let send_buf = new Uint8Array(63);
+        send_buf[0] = 0xB1;
+        this.write(send_buf);
     }
     start_debug(): void {
         let send_buf = new Uint8Array(63);

@@ -91,6 +91,7 @@ export class OholeoKeyboardController implements IKeyboardController {
             result = (await device.open()) == undefined
         }
         if (result) {
+            this.request_config();
             this.device.addEventListener("inputreport", (event : HIDInputReportEvent) => {
                 const { data, device, reportId } = event;
                 this.prase_buffer(new Uint8Array(data.buffer));
@@ -106,7 +107,7 @@ export class OholeoKeyboardController implements IKeyboardController {
             case 1 : {
                 break;
             }
-            case 0xFF : {
+            case 0xFE : {
                 for (var i = 0;i<4;i++) {
                     let key_index = buf[1 + 10 * i];
                     if (key_index >= this.advanced_keys.length) {
@@ -131,11 +132,74 @@ export class OholeoKeyboardController implements IKeyboardController {
                 }
                 break;
             }
+            case 0xFF : {
+                this.unload_cargo(buf.slice(1,buf.byteLength-1));
+            }
             default: {
                 break
             }
         }
     }
+    unload_cargo(buf: Uint8Array) {
+        let dataView = new DataView(buf.buffer);  
+        //console.log(buf);
+        switch (buf[0])
+        {
+        case 0: // Advanced Key
+            const key_index = buf[1];
+            //console.log("Advanced Key ID:{:?}", key_index);
+            this.advanced_keys[key_index].mode = buf[2];
+            this.advanced_keys[key_index].activation_value = dataView.getFloat32(3 + 4 * 0, true);
+            this.advanced_keys[key_index].deactivation_value = dataView.getFloat32(3 + 4 * 1, true);
+            this.advanced_keys[key_index].trigger_distance = dataView.getFloat32(3 + 4 * 2, true);
+            this.advanced_keys[key_index].release_distance = dataView.getFloat32(3 + 4 * 3, true);
+            this.advanced_keys[key_index].trigger_speed = dataView.getFloat32(3 + 4 * 4, true);
+            this.advanced_keys[key_index].release_speed = dataView.getFloat32(3 + 4 * 5, true);
+            this.advanced_keys[key_index].upper_deadzone = dataView.getFloat32(3 + 4 * 6, true);
+            this.advanced_keys[key_index].lower_deadzone = dataView.getFloat32(3 + 4 * 7, true);
+            //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].upper_bound = fill_in_float(&buf[2 + 4 * 8]);
+            //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].lower_bound = fill_in_float(&buf[2 + 4 * 9]);
+            break;
+        case 1: // Global LED
+            //console.log("Global LED");
+            this.rgb_switch = buf[1] != 0;
+            break;
+        case 2: // LED
+            for (var i = 0; i < 6; i++)
+            {
+                const key_index = buf[1+9*i];
+                //console.log("LED ID:{:?}", key_index);
+                if (key_index<this.rgb_configs.length)
+                {
+                    this.rgb_configs[key_index].mode  = buf[2 + 9 * i + 0];
+                    this.rgb_configs[key_index].rgb.red = buf[2 + 9 * i + 1];
+                    this.rgb_configs[key_index].rgb.green = buf[2 + 9 * i + 2];
+                    this.rgb_configs[key_index].rgb.blue = buf[2 + 9 * i + 3];
+                    this.rgb_configs[key_index].speed = dataView.getFloat32(2 + 8 * i + 4, true);
+                    
+                    //rgb_to_hsv(&g_rgb_configs[g_rgb_mapping[buf[1]+i]].hsv, &g_rgb_configs[g_rgb_mapping[buf[1]+i]].rgb);
+                }
+            }
+            break;
+        case 3: // Keymap
+            const LAYER_PAGE_LENGTH = 16;
+            const LAYER_PAGE_EXPECTED_NUM = Math.ceil(((this.keymap[0].length + 15) / 16))
+            const layer_index = buf[1];
+            const layer_page_index = buf[2];
+            //console.log("Keymap {:?}:{:?}", layer_index, layer_page_index);
+            if (layer_index < this.keymap.length && layer_page_index < LAYER_PAGE_EXPECTED_NUM)
+            {
+                const layerPageDataView = new DataView(buf.slice(3,buf.byteLength-1).buffer);
+                for (let i = 0; i < LAYER_PAGE_LENGTH; i++) {
+                    this.keymap[layer_index][layer_page_index*16 + i] = dataView.getUint16(3 + i*2, true);
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
     get_connection_state(): boolean {
         return this.device != undefined;
     }
@@ -188,6 +252,11 @@ export class OholeoKeyboardController implements IKeyboardController {
         send_buf[0] = 0x82;
         let res = this.write(send_buf);
         console.log("Wrote Factory Reset Command: {:?} byte(s)", res);
+    }
+    request_config(): void {
+        let send_buf = new Uint8Array(63);
+        send_buf[0] = 0xB1;
+        this.write(send_buf);
     }
     start_debug(): void {
         let send_buf = new Uint8Array(63);

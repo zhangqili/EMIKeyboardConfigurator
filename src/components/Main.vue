@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, nextTick, computed } from "vue";
+import { onMounted, ref, nextTick, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
-import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex } from 'naive-ui'
+import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
 import { keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
@@ -10,6 +10,8 @@ import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
 import { DebugDataItem } from '../apis/utils';
+import type { NotificationType } from 'naive-ui'
+import { useNotification } from 'naive-ui'
 
 const { t } = useI18n();
 const store = useMainStore();
@@ -27,7 +29,7 @@ const {
 } = storeToRefs(store);
 
 const message = useMessage();
-const sidebarWidth = ref(10); // 初始化宽度
+const notification = useNotification();
 const tab_selection = ref<string | null>("performance");
 const keyboard_keys = ref<kle.Key[]>([]);
 const isConnected = ref<boolean>(false);
@@ -134,15 +136,6 @@ function updateKeyboard(value: kle.Keyboard) {
   });
   keyboard_layout.value.text = JSON.stringify(value, null, 2);
   keyboard_keys.value = value.keys;
-}
-
-function updateSidebarWidth() {
-  nextTick(() => {
-    const tabsNavWrapper = document.querySelector('.n-tabs-nav-scroll-wrapper');
-    if (tabsNavWrapper) {
-      sidebarWidth.value = tabsNavWrapper.clientWidth;
-    }
-  });
 }
 
 async function connectCommand() {
@@ -290,8 +283,27 @@ function handleAdvancedMenu(key: string | number) {
 
 onMounted(async () => {
   //initializeKeyboard();
-  updateSidebarWidth();
-  //window.addEventListener('resize', updateSidebarWidth); // Update width on window resize
+  if(navigator.userAgent.toLowerCase().includes("linux"))
+  {
+    notification.warning(
+      {
+        title: 'Linux system detected',
+        content: 'You may modifiy udev rules to connect to your device.',
+        keepAliveOnHover: true,
+        action: () =>
+            h(
+              NButton,
+              {
+                text: true,
+                type: 'primary',
+              },
+              {
+                default: () => "Don't show again"
+              }
+            ),
+      }
+    );
+  }
   const result: string[] = await apis.get_devices();
   devices.value = result.map((label: string, index: number) => ({
     label,
@@ -311,71 +323,118 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
 </script>
 
 <template>
-  <n-layout position="absolute">
-    <n-layout-header style="height: 80px; padding: 24px" bordered>
-      <n-grid :x-gap="12" :y-gap="12" :cols="5">
-        <n-gi :span="4">
-          <n-flex>
-            <n-select @update:value="handleUpdateValue" style="max-width: 200px;" :disabled="isConnected" v-model:value="selected_device"
-              v-model:options="devices" filterable placeholder="Select device" />
-            <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? "Disconnect" :
-              t('toolbar_connect') }}</n-button>
-            <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
-            <n-dropdown :disabled="!isConnected" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
-              :options="advanced_options">
-              <n-button :disabled="!isConnected">{{ t('toolbar_advance') }}</n-button>
-            </n-dropdown>
-          </n-flex>
-        </n-gi>
-        <n-gi :span="1">
-          <n-flex justify="end">
-<!--             <n-button >Import</n-button>
-            <n-button >Export</n-button> -->
-            <n-button>{{ t('toolbar_settings') }}</n-button>
-          </n-flex>
-        </n-gi>
-      </n-grid>
-    </n-layout-header>
-    <n-layout has-sider position="absolute" style="top: 80px;" >
-      <n-layout position="absolute" content-style="padding: 0px;">
-
-        <n-layout has-sider position="absolute">
-          <n-layout-sider ref="sidebar" :width="sidebarWidth">
-            <n-tabs line v-model:value=tab_selection animated :placement="'left'">
-              <n-tab name="performance" :tab="t('main_tabs_performance')">
-              </n-tab>
-              <n-tab name="keymap" :tab="t('main_tabs_keymap')">
-              </n-tab>
-              <n-tab name="rgb" :tab="t('main_tabs_rgb')">
-              </n-tab>
-              <n-tab name="debug" :tab="t('main_tabs_debug')">
-              </n-tab>
-            </n-tabs>
-          </n-layout-sider>
-
-          <n-layout>
-            <n-layout-header style="position: sticky; top: 0px; z-index: 2;">
-              <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
-              <n-button @click="applyToAllKeys">Apply to all</n-button>
-            </n-layout-header>
-            <n-layout-content>
+  <div class="root_container">
+    <n-layout>
+      <n-layout-header class="header" bordered>
+        <n-grid :x-gap="12" :y-gap="12" :cols="5">
+          <n-gi :span="4">
+            <n-flex>
+              <n-select @update:value="handleUpdateValue" style="max-width: 200px;" :disabled="isConnected" v-model:value="selected_device"
+                v-model:options="devices" filterable placeholder="Select device" />
+              <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? "Disconnect" :
+                t('toolbar_connect') }}</n-button>
+              <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
+              <n-dropdown :disabled="!isConnected" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
+                :options="advanced_options">
+                <n-button :disabled="!isConnected">{{ t('toolbar_advance') }}</n-button>
+              </n-dropdown>
+            </n-flex>
+          </n-gi>
+          <n-gi :span="1">
+            <n-flex justify="end">
+              <!--<n-button >Import</n-button>
+              <n-button >Export</n-button>-->
+              <n-button>{{ t('toolbar_settings') }}</n-button>
+            </n-flex>
+          </n-gi>
+        </n-grid>
+      </n-layout-header>
+        <div class="container">
+          <div>
+            <div class="tabs">
+              <div>Config File:</div>
+              <n-select></n-select>
+              <n-tabs line v-model:value=tab_selection animated :placement="'left'">
+                <n-tab name="performance" :tab="t('main_tabs_performance')">
+                </n-tab>
+                <n-tab name="keymap" :tab="t('main_tabs_keymap')">
+                </n-tab>
+                <n-tab name="rgb" :tab="t('main_tabs_rgb')">
+                </n-tab>
+                <n-tab name="debug" :tab="t('main_tabs_debug')">
+                </n-tab>
+              </n-tabs>
+            </div>
+          </div>
+          <div style="flex-grow: 1;">
+            <div class="keyboard_render">
+              <n-layout>
+                <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
+                <n-button @click="applyToAllKeys">Apply to all</n-button>
+              </n-layout>
+            </div>
+            <div>
               <PerformancePanel v-if="tab_selection == 'performance'"/>
               <KeymapPanel v-if="tab_selection == 'keymap'"/>
               <RGBPanel v-if="tab_selection == 'rgb'"/>
               <DebugPanel v-if="tab_selection == 'debug'"/>
-            </n-layout-content>
-            <n-layout-footer>
-
-            </n-layout-footer>
-          </n-layout>
-        </n-layout>
-      </n-layout>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      <!--       <n-layout-footer
+                bordered
+                position="absolute"
+                style="height: 64px;"
+              >
+              </n-layout-footer> -->
     </n-layout>
-    <!--       <n-layout-footer
-              bordered
-              position="absolute"
-              style="height: 64px;"
-            >
-            </n-layout-footer> -->
-  </n-layout>
+  </div>
 </template>
+
+<style scoped>
+  .header {
+    position: sticky;
+    top: 0;
+    height: 80px;
+    padding: 24px;
+    z-index: 2;
+  }
+  .tabs {
+      position: sticky;
+      top: 80px;
+      white-space: nowrap; /* 防止内容换行 */
+  }
+  .right {
+      background-color: lightgreen;
+      flex-grow: 1; /* 让右侧占据剩余空间 */
+  }
+  .tab {
+      position: sticky;
+      top: 0px;
+  }
+  .container {
+    display: flex;
+    /*
+    position: fixed;
+    top: 80px;
+    bottom: 0px;
+    width: 100vw;
+    height: 100vh-80px;
+    */
+  }
+  .root_container {
+    display: flex;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    width: 100vw;
+    height: 100vh;
+  }
+  .keyboard_render {
+    position: sticky;
+    top: 80px;
+    z-index: 2;
+  }
+  
+</style>

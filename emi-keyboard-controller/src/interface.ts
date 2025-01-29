@@ -279,6 +279,7 @@ export interface IKeyboardController{
     flash_config() : void;
     system_reset() : void;
     factory_reset() : void;
+    request_config() : void;
     start_debug() : void;
     stop_debug() : void;
     get_layout_json() : string;
