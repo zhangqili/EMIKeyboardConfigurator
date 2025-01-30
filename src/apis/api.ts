@@ -9,7 +9,7 @@ const DEVICES = [
     "ANSI 104 Sample",
 ];
 
-var CONTROLLER : ekc.IKeyboardController;
+var CONTROLLER : ekc.KeyboardController;
 
 export async function get_devices() {
     return DEVICES;
@@ -119,10 +119,17 @@ export async function stop_debug(){
     return CONTROLLER.stop_debug();
 }
 
-export async function receive_data(){
-    //return (await invoke("receive_data"));
+export async function get_config_file_num(){
+    return CONTROLLER.get_config_file_num();
 }
 
-export async function receive_data_in_background(){
-    //return (await invoke("receive_data_in_background"));
+export async function set_config_file_num(index : number){
+    return CONTROLLER.set_config_file_index(index);
+}
+
+export async function addEventListener(type: string, listener: EventListener){
+    return CONTROLLER.addEventListener(type, listener);
+}
+export async function removeEventListener(type: string, listener: EventListener){
+    return CONTROLLER.removeEventListener(type, listener);
 }

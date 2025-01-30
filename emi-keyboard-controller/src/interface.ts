@@ -283,6 +283,169 @@ export interface IKeyboardController{
     start_debug() : void;
     stop_debug() : void;
     get_layout_json() : string;
+    get_config_file_num() : number;
+    get_config_file_index(): number;
+    set_config_file_index(index: number) : void;
+}
+
+export abstract class KeyboardController implements IKeyboardController, EventTarget{
+    device: HIDDevice | undefined;
+    advanced_keys: AdvancedKey[];
+    rgb_switch: boolean;
+    rgb_configs: IRGBConfig[];
+    keymap: number[][];
+    private listeners: { [key: string]: EventListener[] } = {};
+
+    constructor() {
+        this.device = undefined;
+        this.advanced_keys = new Array<IAdvancedKey>();
+        this.rgb_switch = false;
+        this.rgb_configs = new Array<IRGBConfig>();
+        this.keymap = new Array<Array<number>>();
+    }
+
+    // 添加事件监听
+    addEventListener(type: string, listener: EventListener): void {
+      if (!this.listeners[type]) {
+        this.listeners[type] = [];
+      }
+      this.listeners[type].push(listener);
+    }
+  
+    // 移除事件监听
+    removeEventListener(type: string, listener: EventListener): void {
+      const listeners = this.listeners[type];
+      if (listeners) {
+        const index = listeners.indexOf(listener);
+        if (index > -1) {
+          listeners.splice(index, 1);
+        }
+      }
+    }
+  
+    // 触发事件
+    dispatchEvent(event: Event): boolean {
+      const listeners = this.listeners[event.type];
+      if (listeners) {
+        for (const listener of listeners) {
+          listener(event);
+        }
+        return true;
+      }
+      return false;
+    }
+    
+    async detect(): Promise<HIDDevice[]>
+    {
+        return new Array<HIDDevice>;
+    }
+    write(buf: Uint8Array) : number
+    {
+        return 0;
+    }
+    read(buf: Uint8Array) : number 
+    {
+        return 0;
+    }
+    read_timeout( buf: Uint8Array, timeout: number) : number
+    {
+        return 0;
+    }
+    async connect(device: HIDDevice) : Promise<boolean>
+    {
+        return false;
+    }
+    disconnect() : void
+    {
+
+    }
+    prase_buffer(buf: Uint8Array) : void
+    {
+        
+    }
+    get_connection_state() : boolean
+    {
+        return false;
+    }
+    get_advanced_keys() : IAdvancedKey[]
+    {
+        return new Array<IAdvancedKey>();
+    }
+    set_advanced_keys(keys : IAdvancedKey[]) : void
+    {
+
+    }
+    get_rgb_switch() : boolean
+    {
+        return false;
+    }
+    set_rgb_switch(s : boolean) : void
+    {
+
+    }
+    get_rgb_configs() : IRGBConfig[]
+    {
+        return new Array<IRGBConfig>();
+    }
+    set_rgb_configs(configs : IRGBConfig[]) : void
+    {
+
+    }
+    get_keymap() : number[][]
+    {
+        return new Array<Array<number>>();
+    }
+    set_keymap(keymap : number[][]) : void
+    {
+
+    }
+    fetch_config() : void
+    {
+
+    }
+    save_config() : void
+    {
+
+    }
+    flash_config() : void
+    {
+
+    }
+    system_reset() : void
+    {
+
+    }
+    factory_reset() : void
+    {
+
+    }
+    request_config() : void
+    {
+
+    }
+    start_debug() : void
+    {
+
+    }
+    stop_debug() : void
+    {
+
+    }
+    get_layout_json() : string
+    {
+        return "";
+    }
+    get_config_file_num() : number
+    {
+        return 0;
+    }
+    get_config_file_index(): number
+    {
+        return 0;
+    }
+    set_config_file_index(index: number) : void {
+        
+    }
 }
 
 

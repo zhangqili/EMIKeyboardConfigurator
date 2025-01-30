@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, nextTick, computed, h } from "vue";
+import { onMounted, ref, nextTick, computed, h, getCurrentInstance, triggerRef} from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton } from 'naive-ui'
@@ -24,6 +24,8 @@ const {
   keymap, 
   key_binding, 
   selected_layer, 
+  config_files,
+  selected_config_file_index,
   debug_raw_chart_option, 
   debug_value_chart_option 
 } = storeToRefs(store);
@@ -36,6 +38,7 @@ const isConnected = ref<boolean>(false);
 
 const key_containers = computed(() => {
   var keys = keyboard_keys.value;
+  //console.log(tab_selection.value);
   switch (tab_selection.value) {
     case "performance": {
       keys.forEach((item, index) => {
@@ -113,8 +116,7 @@ const keyboard_layout = ref({
 
 var devices = ref<{ label: string; value: number }[]>([]);
 
-const containerRef = ref<HTMLElement | undefined>(undefined);
-//const selected_device = ref(undefined);
+var files = ref<{ label: string; value: number }[]>([]);
 
 function renderKeyboardFromJson(json_str: string) {
   var layout = JSON.parse(json_str);
@@ -183,15 +185,28 @@ async function getController() {
   advanced_keys.value = await apis.get_advanced_keys();
   keymap.value = await apis.get_keymap();
   rgb_configs.value = await apis.get_rgb_configs();
+  const cnofig_file_num = await apis.get_config_file_num();
+  files.value.length = 0;
+  for (let index = 0; index < cnofig_file_num; index++) {
+    files.value.push({
+    label: "config" + index.toString(),
+    value: index,
+  });
+  }
   //console.log(rgb_configs.value);
 }
 
-async function handleUpdateValue(_value: string, option: SelectOption) {
+async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
   await apis.set_device(option.label as string);
   var layout_json: string = await apis.get_layout_json();
   //console.log(layout_json);
   renderKeyboardFromJson(layout_json);
   getController();
+  apis.addEventListener('updateData',(event: Event) => {triggerRef(keyboard_keys)});
+}
+
+async function handleUpdateFileValue(_value: string, option: SelectOption) {
+  await apis.set_config_file_num(option.value as number);
 }
 
 function applyToAllKeys() {
@@ -291,16 +306,28 @@ onMounted(async () => {
         content: 'You may modifiy udev rules to connect to your device.',
         keepAliveOnHover: true,
         action: () =>
-            h(
-              NButton,
-              {
-                text: true,
-                type: 'primary',
-              },
-              {
-                default: () => "Don't show again"
-              }
-            ),
+        [
+/*           h(
+            NButton,
+            {
+              text: true,
+              type: 'primary',
+            },
+            {
+              default: () => "Read more"
+            }
+          ), */
+          h(
+            NButton,
+            {
+              text: true,
+              type: 'primary',
+            },
+            {
+              default: () => "Don't show again"
+            }
+          ),
+        ]
       }
     );
   }
@@ -329,7 +356,7 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
         <n-grid :x-gap="12" :y-gap="12" :cols="5">
           <n-gi :span="4">
             <n-flex>
-              <n-select @update:value="handleUpdateValue" style="max-width: 200px;" :disabled="isConnected" v-model:value="selected_device"
+              <n-select @update:value="handleUpdateDeviceValue" style="max-width: 200px;" :disabled="isConnected" v-model:value="selected_device"
                 v-model:options="devices" filterable placeholder="Select device" />
               <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? "Disconnect" :
                 t('toolbar_connect') }}</n-button>
@@ -352,8 +379,8 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
         <div class="container">
           <div>
             <div class="tabs">
-              <div>Config File:</div>
-              <n-select></n-select>
+              <n-select placeholder="Config file" @update:value="handleUpdateFileValue" 
+              v-model:value="selected_config_file_index" v-model:options="files"></n-select>
               <n-tabs line v-model:value=tab_selection animated :placement="'left'">
                 <n-tab name="performance" :tab="t('main_tabs_performance')">
                 </n-tab>

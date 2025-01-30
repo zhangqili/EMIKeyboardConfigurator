@@ -1,8 +1,8 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode, KeyboardController } from './../../interface';
 
 const layout = `[[{"a": 7},"Z","X","C","V"]]`;
 
-export class TrinityKeypadController implements IKeyboardController {
+export class TrinityKeypadController extends KeyboardController {
     device: HIDDevice | undefined;
     advanced_keys: AdvancedKey[];
     rgb_switch: boolean;
@@ -11,6 +11,7 @@ export class TrinityKeypadController implements IKeyboardController {
     ADVANCED_KEY_NUM: number = 4;
 
     constructor() {
+        super();
         this.device = undefined;
         this.advanced_keys = Array(this.ADVANCED_KEY_NUM).fill(null).map(() => ({
             state: false,
@@ -88,7 +89,6 @@ export class TrinityKeypadController implements IKeyboardController {
                 KeyCode.KeyTransparent,
             ]
         ];
-
     }
 
     async detect(): Promise<HIDDevice[]> {

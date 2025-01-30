@@ -19,6 +19,8 @@ export const useMainStore = defineStore('main',
         const key_binding = ref<number>(0);
         const selected_layer = ref<number>(0);
         
+        const config_files = ref<string[]>([]);
+        const selected_config_file_index = ref<number | undefined>(undefined);
         const debug_switch = ref(false);
         const debug_raw_chart_option = ref({
             animation: false,
@@ -94,6 +96,8 @@ export const useMainStore = defineStore('main',
             advanced_keys,
             rgb_configs,
             keymap,
+            config_files,
+            selected_config_file_index,
 
             key_binding,
             selected_layer,

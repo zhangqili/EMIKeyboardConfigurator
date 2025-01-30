@@ -1,16 +1,19 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, SystemKeycode, LayerControlKeycode } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, SystemKeycode, LayerControlKeycode, KeyboardController } from './../../interface';
 
 const layout = `[["Esc","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7","*\\n8","(\\n9",")\\n0","_\\n-","+\\n=",{"w":2},"Backspace"],[{"w":1.5},"Tab","Q","W","E","R","T","Y","U","I","O","P","{\\n[","}\\n]",{"w":1.5},"|\\n\\\\"],[{"w":1.75},"Caps Lock","A","S","D","F","G","H","J","K","L",":\\n;","\\"\\n'",{"w":2.25},"Enter"],[{"w":2},"Shift","Z","X","C","V","B","N","M","<\\n,",">\\n.","?\\n/","Shift","↑","Del"],[{"w":1.25},"Ctrl",{"w":1.25},"Win",{"w":1.25},"Alt",{"a":7,"w":6.25},"",{"a":4},"Alt","Fn","←","↓","→"]]`;
 
-export class OholeoKeyboardController implements IKeyboardController {
+export class OholeoKeyboardController extends KeyboardController {
     device: HIDDevice | undefined;
     advanced_keys: AdvancedKey[];
     rgb_switch: boolean;
     rgb_configs: IRGBConfig[];
     keymap: number[][];
     ADVANCED_KEY_NUM: number = 64;
+    config_file_number:number = 4;
+    config_index:number = 0;
 
     constructor() {
+        super();
         this.device = undefined;
         this.advanced_keys = Array(this.ADVANCED_KEY_NUM).fill(null).map(() => ({
             state: false,
@@ -142,12 +145,10 @@ export class OholeoKeyboardController implements IKeyboardController {
     }
     unload_cargo(buf: Uint8Array) {
         let dataView = new DataView(buf.buffer);  
-        //console.log(buf);
         switch (buf[0])
         {
         case 0: // Advanced Key
             const key_index = buf[1];
-            //console.log("Advanced Key ID:{:?}", key_index);
             this.advanced_keys[key_index].mode = buf[2];
             this.advanced_keys[key_index].activation_value = dataView.getFloat32(3 + 4 * 0, true);
             this.advanced_keys[key_index].deactivation_value = dataView.getFloat32(3 + 4 * 1, true);
@@ -161,21 +162,19 @@ export class OholeoKeyboardController implements IKeyboardController {
             //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].lower_bound = fill_in_float(&buf[2 + 4 * 9]);
             break;
         case 1: // Global LED
-            //console.log("Global LED");
             this.rgb_switch = buf[1] != 0;
             break;
         case 2: // LED
             for (var i = 0; i < 6; i++)
             {
                 const key_index = buf[1+9*i];
-                //console.log("LED ID:{:?}", key_index);
                 if (key_index<this.rgb_configs.length)
                 {
-                    this.rgb_configs[key_index].mode  = buf[2 + 9 * i + 0];
-                    this.rgb_configs[key_index].rgb.red = buf[2 + 9 * i + 1];
-                    this.rgb_configs[key_index].rgb.green = buf[2 + 9 * i + 2];
-                    this.rgb_configs[key_index].rgb.blue = buf[2 + 9 * i + 3];
-                    this.rgb_configs[key_index].speed = dataView.getFloat32(2 + 8 * i + 4, true);
+                    this.rgb_configs[key_index].mode  = buf[1 + 9 * i + 1];
+                    this.rgb_configs[key_index].rgb.red = buf[1 + 9 * i + 2];
+                    this.rgb_configs[key_index].rgb.green = buf[1 + 9 * i + 3];
+                    this.rgb_configs[key_index].rgb.blue = buf[1 + 9 * i + 4];
+                    this.rgb_configs[key_index].speed = dataView.getFloat32(1 + 9 * i + 5, true);
                     
                     //rgb_to_hsv(&g_rgb_configs[g_rgb_mapping[buf[1]+i]].hsv, &g_rgb_configs[g_rgb_mapping[buf[1]+i]].rgb);
                 }
@@ -186,7 +185,6 @@ export class OholeoKeyboardController implements IKeyboardController {
             const LAYER_PAGE_EXPECTED_NUM = Math.ceil(((this.keymap[0].length + 15) / 16))
             const layer_index = buf[1];
             const layer_page_index = buf[2];
-            //console.log("Keymap {:?}:{:?}", layer_index, layer_page_index);
             if (layer_index < this.keymap.length && layer_page_index < LAYER_PAGE_EXPECTED_NUM)
             {
                 const layerPageDataView = new DataView(buf.slice(3,buf.byteLength-1).buffer);
@@ -194,6 +192,10 @@ export class OholeoKeyboardController implements IKeyboardController {
                     this.keymap[layer_index][layer_page_index*16 + i] = dataView.getUint16(3 + i*2, true);
                 }
             }
+            break;
+        case 4: 
+            this.config_index = buf[1];
+            this.dispatchEvent(new Event('updateData'));
             break;
         default:
             break;
@@ -340,7 +342,6 @@ export class OholeoKeyboardController implements IKeyboardController {
         send_buf[1] = 0x03;
         let dataView = new DataView(send_buf.buffer);        
         this.keymap.forEach((layer,i) => {
-            //console.log("{:?}",i);
             send_buf[2] = i; //layer_index
             for (var index = 0; index < layer.length; index+=layer_page_length) {
                 var layer_seg;
@@ -351,20 +352,30 @@ export class OholeoKeyboardController implements IKeyboardController {
                 {
                     layer_seg = layer.slice(index,index+layer_page_length); 
                 }
-                // 转换 `u16` 为 `u8` 数组（小端序）
-                //console.log(layer_seg);
-                //console.log(j*16);
-                //console.log(((j+1)*16));
                 send_buf[3] = index;//layer_page_index
                 layer_seg.forEach((value,k) => {
-                    //console.log(4 + k * 2);
                     dataView.setUint16(4 + k * 2,value,true);
                 });
-                //console.log("{:?}",layer_seg);
-                //console.log("{:?}",send_buf);
                 let res = this.write(send_buf);
                 console.log("Wrote Keymap: {:?} byte(s)", res);
             }
         });
+    }
+
+    get_config_file_num(): number {
+        return this.config_file_number;
+    }
+
+    get_config_file_index(): number {
+        return this.config_file_number;
+    }
+
+    set_config_file_index(index: number) : void {
+        this.config_file_number = index;
+        let send_buf = new Uint8Array(63);
+        send_buf[0] = 0x90;
+        send_buf[1] = this.config_file_number;
+        let res = this.write(send_buf);
+        this.request_config();
     }
 }
