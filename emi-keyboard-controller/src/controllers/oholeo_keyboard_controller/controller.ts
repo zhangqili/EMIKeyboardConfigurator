@@ -4,13 +4,8 @@ const layout = `[["Esc","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7",
 
 export class OholeoKeyboardController extends KeyboardController {
     device: HIDDevice | undefined;
-    advanced_keys: AdvancedKey[];
-    rgb_switch: boolean;
-    rgb_configs: IRGBConfig[];
-    keymap: number[][];
     ADVANCED_KEY_NUM: number = 64;
     config_file_number:number = 4;
-    config_index:number = 0;
 
     constructor() {
         super();
@@ -60,11 +55,11 @@ export class OholeoKeyboardController extends KeyboardController {
                     KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.Home, KeyCode.PageDown, KeyCode.End,
                 ],
                 [ 
-                    KeyCode.KeySystem | (SystemKeycode.SystemBootloader << 8),  KeyCode.KeySystem | (SystemKeycode.SystemConfig0 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig1 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig2 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig3 << 8),     KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeySystem | (SystemKeycode.SystemResetToDefault << 8),
-                    KeyCode.KeyTransparent, KeyCode.KeyTransparent,             KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemReset << 8),       KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent, KeyCode.KeyTransparent,             KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemDebug << 8),   KeyCode.KeySystem | (SystemKeycode.SystemFactoryReset << 8),KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyUser | (1 << 8),                                 KeyCode.KeyUser | (0 << 8), KeyCode.KeyUser | (0xFF << 8),  KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent, KeyCode.KeyTransparent,             KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, 
+                    KeyCode.KeySystem | (SystemKeycode.SystemBootloader << 8),  KeyCode.KeySystem | (SystemKeycode.SystemConfig0 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig1 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig2 << 8),     KeyCode.KeySystem | (SystemKeycode.SystemConfig3 << 8), KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeySystem | (SystemKeycode.SystemResetToDefault << 8),
+                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemReset << 8),       KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemSave << 8),    KeyCode.KeySystem | (SystemKeycode.SystemDebug << 8),   KeyCode.KeySystem | (SystemKeycode.SystemFactoryReset << 8),KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent,                                                                                             KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyUser | (1 << 8),                             KeyCode.KeyUser | (0 << 8), KeyCode.KeyUser | (0xFF << 8),  KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, 
                 ],
                 Array(64).fill(KeyCode.KeyTransparent),
                 Array(64).fill(KeyCode.KeyTransparent)
@@ -205,30 +200,7 @@ export class OholeoKeyboardController extends KeyboardController {
     get_connection_state(): boolean {
         return this.device != undefined;
     }
-    get_advanced_keys(): IAdvancedKey[] {
-        return this.advanced_keys;
-    }
-    set_advanced_keys(keys: IAdvancedKey[]): void {
-        this.advanced_keys = keys;
-    }
-    get_rgb_switch(): boolean {
-        return this.rgb_switch;
-    }
-    set_rgb_switch(s: boolean): void {
-        this.rgb_switch = s;
-    }
-    get_rgb_configs(): IRGBConfig[] {
-        return this.rgb_configs;
-    }
-    set_rgb_configs(configs: IRGBConfig[]): void {
-        this.rgb_configs = configs;
-    }
-    get_keymap(): number[][] {
-        return this.keymap;
-    }
-    set_keymap(keymap: number[][]): void {
-        this.keymap = keymap;
-    }
+
     fetch_config(): void {
         throw new Error('Method not implemented.');
     }
@@ -300,39 +272,30 @@ export class OholeoKeyboardController extends KeyboardController {
             console.log("Wrote RGB Configs: {:?} byte(s)", res);
         }
         send_buf[1] = 0x02;
-        const rgb_page_num = Math.ceil(this.rgb_configs.length / 7);
-        for (var i = 0; i < rgb_page_num; i+=1){
-            for (var j = 0; j < 7; j+=1){
+        const rgb_page_num = Math.ceil(this.rgb_configs.length / 6);
+        for (var rgb_page_index = 0; rgb_page_index < rgb_page_num; rgb_page_index+=1){
+            for (var j = 0; j < 6; j+=1){
                 let dataView = new DataView(send_buf.buffer);
-                send_buf[2] = (i * 7);
-                let index = i * 7 + j;
-                if (index < this.rgb_configs.length ){
-                    let item = this.rgb_configs[index];
-                    send_buf[3 + 0 + 8 * j] = item.mode;
-                    send_buf[3 + 1 + 8 * j] = item.rgb.red;
-                    send_buf[3 + 2 + 8 * j] = item.rgb.green;
-                    send_buf[3 + 3 + 8 * j] = item.rgb.blue;
-                    dataView.setFloat32(3 + 4 + 8 * j,item.speed,true);
+                let rgb_index = rgb_page_index * 6 + j;
+                if (rgb_index < this.rgb_configs.length ){
+                    let item = this.rgb_configs[rgb_index];
+                    console.log(rgb_index);
+                    send_buf[2 + 0 + 9 * j] = rgb_index;
+                    send_buf[2 + 1 + 9 * j] = item.mode;
+                    send_buf[2 + 2 + 9 * j] = item.rgb.red;
+                    send_buf[2 + 3 + 9 * j] = item.rgb.green;
+                    send_buf[2 + 4 + 9 * j] = item.rgb.blue;
+                    dataView.setFloat32(2 + 5 + 9 * j,item.speed,true);
                 }
                 else
                 {
+                    send_buf[2 + 0 + 9 * j] = 0xFF;
                     break;
                 }
             }
             let res = this.write(send_buf);
             console.log("Wrote RGB Configs: {:?} byte(s)", res);
         }
-        //this.rgb_configs.forEach((item, index) =>{
-        //    send_buf[2 + 8 * index] = item.mode;
-        //    send_buf[3 + 8 * index] = item.rgb.red;
-        //    send_buf[4 + 8 * index] = item.rgb.green;
-        //    send_buf[5 + 8 * index] = item.rgb.blue;
-        //    send_buf[6 + 8 * index] = (item.speed * 100.0);
-        //});
-        //{
-        //    let res = this.write(send_buf);
-        //    console.log("Wrote RGB Configs: {:?} byte(s)", res);
-        //}
     }
 
     send_keymap() {

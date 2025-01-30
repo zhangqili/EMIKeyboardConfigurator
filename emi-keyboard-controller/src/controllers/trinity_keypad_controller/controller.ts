@@ -4,10 +4,6 @@ const layout = `[[{"a": 7},"Z","X","C","V"]]`;
 
 export class TrinityKeypadController extends KeyboardController {
     device: HIDDevice | undefined;
-    advanced_keys: AdvancedKey[];
-    rgb_switch: boolean;
-    rgb_configs: IRGBConfig[];
-    keymap: number[][];
     ADVANCED_KEY_NUM: number = 4;
 
     constructor() {
@@ -162,30 +158,7 @@ export class TrinityKeypadController extends KeyboardController {
     get_connection_state(): boolean {
         return this.device != undefined;
     }
-    get_advanced_keys(): IAdvancedKey[] {
-        return this.advanced_keys;
-    }
-    set_advanced_keys(keys: IAdvancedKey[]): void {
-        this.advanced_keys = keys;
-    }
-    get_rgb_switch(): boolean {
-        return this.rgb_switch;
-    }
-    set_rgb_switch(s: boolean): void {
-        this.rgb_switch = s;
-    }
-    get_rgb_configs(): IRGBConfig[] {
-        return this.rgb_configs;
-    }
-    set_rgb_configs(configs: IRGBConfig[]): void {
-        this.rgb_configs = configs;
-    }
-    get_keymap(): number[][] {
-        return this.keymap;
-    }
-    set_keymap(keymap: number[][]): void {
-        this.keymap = keymap;
-    }
+
     fetch_config(): void {
         throw new Error('Method not implemented.');
     }

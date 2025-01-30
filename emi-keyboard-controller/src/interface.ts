@@ -294,6 +294,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     rgb_switch: boolean;
     rgb_configs: IRGBConfig[];
     keymap: number[][];
+    config_index:number;
     private listeners: { [key: string]: EventListener[] } = {};
 
     constructor() {
@@ -302,6 +303,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.rgb_switch = false;
         this.rgb_configs = new Array<IRGBConfig>();
         this.keymap = new Array<Array<number>>();
+        this.config_index = 0;
     }
 
     // 添加事件监听
@@ -336,9 +338,12 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     
     async detect(): Promise<HIDDevice[]>
-    {
-        return new Array<HIDDevice>;
+    {        
+        return await navigator.hid.requestDevice({
+            filters: [{ vendorId: 0xFFFF, productId: 0xFFFF, usagePage:0xFFC0}]
+        });;
     }
+
     write(buf: Uint8Array) : number
     {
         return 0;
@@ -367,37 +372,29 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     {
         return false;
     }
-    get_advanced_keys() : IAdvancedKey[]
-    {
-        return new Array<IAdvancedKey>();
+    get_advanced_keys(): IAdvancedKey[] {
+        return this.advanced_keys;
     }
-    set_advanced_keys(keys : IAdvancedKey[]) : void
-    {
-
+    set_advanced_keys(keys: IAdvancedKey[]): void {
+        this.advanced_keys = keys;
     }
-    get_rgb_switch() : boolean
-    {
-        return false;
+    get_rgb_switch(): boolean {
+        return this.rgb_switch;
     }
-    set_rgb_switch(s : boolean) : void
-    {
-
+    set_rgb_switch(s: boolean): void {
+        this.rgb_switch = s;
     }
-    get_rgb_configs() : IRGBConfig[]
-    {
-        return new Array<IRGBConfig>();
+    get_rgb_configs(): IRGBConfig[] {
+        return this.rgb_configs;
     }
-    set_rgb_configs(configs : IRGBConfig[]) : void
-    {
-
+    set_rgb_configs(configs: IRGBConfig[]): void {
+        this.rgb_configs = configs;
     }
-    get_keymap() : number[][]
-    {
-        return new Array<Array<number>>();
+    get_keymap(): number[][] {
+        return this.keymap;
     }
-    set_keymap(keymap : number[][]) : void
-    {
-
+    set_keymap(keymap: number[][]): void {
+        this.keymap = keymap;
     }
     fetch_config() : void
     {
@@ -433,7 +430,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     get_layout_json() : string
     {
-        return "";
+        return "[]";
     }
     get_config_file_num() : number
     {
@@ -444,7 +441,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         return 0;
     }
     set_config_file_index(index: number) : void {
-        
+        this.config_index = index;
     }
 }
 
