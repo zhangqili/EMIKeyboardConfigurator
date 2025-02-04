@@ -10,7 +10,7 @@ import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
 import { DebugDataItem } from '../apis/utils';
-import type { NotificationType } from 'naive-ui'
+import type { MenuOption, NotificationType } from 'naive-ui'
 import { useNotification } from 'naive-ui'
 
 const { t } = useI18n();
@@ -271,7 +271,27 @@ const advanced_options = [
     label: 'Factory reset',
     key: 'factory reset'
   }
-]
+];
+
+const menuOptions: MenuOption[] = [
+  {
+    label: t('main_tabs_performance'),
+    key: 'performance',
+  },
+  {
+    label: t('main_tabs_keymap'),
+    key: 'keymap',
+  },
+  {
+    label: t('main_tabs_rgb'),
+    key: 'rgb',
+  },
+  {
+    label: t('main_tabs_debug'),
+    key: 'debug',
+  },
+];
+
 
 function handleAdvancedMenu(key: string | number) {
   if (isConnected.value) {
@@ -304,6 +324,7 @@ onMounted(async () => {
       {
         title: 'Linux system detected',
         content: 'You may modifiy udev rules to connect to your device.',
+        duration: 5000,
         keepAliveOnHover: true,
         action: () =>
         [
@@ -376,45 +397,31 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
           </n-gi>
         </n-grid>
       </n-layout-header>
-        <div class="container">
-          <div>
-            <div class="tabs">
+      <n-layout has-sider class="container">
+        <n-layout-sider :width="200">
+          <n-space vertical>
+            <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
               <n-select placeholder="Config file" @update:value="handleUpdateFileValue" 
               v-model:value="selected_config_file_index" v-model:options="files"></n-select>
-              <n-tabs line v-model:value=tab_selection animated :placement="'left'">
-                <n-tab name="performance" :tab="t('main_tabs_performance')">
-                </n-tab>
-                <n-tab name="keymap" :tab="t('main_tabs_keymap')">
-                </n-tab>
-                <n-tab name="rgb" :tab="t('main_tabs_rgb')">
-                </n-tab>
-                <n-tab name="debug" :tab="t('main_tabs_debug')">
-                </n-tab>
-              </n-tabs>
             </div>
-          </div>
+            <n-menu
+              :options="menuOptions" v-model:value="tab_selection">
+            </n-menu>
+          </n-space>
+        </n-layout-sider>
+        <n-layout-content >
+          <n-layout class="keyboard_render">
+            <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
+            <n-button @click="applyToAllKeys">Apply to all</n-button>
+          </n-layout>
           <div style="flex-grow: 1;">
-            <div class="keyboard_render">
-              <n-layout>
-                <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
-                <n-button @click="applyToAllKeys">Apply to all</n-button>
-              </n-layout>
-            </div>
-            <div>
-              <PerformancePanel v-if="tab_selection == 'performance'"/>
-              <KeymapPanel v-if="tab_selection == 'keymap'"/>
-              <RGBPanel v-if="tab_selection == 'rgb'"/>
-              <DebugPanel v-if="tab_selection == 'debug'"/>
-            </div>
+            <PerformancePanel v-if="tab_selection == 'performance'"/>
+            <KeymapPanel v-if="tab_selection == 'keymap'"/>
+            <RGBPanel v-if="tab_selection == 'rgb'"/>
+            <DebugPanel v-if="tab_selection == 'debug'"/>
           </div>
-        </div>
-        <div></div>
-      <!--       <n-layout-footer
-                bordered
-                position="absolute"
-                style="height: 64px;"
-              >
-              </n-layout-footer> -->
+        </n-layout-content>
+      </n-layout>
     </n-layout>
   </div>
 </template>
@@ -442,6 +449,11 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
   }
   .container {
     display: flex;
+    position: absolute;
+    top: 80px;
+    bottom: 0px;
+    width: 100vw;
+    height: 100vh-80px;
     /*
     position: fixed;
     top: 80px;
@@ -460,7 +472,7 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
   }
   .keyboard_render {
     position: sticky;
-    top: 80px;
+    top: 0px;
     z-index: 2;
   }
   

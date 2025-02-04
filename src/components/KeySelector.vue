@@ -32,6 +32,10 @@ function handleLayerNumber(n: number | null) {
     emit('update:binding', (Number(layer_control_value.value) << 12) | (n as number) << 8 | KeyCode.LayerControl);
 }
 
+function handleUserNumber(n: number | null) {
+    emit('update:binding', ((n as number & 0xFF) << 8 | KeyCode.KeyUser));
+}
+
 function handleLayerControl(value: string, option: SelectOption) {
     emit('update:binding', (Number(value) << 12) | layer_value.value << 8 | KeyCode.LayerControl);
 }
@@ -256,6 +260,13 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                             :type="((props.binding & 0xFF) == KeyCode.KeySystem && ((props.binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeyCodeClick((key as unknown as number) << 8 | KeyCode.KeySystem)">
                             {{ SystemCodeToKeyName[key as unknown as SystemKeycode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="User">
+                        <n-flex>
+                            <n-input-number @update:value="handleUserNumber" max="255" min="0"></n-input-number>
+                        </n-flex>
                     </n-thing>
                 </n-list-item>
             </n-list>

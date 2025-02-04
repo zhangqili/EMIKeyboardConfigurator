@@ -57,7 +57,7 @@ export class OholeoKeyboardController extends KeyboardController {
                 [ 
                     KeyCode.KeySystem | (SystemKeycode.SystemBootloader << 8),  KeyCode.KeySystem | (SystemKeycode.SystemConfig0 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig1 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig2 << 8),     KeyCode.KeySystem | (SystemKeycode.SystemConfig3 << 8), KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeySystem | (SystemKeycode.SystemResetToDefault << 8),
                     KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemReset << 8),       KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemSave << 8),    KeyCode.KeySystem | (SystemKeycode.SystemDebug << 8),   KeyCode.KeySystem | (SystemKeycode.SystemFactoryReset << 8),KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
+                    KeyCode.KeyUser | (16 << 8),                                KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemSave << 8),    KeyCode.KeySystem | (SystemKeycode.SystemDebug << 8),   KeyCode.KeySystem | (SystemKeycode.SystemFactoryReset << 8),KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
                     KeyCode.KeyTransparent,                                                                                             KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyUser | (1 << 8),                             KeyCode.KeyUser | (0 << 8), KeyCode.KeyUser | (0xFF << 8),  KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
                     KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, 
                 ],
@@ -188,7 +188,7 @@ export class OholeoKeyboardController extends KeyboardController {
                 }
             }
             break;
-        case 4: 
+        case 0x80: 
             this.config_index = buf[1];
             this.dispatchEvent(new Event('updateData'));
             break;
@@ -315,10 +315,11 @@ export class OholeoKeyboardController extends KeyboardController {
                 {
                     layer_seg = layer.slice(index,index+layer_page_length); 
                 }
-                send_buf[3] = index;//layer_page_index
+                send_buf[3] = index/layer_page_length;//layer_page_index
                 layer_seg.forEach((value,k) => {
                     dataView.setUint16(4 + k * 2,value,true);
                 });
+                //console.log(send_buf);
                 let res = this.write(send_buf);
                 console.log("Wrote Keymap: {:?} byte(s)", res);
             }
