@@ -61,11 +61,9 @@ const rotation = computed(() => {
   <div class="key" :style="rotation">
     <div id="keycap" :style="position">
       <div class="keyborder" :style="size" />
-      <div class="keytop" :style="sizeKeytop">
-      </div>
       <!-- Render Labels -->
       <!-- Labels rendering -->
-      <div class="keylabels" style="left: 8px; top: 4px; width: 40px; height: 40px; padding: 3px;">
+      <div class="keylabels" style="left: 4px; top: 4px; bottom: 0px; width: 48px; height: 40px;">
         <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
           <div :style="sizeLabel">{{ label }}</div>
         </div>
@@ -92,7 +90,7 @@ const rotation = computed(() => {
   border-radius: 3px;
   border-style: solid;
   border-color: #000;
-  background-color: #333333;
+  background-color: #28282b;
 }
 
 .keytop {

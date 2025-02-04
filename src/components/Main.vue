@@ -84,7 +84,7 @@ const key_containers = computed(() => {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         item.labels[0] = rgbModeDisplayMap[rgb_configs.value[index].mode];
-        item.labels[3] = `${Math.round(rgb_configs.value[index].speed * 1000)}\t`;
+        item.labels[6] = `${Math.round(rgb_configs.value[index].speed * 1000)}\t`;
         item.labels[9] = rgbToHex(rgb_configs.value[index].rgb);
       })
       break;

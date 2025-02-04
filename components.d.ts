@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     Application: typeof import('./src/components/Application.vue')['default']
     DebugPanel: typeof import('./src/components/DebugPanel.vue')['default']
+    DynamicKeyPanel: typeof import('./src/components/DynamicKeyPanel.vue')['default']
     Key: typeof import('./src/components/Key.vue')['default']
     KeyboardRender: typeof import('./src/components/KeyboardRender.vue')['default']
     KeyboardTracker: typeof import('./src/components/KeyboardTracker.vue')['default']
