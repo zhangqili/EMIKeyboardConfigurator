@@ -269,6 +269,13 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         </n-flex>
                     </n-thing>
                 </n-list-item>
+                <n-list-item>
+                    <n-thing title="Transparent">
+                        <n-button :type="((props.binding & 0xFF) == KeyCode.KeyTransparent) ? 'primary' : ''"
+                            @click="handleFullKeyCodeClick(KeyCode.KeyTransparent)">
+                            Transparent</n-button>
+                    </n-thing>
+                </n-list-item>
             </n-list>
         </n-tab-pane>
     </n-tabs>

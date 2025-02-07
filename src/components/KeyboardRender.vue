@@ -43,7 +43,7 @@ function keyButtonClick(index: number) {
   <div class="keyboard no-select" :style="{ minHeight: minHeight }">
     <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" @click="keyButtonClick(index)" :key="index" :x="key.x" :y="key.y"
       :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
-      :rotation-angle="key.rotation_angle" :labels="key.labels" />
+      :rotation-angle="key.rotation_angle" :labels="key.labels" :color="key.color" />
   </div>
 </template>
 

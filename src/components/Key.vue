@@ -10,10 +10,12 @@ const props = defineProps([
   "rotationX",
   "rotationY",
   "rotationAngle",
-  "labels"
+  "labels",
+  "color",
 ]);
 
 const usize = ref(54);
+const margin = ref(2);
 
 const position = computed(() => {
   return {
@@ -30,6 +32,16 @@ const size = computed(() => {
   };
 });
 
+const keycap_size = computed(() => {
+  return {
+    width: usize.value * props.width + "px",
+    height: usize.value * props.height + "px",
+    position: "absolute",
+    left: usize.value * props.x + "px",
+    top: usize.value * props.y + "px",
+  };
+});
+
 const sizeKeytop = computed(() => {
   return {
     width: usize.value * props.width - 12 + "px",
@@ -41,10 +53,22 @@ const sizeLabel = computed(() => {
   return {
     width: usize.value * props.width - 12 + "px",
     height: usize.value * props.height - 12 + "px",
+    maxWidth: usize.value * props.width - 12 + "px",
+    maxHeight: usize.value * props.height - 12 + "px",
+    textWrap: "wrap",
     color: "white",
   };
 });
 
+const sizeLabel1 = computed(() => {
+  return {
+    width: usize.value * props.width - 12 + "px",
+    maxWidth: usize.value * props.width - 12 + "px",
+    textWrap: "wrap",
+    height: "8px",
+    color: "white",
+  };
+});
 const rotation = computed(() => {
   if (props.rotationAngle !== 0) {
     return {
@@ -55,18 +79,34 @@ const rotation = computed(() => {
   }
   return {};
 });
+
+const key_border = computed(() => {
+  return {
+    padding: margin.value + "px",
+  };
+});
+
+const button_style = computed(() => {
+  return {
+    height: "100%",
+    width: "100%",
+    background: props.color,
+  };
+});
 </script>
 
 <template>
   <div class="key" :style="rotation">
-    <div id="keycap" :style="position">
-      <div class="keyborder" :style="size" />
-      <!-- Render Labels -->
-      <!-- Labels rendering -->
-      <div class="keylabels" style="left: 4px; top: 4px; bottom: 0px; width: 48px; height: 40px;">
-        <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
-          <div :style="sizeLabel">{{ label }}</div>
-        </div>
+    <div :style="keycap_size">
+      <div style="position: absolute; inset: 2px;">
+        <n-button :style="button_style" :focusable="false" secondary class="keycap" >
+          <div class="keylabels">
+            <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
+              <div v-if="index<9" :style="sizeLabel">{{ label }}</div>
+              <div v-if="index>=9" :style="sizeLabel1">{{ label }}</div>
+            </div>
+          </div>
+        </n-button>
       </div>
     </div>
   </div>
@@ -90,7 +130,6 @@ const rotation = computed(() => {
   border-radius: 3px;
   border-style: solid;
   border-color: #000;
-  background-color: #28282b;
 }
 
 .keytop {
@@ -107,7 +146,7 @@ const rotation = computed(() => {
 .keylabel>div {
   display: table-cell;
   position: static !important;
-  color: rgba(0, 0, 0, 1)
+  /*color: rgba(0, 0, 0, 1)*/
 }
 
 /* Vertical alignment */
@@ -134,7 +173,6 @@ const rotation = computed(() => {
 .keylabel11 {
   margin-top: 40px;
   font-size: 9px !important;
-
 }
 
 /* Horizontal  alignment */
@@ -211,9 +249,11 @@ const rotation = computed(() => {
   line-height: 1em;
 }
 
+/*
 .keylabels {
   font-family: "Helvetica", "Arial", sans-serif;
 }
+*/
 
 .keylabel hr {
   display: inline;
@@ -223,7 +263,6 @@ const rotation = computed(() => {
 .keylabel hr:before {
   position: relative;
   display: block;
-  overflow: hidden;
   white-space: nowrap;
   content: "\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500";
 }
@@ -231,9 +270,13 @@ const rotation = computed(() => {
 /* Key labels */
 .keylabel {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%; /* Ensure labels take the full width */
-  height: 100%; /* Ensure labels take the full height */
+  top: 2px;
+  left: 2px;
+  width: 100%-2px; /* Ensure labels take the full width */
+  height: 100%-2px; /* Ensure labels take the full height */
+  text-shadow: 
+    0 0 5px rgba(0, 0, 0, 1), 
+    0 0 10px rgba(0, 0, 0, 1),
+    0 0 15px rgba(0, 0, 0, 1);;
 }
 </style>

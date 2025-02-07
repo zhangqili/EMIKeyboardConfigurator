@@ -1,4 +1,5 @@
 import { KeyCode, KeyMode, KeyModifier, MouseKeycode, SystemKeycode, RGBMode, Srgb, LayerControlKeycode } from "emi-keyboard-controller";
+import * as kle from "@ijprest/kle-serial";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键
@@ -339,7 +340,7 @@ export const keyCodeToKeyName: { [key in KeyCode]: string } = {
   [KeyCode.FN]: 'FN',
   [KeyCode.KeyUser]: 'User',
   [KeyCode.KeySystem]: 'System',
-  [KeyCode.KeyTransparent]: 'Transparent',
+  [KeyCode.KeyTransparent]: '∇',
 };
 
 export const keyModifierToKeyName: { [key in KeyModifier]: string } = {
@@ -439,4 +440,8 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
 export interface DebugDataItem {
     name: string;
     value: [number, number];
+}
+
+export class KeyConfig extends kle.Key {
+  declare color: string;
 }

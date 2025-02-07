@@ -5,7 +5,7 @@ import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
+import { keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
 import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
@@ -33,7 +33,7 @@ const {
 const message = useMessage();
 const notification = useNotification();
 const tab_selection = ref<string | null>("performance");
-const keyboard_keys = ref<kle.Key[]>([]);
+const keyboard_keys = ref<KeyConfig[]>([]);
 const isConnected = ref<boolean>(false);
 
 const key_containers = computed(() => {
@@ -106,6 +106,9 @@ const key_containers = computed(() => {
       break;
     }
   }
+  keys.forEach((item,index) => {
+    item.color = rgbToHex(rgb_configs.value[index].rgb);
+  })
   return keys;
 });
 
