@@ -12,6 +12,7 @@ const props = defineProps([
   "rotationAngle",
   "labels",
   "color",
+  "selected"
 ]);
 
 const usize = ref(54);
@@ -56,7 +57,6 @@ const sizeLabel = computed(() => {
     maxWidth: usize.value * props.width - 12 + "px",
     maxHeight: usize.value * props.height - 12 + "px",
     textWrap: "wrap",
-    color: "white",
   };
 });
 
@@ -66,7 +66,6 @@ const sizeLabel1 = computed(() => {
     maxWidth: usize.value * props.width - 12 + "px",
     textWrap: "wrap",
     height: "8px",
-    color: "white",
   };
 });
 const rotation = computed(() => {
@@ -86,11 +85,24 @@ const key_border = computed(() => {
   };
 });
 
+function getContrastColor(bgColor) {
+    if (bgColor == undefined) {
+      return;
+    }
+    const r = parseInt(bgColor.substr(1, 2), 16);
+    const g = parseInt(bgColor.substr(3, 2), 16);
+    const b = parseInt(bgColor.substr(5, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? "#000000" : "#FFFFFF";
+}
+
 const button_style = computed(() => {
   return {
     height: "100%",
     width: "100%",
     background: props.color,
+    color: getContrastColor(props.color),
+    outline: props.selected ? "solid red 2px" : "",
   };
 });
 </script>
@@ -99,7 +111,7 @@ const button_style = computed(() => {
   <div class="key" :style="rotation">
     <div :style="keycap_size">
       <div style="position: absolute; inset: 2px;">
-        <n-button :style="button_style" :focusable="false" secondary class="keycap" >
+        <n-button :style="button_style" :focusable="false" class="keycap" >
           <div class="keylabels">
             <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
               <div v-if="index<9" :style="sizeLabel">{{ label }}</div>
@@ -274,9 +286,11 @@ const button_style = computed(() => {
   left: 2px;
   width: 100%-2px; /* Ensure labels take the full width */
   height: 100%-2px; /* Ensure labels take the full height */
+  /*
   text-shadow: 
-    0 0 5px rgba(0, 0, 0, 1), 
-    0 0 10px rgba(0, 0, 0, 1),
-    0 0 15px rgba(0, 0, 0, 1);;
+    0 0 5px #000000, 
+    0 0 10px #000000,
+    0 0 15px #000000;;
+    */
 }
 </style>

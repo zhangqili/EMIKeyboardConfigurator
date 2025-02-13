@@ -87,20 +87,22 @@ const modes =
 </script>
 
 <template>
-  <n-space vertical>
-    <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-      <n-form-item label="Mode">
-        <n-select :options="modes" v-model:value="mode">
-        </n-select>
-      </n-form-item>
-      <n-form-item label="Color">
-        <n-color-picker v-model:value="color" :show-preview="true" :show-alpha="false"/>
-      </n-form-item>
-      <n-form-item label="Speed">
-        <n-input-number v-model:value="speed" placeholder="Speed" :min="0" :max="100" />
-      </n-form-item>
-    </n-form>
-  </n-space>
+  <n-card>
+    <n-space vertical>
+      <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
+        <n-form-item label="Mode">
+          <n-select :options="modes" v-model:value="mode">
+          </n-select>
+        </n-form-item>
+        <n-form-item label="Color">
+          <n-color-picker v-model:value="color" :show-preview="true" :show-alpha="false"/>
+        </n-form-item>
+        <n-form-item label="Speed">
+          <n-input-number v-model:value="speed" placeholder="Speed" :min="0" :max="100" />
+        </n-form-item>
+      </n-form>
+    </n-space>
+  </n-card>
 </template>
 
 <style></style>

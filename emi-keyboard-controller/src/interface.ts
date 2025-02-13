@@ -27,6 +27,54 @@ export enum RGBMode {
     RgbModeJelly = 9,
 }
 
+export enum DynamicKeyType{
+    DynamicKeyNone = 0,
+    DynamicKeyStroke = 1,
+    DynamicKeyModTap = 2,
+    DynamicKeyToggleKey = 3,
+    DynamicKeyMutex = 4,
+    DynamicKeyTypeNum = 5,    
+}
+
+export interface IDynamicKey {
+    type : DynamicKeyType | number;
+}
+
+export interface IDynamicKeyStroke4x4 extends IDynamicKey {
+    key_binding : number[];
+    key_control : number[];
+    press_begin_distance : number;
+    press_fully_distance : number;
+    release_begin_distance : number;
+    release_fully_distance : number;
+}
+
+export interface IDynamicKeyModTap extends IDynamicKey {
+    key_binding : number[];
+    duration : number;
+}
+
+export interface IDynamicKeyToggleKey extends IDynamicKey {
+    key_binding : number;
+}
+
+export enum DynamicKeyMutexMode{
+    DKMutexDistancePriority = 0,
+    DKMutexLastPriority = 1,
+    DKMutexKey1Priority = 2,
+    DKMutexKey2Priority = 3,
+    DKMutexNeutral = 4,    
+}
+
+export interface IDynamicKeyToggleKey extends IDynamicKey {
+    key_binding : number;
+}
+
+export interface IDynamicKeyMutex extends IDynamicKey {
+    key : ({id:number;binding:number})[];
+    mode : (DynamicKeyMutexMode | number);
+}
+
 // Interface for AdvancedKey
 export interface IAdvancedKey {
     state: boolean;

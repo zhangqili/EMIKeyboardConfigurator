@@ -13,7 +13,11 @@ const props = defineProps(["keys"]);
 // 计算 min-height 的值，基于 keys 中 key.y 的最大值
 const minHeight = computed(() => {
   const maxY = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.y)) : 0;
-  return `${(maxY + 1) * 54}px`; // 添加偏移量以确保足够空间
+  return `${(maxY + 1) * usize.value}px`; // 添加偏移量以确保足够空间
+});
+const minWidth = computed(() => {
+  const maxX = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.x)) : 0;
+  return `${(maxX + 1) * usize.value}px`; // 添加偏移量以确保足够空间
 });
 
 
@@ -40,10 +44,15 @@ function keyButtonClick(index: number) {
 </script>
 
 <template>
-  <div class="keyboard no-select" :style="{ minHeight: minHeight }">
-    <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" @click="keyButtonClick(index)" :key="index" :x="key.x" :y="key.y"
-      :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
-      :rotation-angle="key.rotation_angle" :labels="key.labels" :color="key.color" />
+  <div style="display: grid; place-items: center;">
+    <div class="keyboard no-select" :style="{ minHeight: minHeight, minWidth: minWidth }">
+      <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" @click="keyButtonClick(index)" :key="index" :x="key.x" :y="key.y"
+        :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
+        :rotation-angle="key.rotation_angle" :labels="key.labels" :color="key.color" />
+    </div>
+    <slot>
+      
+    </slot>
   </div>
 </template>
 

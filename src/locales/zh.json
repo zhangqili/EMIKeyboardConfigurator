@@ -9,5 +9,7 @@
     "main_tabs_performance": "性能",
     "main_tabs_keymap": "映射",
     "main_tabs_rgb": "灯效",
-    "main_tabs_debug": "调试"
+    "main_tabs_dynamic_key": "动态按键",
+    "main_tabs_debug": "调试",
+    "main_tabs_about": "关于"
 }

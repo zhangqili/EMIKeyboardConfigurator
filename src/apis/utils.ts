@@ -437,6 +437,13 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
   return {mainString: mainString, subString: subString};
 }
 
+
+export function keyCodeToStringLabels(keycode: number): string[] {
+  const label_item = keyCodeToString(keycode)
+  return [label_item.subString,,,,,,label_item.mainString] as string[];
+}
+
+
 export interface DebugDataItem {
     name: string;
     value: [number, number];

@@ -6,38 +6,37 @@ import { SelectOption, useMessage } from 'naive-ui';
 
 const message = useMessage();
 
-const props = defineProps<{ binding: number }>();
-const emit = defineEmits(['update:binding']);
+const binding = defineModel("binding", {default : 0});
 
 function handleKeyModifierClick(key: number | string | KeyCode) {
-    var modifier = (props.binding >> 8) & 0xFF;
+    var modifier = (binding.value >> 8) & 0xFF;
     if ((modifier & key as number) > 0) {
         modifier &= ~(key as number);
     }
     else {
         modifier |= key as number;
     }
-    emit('update:binding', props.binding & 0xFF | (modifier << 8));
+    binding.value = binding.value & 0xFF | (modifier << 8);
 }
 
 function handleKeyCodeClick(key: number | string | KeyCode) {
-    emit('update:binding', (props.binding & 0xFF00 | key as number));
+    binding.value = binding.value & 0xFF00 | key as number;
 }
 
 function handleFullKeyCodeClick(key: number | string | KeyCode) {
-    emit('update:binding', (key as number));
+    binding.value = key as number;
 }
 
 function handleLayerNumber(n: number | null) {
-    emit('update:binding', (Number(layer_control_value.value) << 12) | (n as number) << 8 | KeyCode.LayerControl);
+    binding.value = ((Number(layer_control_value.value) << 12) | (n as number) << 8 | KeyCode.LayerControl);
 }
 
 function handleUserNumber(n: number | null) {
-    emit('update:binding', ((n as number & 0xFF) << 8 | KeyCode.KeyUser));
+    binding.value = ((n as number & 0xFF) << 8 | KeyCode.KeyUser);
 }
 
 function handleLayerControl(value: string, option: SelectOption) {
-    emit('update:binding', (Number(value) << 12) | layer_value.value << 8 | KeyCode.LayerControl);
+    binding.value = (Number(value) << 12) | layer_value.value << 8 | KeyCode.LayerControl;
 }
 
 const layer_options = Object.keys(LayerControlKeycode).slice(0,4).map((key) => {
@@ -57,12 +56,12 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                 <n-list-item>
                     <n-thing title="Modifiers">
                         <n-space vertical>
-                            <n-button @click="() => { emit('update:binding', props.binding & 0xFF); }">
+                            <n-button @click="() => { binding = binding & 0xFF; }">
                                 Clear</n-button>
                             <n-button-group>
                                 <n-button v-for="(key, index) in Object.keys(KeyModifier)
                                     .slice(1, 9)" @click="handleKeyModifierClick(key)"
-                                    :type="((props.binding >> 8) & 0xFF & (key as unknown as number)) > 0 ? 'primary' : ''">
+                                    :type="((binding >> 8) & 0xFF & (key as unknown as number)) > 0 ? 'primary' : ''">
                                     {{ keyModifierToKeyName[key as unknown as KeyModifier] }}</n-button>
                             </n-button-group>
                         </n-space>
@@ -73,7 +72,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.NoEvent, KeyCode.ErrorUndefined + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -83,7 +82,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.A, KeyCode.Z + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -94,7 +93,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                             <n-button v-for="(key, code) in Object.keys(KeyCode)
                                 //.filter(key => isNaN(Number(key)))
                                 .slice(KeyCode.Key1, KeyCode.Key0 + 1)"
-                                :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                                 @click="handleKeyCodeClick(key)">
                                 {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                         </n-button-group>
@@ -106,7 +105,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                             <n-button v-for="(key, code) in Object.keys(KeyCode)
                                 //.filter(key => isNaN(Number(key)))
                                 .slice(KeyCode.Enter, KeyCode.Tab + 1)"
-                                :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                                 @click="handleKeyCodeClick(key)">
                                 {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                         </n-button-group>
@@ -117,7 +116,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.Spacebar, KeyCode.Slash + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -127,7 +126,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.CapsLock, KeyCode.Pause + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -137,7 +136,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.Insert, KeyCode.UpArrow + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -147,7 +146,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.NumLock, KeyCode.KeypadDot + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -157,7 +156,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.NonUsBackslash, KeyCode.KeypadEqual + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -168,7 +167,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                             <n-button v-for="(key, code) in Object.keys(KeyCode)
                                 //.filter(key => isNaN(Number(key)))
                                 .slice(KeyCode.F13, KeyCode.F24 + 1)"
-                                :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                                 @click="handleKeyCodeClick(key)">
                                 {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                         </n-button-group>
@@ -179,7 +178,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.Execute, KeyCode.VolumeDown + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -189,7 +188,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.LockingCapsLock, KeyCode.LockingScrollLock + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -199,7 +198,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.KeypadComma, KeyCode.Lang9 + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -209,7 +208,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(KeyCode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(KeyCode.AlternateErase, KeyCode.ExSel + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ keyCodeToKeyName[key as unknown as KeyCode] }}</n-button>
                     </n-thing>
@@ -219,7 +218,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(MouseKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelDown + 1)"
-                            :type="((props.binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleKeyCodeClick(key)">
                             {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
                     </n-thing>
@@ -233,7 +232,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(MouseKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelDown + 1)"
-                            :type="((props.binding & 0xFF) == KeyCode.MouseCollection && ((props.binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == KeyCode.MouseCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeyCodeClick((key as unknown as number) << 8 | KeyCode.MouseCollection)">
                             {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
                     </n-thing>
@@ -257,7 +256,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                         <n-button v-for="(key, code) in Object.keys(SystemKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(0, 10)"
-                            :type="((props.binding & 0xFF) == KeyCode.KeySystem && ((props.binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            :type="((binding & 0xFF) == KeyCode.KeySystem && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeyCodeClick((key as unknown as number) << 8 | KeyCode.KeySystem)">
                             {{ SystemCodeToKeyName[key as unknown as SystemKeycode] }}</n-button>
                     </n-thing>
@@ -271,7 +270,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                 </n-list-item>
                 <n-list-item>
                     <n-thing title="Transparent">
-                        <n-button :type="((props.binding & 0xFF) == KeyCode.KeyTransparent) ? 'primary' : ''"
+                        <n-button :type="((binding & 0xFF) == KeyCode.KeyTransparent) ? 'primary' : ''"
                             @click="handleFullKeyCodeClick(KeyCode.KeyTransparent)">
                             Transparent</n-button>
                     </n-thing>

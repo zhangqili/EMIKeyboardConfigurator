@@ -12,6 +12,13 @@ import { storeToRefs } from "pinia";
 import { DebugDataItem } from '../apis/utils';
 import type { MenuOption, NotificationType } from 'naive-ui'
 import { useNotification } from 'naive-ui'
+import DynamicKeyPanel from "./DynamicKeyPanel.vue";
+import RGBPanel from "./RGBPanel.vue";
+import PerformancePanel from "./PerformancePanel.vue";
+import KeymapPanel from "./KeymapPanel.vue";
+import DebugPanel from "./DebugPanel.vue";
+import KeyboardRender from "./KeyboardRender.vue";
+import AboutPanel from "./AboutPanel.vue";
 
 const { t } = useI18n();
 const store = useMainStore();
@@ -290,8 +297,16 @@ const menuOptions: MenuOption[] = [
     key: 'rgb',
   },
   {
+    label: t('main_tabs_dynamic_key'),
+    key: 'dynamic_key',
+  },
+  {
     label: t('main_tabs_debug'),
     key: 'debug',
+  },
+  {
+    label: t('main_tabs_about'),
+    key: 'about',
   },
 ];
 
@@ -326,7 +341,7 @@ onMounted(async () => {
     notification.warning(
       {
         title: 'Linux system detected',
-        content: 'You may modifiy udev rules to connect to your device.',
+        content: 'You may modifiy udev rules to access your device.',
         duration: 5000,
         keepAliveOnHover: true,
         action: () =>
@@ -355,6 +370,41 @@ onMounted(async () => {
       }
     );
   }
+  if (!('hid' in navigator))
+  {
+    notification.warning(
+      {
+        title: "Your browser doesn't support WebHID",
+        content: 'Please use a browser with Chromium >= 89 to access your device.',
+        duration: 5000,
+        keepAliveOnHover: true,
+        action: () =>
+        [
+/*           h(
+            NButton,
+            {
+              text: true,
+              type: 'primary',
+            },
+            {
+              default: () => "Read more"
+            }
+          ), */
+          h(
+            NButton,
+            {
+              text: true,
+              type: 'primary',
+            },
+            {
+              default: () => "Don't show again"
+            }
+          ),
+        ]
+      }
+    );
+
+  }
   const result: string[] = await apis.get_devices();
   devices.value = result.map((label: string, index: number) => ({
     label,
@@ -362,20 +412,11 @@ onMounted(async () => {
   }));
 });
 
-listen<ekc.IAdvancedKey[]>('update-value', (event) => {
-  //console.log(event.payload);
-  advanced_keys.value.forEach((key, index) => {
-    key.raw = event.payload[index].raw;
-    key.value = event.payload[index].value;
-    key.state = event.payload[index].state;
-  }
-  );
-});
 </script>
 
 <template>
   <div class="root_container">
-    <n-layout>
+    <n-layout has-sider>
       <n-layout-header class="header" bordered>
         <n-grid :x-gap="12" :y-gap="12" :cols="5">
           <n-gi :span="4">
@@ -400,31 +441,34 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
           </n-gi>
         </n-grid>
       </n-layout-header>
-      <n-layout has-sider class="container">
-        <n-layout-sider :width="200">
+      <div class="container">
+        <n-layout-sider :width="200" style="flex-shrink: 0;">
           <n-space vertical>
-            <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
-              <n-select placeholder="Config file" @update:value="handleUpdateFileValue" 
+            <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px; margin-bottom: -8px;">
+              <n-select style="font-size: 14px;" size="large" placeholder="Config file" @update:value="handleUpdateFileValue" 
               v-model:value="selected_config_file_index" v-model:options="files"></n-select>
             </div>
             <n-menu
-              :options="menuOptions" v-model:value="tab_selection">
+              :indent="20" :options="menuOptions" v-model:value="tab_selection">
             </n-menu>
           </n-space>
         </n-layout-sider>
-        <n-layout-content >
-          <n-layout class="keyboard_render">
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <div class="keyboard_render">
             <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
             <n-button @click="applyToAllKeys">Apply to all</n-button>
-          </n-layout>
-          <div style="flex-grow: 1;">
+            <n-divider style="margin: 0px;"/>
+          </div>
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
             <PerformancePanel v-if="tab_selection == 'performance'"/>
             <KeymapPanel v-if="tab_selection == 'keymap'"/>
             <RGBPanel v-if="tab_selection == 'rgb'"/>
+            <DynamicKeyPanel v-if="tab_selection == 'dynamic_key'"/>
             <DebugPanel v-if="tab_selection == 'debug'"/>
+            <AboutPanel v-if="tab_selection == 'about'"/>
           </div>
-        </n-layout-content>
-      </n-layout>
+        </div>
+      </div>
     </n-layout>
   </div>
 </template>
@@ -452,7 +496,7 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
   }
   .container {
     display: flex;
-    position: absolute;
+    position: fixed;
     top: 80px;
     bottom: 0px;
     width: 100vw;
@@ -474,9 +518,7 @@ listen<ekc.IAdvancedKey[]>('update-value', (event) => {
     height: 100vh;
   }
   .keyboard_render {
-    position: sticky;
-    top: 0px;
-    z-index: 2;
+    flex-shrink: 0;
   }
   
 </style>

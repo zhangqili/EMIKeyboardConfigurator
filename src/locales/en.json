@@ -9,5 +9,7 @@
     "main_tabs_performance": "Performance",
     "main_tabs_keymap": "Keymap",
     "main_tabs_rgb": "RGB",
-    "main_tabs_debug": "Debug"
+    "main_tabs_dynamic_key": "Dynamic Key",
+    "main_tabs_debug": "Debug",
+    "main_tabs_about": "About"
 }

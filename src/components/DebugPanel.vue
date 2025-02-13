@@ -151,30 +151,32 @@ const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
 </script>
 
 <template>
-    <n-flex vertical>
-        <n-flex>
-            <div>Enable Debug</div>
-            <n-switch v-model:value="debug_switch" @update:value="handleChange"></n-switch>
+    <n-card>
+        <n-flex vertical>
+            <n-flex>
+                <div>Enable Debug</div>
+                <n-switch v-model:value="debug_switch" @update:value="handleChange"></n-switch>
+            </n-flex>
+            <n-flex>
+                <n-button @click="clearCommand">Clear</n-button>
+            </n-flex>
+            <n-flex>
+                <n-tabs type="segment" animated>
+                    <n-tab-pane name="raw_chart" tab="Raw">
+                        <v-chart ref="debug_raw_chart" :option="debug_raw_chart_option" class="chart" autoresize />
+                    </n-tab-pane>
+                    <n-tab-pane name="value_chart" tab="Normalized Value">
+                        <v-chart ref="debug_value_chart" :option="debug_value_chart_option" class="chart" autoresize />
+                    </n-tab-pane>
+                </n-tabs>
+            </n-flex>
+            <n-data-table :data="advanced_keys" :columns="columns" :bordered="false" />
+            <!--         <n-collapse>
+                <n-collapse-item title="Data table" name="0">
+                </n-collapse-item>
+            </n-collapse> -->
         </n-flex>
-        <n-flex>
-            <n-button @click="clearCommand">Clear</n-button>
-        </n-flex>
-        <n-flex>
-            <n-tabs type="segment" animated>
-                <n-tab-pane name="raw_chart" tab="Raw">
-                    <v-chart ref="debug_raw_chart" :option="debug_raw_chart_option" class="chart" autoresize />
-                </n-tab-pane>
-                <n-tab-pane name="value_chart" tab="Normalized Value">
-                    <v-chart ref="debug_value_chart" :option="debug_value_chart_option" class="chart" autoresize />
-                </n-tab-pane>
-            </n-tabs>
-        </n-flex>
-        <n-data-table :data="advanced_keys" :columns="columns" :bordered="false" />
-        <!--         <n-collapse>
-            <n-collapse-item title="Data table" name="0">
-            </n-collapse-item>
-        </n-collapse> -->
-    </n-flex>
+    </n-card>
 </template>
 
 <style scoped>
