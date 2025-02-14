@@ -1,4 +1,4 @@
-import { AdvancedKey, IAdvancedKey, IRGBConfig, RGBConfig } from 'emi-keyboard-controller'
+import { AdvancedKey, DynamicKey, DynamicKeyType, IAdvancedKey, IDynamicKey, IRGBConfig, RGBConfig } from 'emi-keyboard-controller'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { DebugDataItem } from '../apis/utils';
@@ -11,14 +11,17 @@ export const useMainStore = defineStore('main',
         const selected_device = ref<string | undefined>(undefined);
         const advanced_key = ref<IAdvancedKey>(new AdvancedKey());
         const rgb_config = ref<IRGBConfig>(new RGBConfig());
+        const dynamic_key = ref<IDynamicKey>(new DynamicKey());;
+        const dynamic_key_index = ref<number>(-1);;
 
         const advanced_keys = ref<IAdvancedKey[]>([]);
         const rgb_configs = ref<IRGBConfig[]>([]);
         const keymap = ref<number[][] | undefined>(undefined);
+        const dynamic_keys = ref<IDynamicKey[]>([]);
 
         const key_binding = ref<number>(0);
-        const selected_layer = ref<number>(0);
-        
+        const current_layer = ref<number>(0);
+
         const config_files = ref<string[]>([]);
         const selected_config_file_index = ref<number | undefined>(undefined);
         const debug_switch = ref(false);
@@ -92,15 +95,19 @@ export const useMainStore = defineStore('main',
             selected_device,
             advanced_key,
             rgb_config,
+            dynamic_key,
+            dynamic_key_index,
 
             advanced_keys,
             rgb_configs,
             keymap,
+            dynamic_keys,
+
             config_files,
             selected_config_file_index,
 
             key_binding,
-            selected_layer,
+            current_layer,
 
             debug_raw_chart_option,
             debug_value_chart_option,

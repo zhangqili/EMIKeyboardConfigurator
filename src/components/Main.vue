@@ -5,7 +5,7 @@ import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
+import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey } from "../apis/utils";
 import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
@@ -26,20 +26,23 @@ const {
   selected_device,
   advanced_key, 
   rgb_config, 
+  dynamic_key,
+  dynamic_key_index,
   advanced_keys, 
   rgb_configs, 
   keymap, 
   key_binding, 
-  selected_layer, 
+  current_layer, 
   config_files,
   selected_config_file_index,
   debug_raw_chart_option, 
-  debug_value_chart_option 
+  debug_value_chart_option,
+  dynamic_keys
 } = storeToRefs(store);
 
 const message = useMessage();
 const notification = useNotification();
-const tab_selection = ref<string | null>("performance");
+const tab_selection = ref<string | null>("PerformancePanel");
 const keyboard_keys = ref<KeyConfig[]>([]);
 const isConnected = ref<boolean>(false);
 
@@ -47,7 +50,7 @@ const key_containers = computed(() => {
   var keys = keyboard_keys.value;
   //console.log(tab_selection.value);
   switch (tab_selection.value) {
-    case "performance": {
+    case "PerformancePanel": {
       keys.forEach((item, index) => {
         const advanced_key = advanced_keys.value[index];
         if (advanced_key != undefined) {
@@ -76,18 +79,30 @@ const key_containers = computed(() => {
       })
       break;
     }
-    case "keymap": {
+    case "KeymapPanel":
+    case "DynamicKeyPanel": {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         if (keymap.value != undefined) {
-          var strings = keyCodeToString(keymap.value[selected_layer.value][index]);
-          item.labels[0] = strings.subString;
-          item.labels[6] = strings.mainString;
+          if((keymap.value[current_layer.value][index] & 0xFF) == ekc.KeyCode.DynamicKey)
+          {
+            const strings = keyCodeToString(keymap.value[current_layer.value][index]);
+            const dk_index = ((keymap.value[current_layer.value][index] >> 8) & 0xFF)
+            //item.labels[0] = strings.subString;
+            item.labels[6] = DynamicKeyToKeyName[dynamic_keys.value[dk_index].type as ekc.DynamicKeyType];
+            item.labels[9] = strings.mainString;
+          }
+          else
+          {
+            var strings = keyCodeToString(keymap.value[current_layer.value][index]);
+            item.labels[0] = strings.subString;
+            item.labels[6] = strings.mainString;
+          }
         }
-      })
+      });
       break;
     }
-    case "rgb": {
+    case "RGBPanel": {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         item.labels[0] = rgbModeDisplayMap[rgb_configs.value[index].mode];
@@ -96,7 +111,7 @@ const key_containers = computed(() => {
       })
       break;
     }
-    case "debug": {
+    case "DebugPanel": {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         item.labels[0] = advanced_keys.value[index].raw.toFixed(2);
@@ -108,7 +123,6 @@ const key_containers = computed(() => {
     default: {
       keys.forEach((item) => {
         item.labels = item.labels.map(() => "");
-        item.labels[0] = "null";
       })
       break;
     }
@@ -177,6 +191,7 @@ async function saveCommand() {
       apis.set_keymap(keymap.value);
     }
     apis.set_rgb_configs(rgb_configs.value);
+    apis.set_dynamic_keys(dynamic_keys.value);
     var result = await apis.save_config();
     console.log(result);
 
@@ -195,15 +210,26 @@ async function getController() {
   advanced_keys.value = await apis.get_advanced_keys();
   keymap.value = await apis.get_keymap();
   rgb_configs.value = await apis.get_rgb_configs();
+  dynamic_keys.value = await apis.get_dynamic_keys();
   const cnofig_file_num = await apis.get_config_file_num();
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
     files.value.push({
-    label: "config" + index.toString(),
+    label: "Config" + index.toString(),
     value: index,
   });
   }
+  current_layer.value = 0;
+  triggerRef(keymap);
   //console.log(rgb_configs.value);
+}
+
+function updateData()
+{
+  if (keymap.value != undefined) {
+    mapBackDynamicKey(keymap.value, dynamic_keys.value);
+  }
+  triggerRef(advanced_keys);
 }
 
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
@@ -212,7 +238,7 @@ async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
   //console.log(layout_json);
   renderKeyboardFromJson(layout_json);
   getController();
-  apis.addEventListener('updateData',(event: Event) => {triggerRef(keyboard_keys)});
+  apis.addEventListener('updateData',(event: Event) => {updateData();});
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
@@ -229,21 +255,98 @@ function applyToSelectedKey(id: number) {
   //message.info(id.toString());
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
-    case "performance": {
+    case "PerformancePanel": {
       advanced_keys.value[id] = JSON.parse(JSON.stringify(advanced_key.value));
       break;
     }
-    case "keymap": {
+    case "KeymapPanel": {
       if (keymap.value != undefined) {
-        keymap.value[selected_layer.value][id] = key_binding.value;
+        keymap.value[current_layer.value][id] = key_binding.value;
       }
       break;
     }
-    case "rgb": {
+    case "DynamicKeyPanel": {
+      if (dynamic_key.value.type != ekc.DynamicKeyType.DynamicKeyNone ) {
+        switch (dynamic_key.value.type) {
+          case ekc.DynamicKeyType.DynamicKeyMutex:
+            var dynamic_key_mutex = dynamic_key.value as ekc.DynamicKeyMutex;
+            if (keymap.value != undefined) {
+              if (dynamic_key_mutex.target_keys_location.length == 0) {
+                dynamic_key_mutex.is_key2_primary = false;
+                const binding = keymap.value[current_layer.value][id];
+                dynamic_key_mutex.target_keys_location[0] = {layer: current_layer.value, id: id};
+                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                dynamic_key_mutex.set_primary_binding(binding);
+                dynamic_key.value = dynamic_key_mutex;
+                dynamic_key_mutex.key_id[0] = id;
+                
+              }
+              else if (dynamic_key_mutex.target_keys_location.length == 1)
+              {
+                dynamic_key_mutex.is_key2_primary = true;
+                const binding = keymap.value[current_layer.value][id];
+                dynamic_key_mutex.target_keys_location[1] = {layer: current_layer.value, id: id};
+                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                dynamic_key_mutex.set_primary_binding(binding);
+                dynamic_key_mutex.key_id[1] = id;
+                dynamic_key.value = dynamic_key_mutex;
+              }
+              else
+              {
+                if (dynamic_key_mutex.is_key2_primary) {
+                  const last_binding = dynamic_key.value.get_primary_binding();
+                  keymap.value[dynamic_key.value.target_keys_location[1].layer][dynamic_key.value.target_keys_location[1].id] = last_binding;
+                  const binding = keymap.value[current_layer.value][id];
+                  dynamic_key.value.target_keys_location[1] = {layer: current_layer.value, id: id};
+                  keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                  dynamic_key_mutex.key_id[1] = id;
+                  dynamic_key.value.set_primary_binding(binding);
+                }
+                else
+                {
+                  const last_binding = dynamic_key.value.get_primary_binding();
+                  keymap.value[dynamic_key.value.target_keys_location[0].layer][dynamic_key.value.target_keys_location[0].id] = last_binding;
+                  const binding = keymap.value[current_layer.value][id];
+                  dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
+                  keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                  dynamic_key_mutex.key_id[0] = id;
+                  dynamic_key.value.set_primary_binding(binding);
+
+                }
+              }
+              triggerRef(dynamic_key);
+              mapDynamicKey(keymap.value, dynamic_keys.value);
+            }
+            break;
+          default:
+            if (keymap.value != undefined) {
+              if (dynamic_key.value.target_keys_location.length == 0) {
+                const binding = keymap.value[current_layer.value][id];
+                dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
+                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                dynamic_key.value.set_primary_binding(binding);
+              }
+              else
+              {
+                const last_binding = dynamic_key.value.get_primary_binding();
+                keymap.value[dynamic_key.value.target_keys_location[0].layer][dynamic_key.value.target_keys_location[0].id] = last_binding;
+                const binding = keymap.value[current_layer.value][id];
+                dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
+                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                dynamic_key.value.set_primary_binding(binding);
+              }
+              mapDynamicKey(keymap.value, dynamic_keys.value);
+            }
+            break;
+        }
+      }
+      break;
+    }
+    case "RGBPanel": {
       rgb_configs.value[id] = JSON.parse(JSON.stringify(rgb_config.value));
       break;
     }
-    case "debug": {
+    case "DebugPanel": {
       if (!debug_raw_chart_option.value.series.some(item => item.id == id)) {
         debug_raw_chart_option.value.series.push({
           id: id,
@@ -286,27 +389,27 @@ const advanced_options = [
 const menuOptions: MenuOption[] = [
   {
     label: t('main_tabs_performance'),
-    key: 'performance',
+    key: 'PerformancePanel',
   },
   {
     label: t('main_tabs_keymap'),
-    key: 'keymap',
+    key: 'KeymapPanel',
   },
   {
     label: t('main_tabs_rgb'),
-    key: 'rgb',
+    key: 'RGBPanel',
   },
   {
     label: t('main_tabs_dynamic_key'),
-    key: 'dynamic_key',
+    key: 'DynamicKeyPanel',
   },
   {
     label: t('main_tabs_debug'),
-    key: 'debug',
+    key: 'DebugPanel',
   },
   {
     label: t('main_tabs_about'),
-    key: 'about',
+    key: 'AboutPanel',
   },
 ];
 
@@ -412,6 +515,18 @@ onMounted(async () => {
   }));
 });
 
+
+const layers = computed(()=>
+  {
+    if (keymap.value!=undefined) {
+      return keymap.value.map((item,index)=>({
+        value: index,
+        label: 'layer ' + index.toString(),
+      }));
+    }
+  }
+);
+
 </script>
 
 <template>
@@ -456,16 +571,28 @@ onMounted(async () => {
         <div style="flex: 1; display: flex; flex-direction: column;">
           <div class="keyboard_render">
             <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
-            <n-button @click="applyToAllKeys">Apply to all</n-button>
+            <div style="display: flex; justify-content: center; min-height: 24px;" >
+              <Transition>
+                <n-radio-group v-model:value="current_layer" size="small" v-if="tab_selection == 'KeymapPanel'||tab_selection == 'DynamicKeyPanel'">
+                  <TransitionGroup name="list">
+                    <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />
+                  </TransitionGroup>
+                </n-radio-group>
+              </Transition>
+            </div>
+            <div style="position: relative;">
+              <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">Apply to all</n-button>
+            </div>
             <n-divider style="margin: 0px;"/>
           </div>
           <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
-            <PerformancePanel v-if="tab_selection == 'performance'"/>
-            <KeymapPanel v-if="tab_selection == 'keymap'"/>
-            <RGBPanel v-if="tab_selection == 'rgb'"/>
-            <DynamicKeyPanel v-if="tab_selection == 'dynamic_key'"/>
-            <DebugPanel v-if="tab_selection == 'debug'"/>
-            <AboutPanel v-if="tab_selection == 'about'"/>
+            <PerformancePanel v-if="tab_selection == 'PerformancePanel'"/>
+            <KeymapPanel v-if="tab_selection == 'KeymapPanel'"/>
+            <RGBPanel v-if="tab_selection == 'RGBPanel'"/>
+            <DynamicKeyPanel v-if="tab_selection == 'DynamicKeyPanel'"/>
+            <DebugPanel v-if="tab_selection == 'DebugPanel'"/>
+            <AboutPanel v-if="tab_selection == 'AboutPanel'"/>
+            <n-back-top/>
           </div>
         </div>
       </div>
@@ -480,11 +607,6 @@ onMounted(async () => {
     height: 80px;
     padding: 24px;
     z-index: 2;
-  }
-  .tabs {
-      position: sticky;
-      top: 80px;
-      white-space: nowrap; /* 防止内容换行 */
   }
   .right {
       background-color: lightgreen;
@@ -520,5 +642,28 @@ onMounted(async () => {
   .keyboard_render {
     flex-shrink: 0;
   }
+  .v-enter-active,
+  .v-leave-active {
+    transition: opacity 0.5s ease;
+  }
   
+  .v-enter-from,
+  .v-leave-to {
+    opacity: 0;
+  }
+
+  .list-move,
+  .list-enter-active,
+  .list-leave-active {
+    transition: all 0.5s ease;
+  }
+  .list-enter-from,
+  .list-leave-to {
+    opacity: 0;
+  } 
+
+  .list-leave-active {
+    position: absolute;
+  }
+
 </style>

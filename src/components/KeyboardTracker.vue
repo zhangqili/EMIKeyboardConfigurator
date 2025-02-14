@@ -6,7 +6,7 @@ import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
 
 const store = useMainStore();
-const {key_binding, selected_layer} = storeToRefs(store);
+const {key_binding, current_layer} = storeToRefs(store);
 
 const modifierKeys = ref<string[]>([]);
 const regularKey = ref<string>();

@@ -17,7 +17,7 @@ const { t } = useI18n();
 const message = useMessage();
 
 const store = useMainStore();
-const { key_binding, selected_layer, keymap, advanced_keys } = storeToRefs(store);
+const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
 
 const dynamic_key_mutex = defineModel<ekc.IDynamicKeyMutex>("dynamic_key",{ 
   default: {
@@ -34,8 +34,6 @@ const dynamic_key_mutex = defineModel<ekc.IDynamicKeyMutex>("dynamic_key",{
     mode: ekc.DynamicKeyMutexMode.DKMutexDistancePriority,
   }
 });
-
-const key_bindings = ref<number[]>([dynamic_key_mutex.value.key[0].binding,dynamic_key_mutex.value.key[1].binding])
 
 const dynamic_key_mutex_modes =
   [
@@ -84,8 +82,14 @@ const dynamic_key_mutex_switch = computed<boolean>({
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_mutex.value != undefined) {
-      key_bindings.value[index] = key_binding.value;
-      dynamic_key_mutex.value.key[index].binding = key_binding.value;
+      if (index == 0) {
+        dynamic_key_mutex.value.bindings[index] = key_binding.value;
+        
+      }
+      else
+      {
+
+      }
       }
   } else {
 
@@ -95,8 +99,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_mutex.value != undefined) {
-      key_bindings.value[index] = key_binding.value;
-      dynamic_key_mutex.value.key[index].binding = key_binding.value;
+      dynamic_key_mutex.value.bindings[index] = key_binding.value;
       }
   } else {
 
@@ -104,13 +107,11 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 }
 </script>
 <template>
-<n-form label-placement="left" label-width="auto" require-mark-placement="right-hanging">
+<n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
   <n-form-item label="Key">
     <div class="keyboard no-select" style="height: 54px;width: 108px;">
-    <Key :width="1" :height="1" :x=0
-    :labels="['111']"></Key>
-    <Key :width="1" :height="1" :x=1
-    :labels="['111']"></Key>
+        <Key v-for="(item,index) in dynamic_key_mutex.target_keys_location" :width="1" :height="1" :x=index
+      :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></Key>
     </div>
   </n-form-item>
   <n-form-item label="Priority mode">
@@ -123,7 +124,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
   </n-form-item>
   <n-form-item label="Key bindings">
     <div class="keyboard no-select" style="height: 54px;">
-      <Key v-for="(item,index) in key_bindings" :width="1" :height="1" :x=index
+      <Key v-for="(item,index) in dynamic_key_mutex.bindings" :width="1" :height="1" :x=index
       :labels="keyCodeToStringLabels(item)"
       @mousedown="(event : MouseEvent) => handleMouseDown(event, index)"
       @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)"></Key>

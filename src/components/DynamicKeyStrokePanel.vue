@@ -17,7 +17,7 @@ const { t } = useI18n();
 const message = useMessage();
 
 const store = useMainStore();
-const { key_binding, selected_layer, keymap, advanced_keys } = storeToRefs(store);
+const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
 
 const dynamic_key_stroke = defineModel<ekc.IDynamicKeyStroke4x4>("dynamic_key",{ 
   default: {
@@ -74,7 +74,7 @@ const release_fully_distance = computed<number>({
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_stroke.value != undefined) {
-      dynamic_key_stroke.value.key_binding[index] = key_binding.value;
+      dynamic_key_stroke.value.bindings[index] = key_binding.value;
       triggerRef(dynamic_key_stroke);
       }
   } else {
@@ -85,7 +85,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_stroke.value != undefined) {
-      dynamic_key_stroke.value.key_binding[index] = key_binding.value;
+      dynamic_key_stroke.value.bindings[index] = key_binding.value;
       triggerRef(dynamic_key_stroke);
       }
   } else {
@@ -102,45 +102,17 @@ function setAction(key : number, index : number, action : number)
 {
   dynamic_key_stroke.value.key_control[key] &= ~(0x0F << (index*4));
   dynamic_key_stroke.value.key_control[key] |= (action << (index*4));
-  console.log(dynamic_key_stroke.value.key_control);
+  //console.log(dynamic_key_stroke.value.key_control);
   triggerRef(dynamic_key_stroke);
 }
-
-const action00 = computed<number>({
-  get: () => (getAction(0,0)),
-  set: (value: number) => {
-    setAction(0,0,value)
-  },
-});
-
-const action01 = computed<number>({
-  get: () => (getAction(0,1)),
-  set: (value: number) => {
-    setAction(0,1,value)
-  },
-});
-
-const action02 = computed<number>({
-  get: () => (getAction(0,2)),
-  set: (value: number) => {
-    setAction(0,2,value)
-  },
-});
-
-const action03 = computed<number>({
-  get: () => (getAction(0,3)),
-  set: (value: number) => {
-    setAction(0,3,value)
-  },
-});
 
 </script>
 <template>
   <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
     <n-form-item label="Key">
       <div class="keyboard no-select" style="height: 54px;">
-      <Key :width="1" :height="1" :x=0
-      :labels="['111']"></Key>
+        <Key v-for="(item,index) in dynamic_key_stroke.target_keys_location" :width="1" :height="1" :x=index
+      :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></Key>
       </div>
     </n-form-item>
     <n-form-item label="Press begin distance">
@@ -157,7 +129,7 @@ const action03 = computed<number>({
     </n-form-item>
     <n-form-item label="Key bindings">
       <div class="keyboard no-select" style="height: 54px;">
-      <Key v-for="(item,index) in dynamic_key_stroke.key_binding" :width="1" :height="1" :x=index
+      <Key v-for="(item,index) in dynamic_key_stroke.bindings" :width="1" :height="1" :x=index
       :labels="keyCodeToStringLabels(item)"
       @mousedown="(event : MouseEvent) => handleMouseDown(event, index)"
       @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)"></Key>

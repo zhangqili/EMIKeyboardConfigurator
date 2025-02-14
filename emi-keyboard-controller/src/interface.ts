@@ -36,12 +36,24 @@ export enum DynamicKeyType{
     DynamicKeyTypeNum = 5,    
 }
 
+export class KeyLocation{
+    layer:number;
+    id:number;
+    constructor() {
+        this.layer = -1;
+        this.id = -1;
+    }
+}
+
 export interface IDynamicKey {
     type : DynamicKeyType | number;
+    target_keys_location : KeyLocation[];
+    bindings : number[];
+    get_primary_binding() : number;
+    set_primary_binding(binding : number) : void;
 }
 
 export interface IDynamicKeyStroke4x4 extends IDynamicKey {
-    key_binding : number[];
     key_control : number[];
     press_begin_distance : number;
     press_fully_distance : number;
@@ -50,12 +62,10 @@ export interface IDynamicKeyStroke4x4 extends IDynamicKey {
 }
 
 export interface IDynamicKeyModTap extends IDynamicKey {
-    key_binding : number[];
     duration : number;
 }
 
 export interface IDynamicKeyToggleKey extends IDynamicKey {
-    key_binding : number;
 }
 
 export enum DynamicKeyMutexMode{
@@ -67,11 +77,10 @@ export enum DynamicKeyMutexMode{
 }
 
 export interface IDynamicKeyToggleKey extends IDynamicKey {
-    key_binding : number;
 }
 
 export interface IDynamicKeyMutex extends IDynamicKey {
-    key : ({id:number;binding:number})[];
+    key_id : number[];
     mode : (DynamicKeyMutexMode | number);
 }
 
@@ -135,6 +144,130 @@ export class AdvancedKey implements IAdvancedKey {
         this.upper_bound = 4096.0;
         this.lower_bound = 0;
     }
+}
+
+export class DynamicKey implements IDynamicKey {
+    type: number;
+    target_keys_location: KeyLocation[];
+    bindings: number[];
+    constructor()
+    {
+        this.type = DynamicKeyType.DynamicKeyNone;
+        this.target_keys_location = [];
+        this.bindings = Array<number>();
+    }
+    get_primary_binding(): number {
+        return 0;
+    }
+    set_primary_binding(binding:number): void {
+        
+    }
+}
+
+export class DynamicKeyStroke4x4 implements IDynamicKeyStroke4x4{
+    type: number;
+    target_keys_location: KeyLocation[];
+    bindings: number[];
+    key_control: number[];
+    press_begin_distance: number;
+    press_fully_distance: number;
+    release_begin_distance: number;
+    release_fully_distance: number;
+    constructor()
+    {
+        this.type = DynamicKeyType.DynamicKeyStroke;
+        this.target_keys_location = [];
+        this.bindings = [0,0,0,0];
+        this.key_control = [0,0,0,0];
+        this.press_begin_distance = 0.25;
+        this.press_fully_distance = 0.75;
+        this.release_begin_distance = 0.75;
+        this.release_fully_distance = 0.25;
+    }
+    get_primary_binding(): number {
+        return this.bindings[0];
+    }
+    set_primary_binding(binding:number): void {
+        this.bindings[0] = binding;
+    }
+}
+
+export class DynamicKeyModTap implements IDynamicKeyModTap {
+    type: number;
+    target_keys_location: KeyLocation[];
+    bindings: number[];
+    duration: number;
+    constructor()
+    {
+        this.type = DynamicKeyType.DynamicKeyModTap;
+        this.target_keys_location = [];
+        this.bindings = [0,0];
+        this.duration = 100;
+    }
+    get_primary_binding(): number {
+        return this.bindings[0];
+    }
+    set_primary_binding(binding: number): void {
+        this.bindings[0] = binding;
+    }
+
+}
+
+export class DynamicKeyToggleKey implements IDynamicKeyToggleKey {
+    type: number;
+    target_keys_location: KeyLocation[];
+    bindings: number[];
+    constructor()
+    {
+        this.type = DynamicKeyType.DynamicKeyToggleKey;
+        this.target_keys_location = [];
+        this.bindings = [0];
+    }
+    get_primary_binding(): number {
+        return this.bindings[0];
+    }
+    set_primary_binding(binding: number): void {
+        this.bindings[0] = binding;
+    }
+
+}
+
+export class DynamicKeyMutex implements IDynamicKeyMutex {
+    key_id: number[];
+    bindings: number[];
+    mode: number;
+    type: number;
+    target_keys_location: KeyLocation[];
+    is_key2_primary: boolean;
+    constructor() 
+    {
+        this.type = DynamicKeyType.DynamicKeyMutex;
+        this.target_keys_location = [];
+        this.bindings = [0,0];
+        this.key_id = [0,0];
+        this.mode = DynamicKeyMutexMode.DKMutexDistancePriority;
+        this.is_key2_primary = false;
+    }
+    get_primary_binding(): number {
+        if (this.is_key2_primary) {
+            return this.bindings[1];
+        }
+        else
+        {
+            return this.bindings[0];
+        }
+    }
+    set_primary_binding(binding: number): void {
+        if (this.is_key2_primary) {
+            this.bindings[1] = binding;
+        }
+        else
+        {
+            this.bindings[0] = binding;
+        }
+        this.is_key2_primary = !this.is_key2_primary;
+    }
+
 }
 
 export enum KeyCode {
@@ -228,6 +361,7 @@ export enum KeyCode {
 
     MouseCollection = 0xa5,
     LayerControl = 0xa6,
+    DynamicKey = 0xa7,
     FN = 0xac,
     KeyUser = 0xFD,
     KeySystem = 0xFE,
@@ -322,6 +456,8 @@ export interface IKeyboardController{
     set_rgb_configs(configs : IRGBConfig[]) : void;
     get_keymap() : number[][];
     set_keymap(keymap : number[][]) : void;
+    get_dynamic_keys(): IDynamicKey[];
+    set_dynamic_keys(dynamic_keys: IDynamicKey[]): void;
     fetch_config() : void;
     save_config() : void;
     flash_config() : void;
@@ -342,6 +478,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     rgb_switch: boolean;
     rgb_configs: IRGBConfig[];
     keymap: number[][];
+    dynamic_keys: IDynamicKey[];
     config_index:number;
     private listeners: { [key: string]: EventListener[] } = {};
 
@@ -351,6 +488,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.rgb_switch = false;
         this.rgb_configs = new Array<IRGBConfig>();
         this.keymap = new Array<Array<number>>();
+        this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
         this.config_index = 0;
     }
 
@@ -443,6 +581,13 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     set_keymap(keymap: number[][]): void {
         this.keymap = keymap;
+    }
+    get_dynamic_keys(): IDynamicKey[] {
+        return this.dynamic_keys;
+
+    }
+    set_dynamic_keys(dynamic_keys: IDynamicKey[]): void {
+        this.dynamic_keys = dynamic_keys;
     }
     fetch_config() : void
     {

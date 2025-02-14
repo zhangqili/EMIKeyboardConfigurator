@@ -12,12 +12,12 @@ const props = defineProps(["keys"]);
 
 // 计算 min-height 的值，基于 keys 中 key.y 的最大值
 const minHeight = computed(() => {
-  const maxY = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.y)) : 0;
-  return `${(maxY + 1) * usize.value}px`; // 添加偏移量以确保足够空间
+  const maxY = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.y + key.height)) : 0;
+  return `${(maxY) * usize.value}px`; // 添加偏移量以确保足够空间
 });
 const minWidth = computed(() => {
-  const maxX = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.x)) : 0;
-  return `${(maxX + 1) * usize.value}px`; // 添加偏移量以确保足够空间
+  const maxX = props.keys.length > 0 ? Math.max(...props.keys.map((key : kle.Key) => key.x + key.width)) : 0;
+  return `${(maxX) * usize.value}px`; // 添加偏移量以确保足够空间
 });
 
 
@@ -45,14 +45,13 @@ function keyButtonClick(index: number) {
 
 <template>
   <div style="display: grid; place-items: center;">
-    <div class="keyboard no-select" :style="{ minHeight: minHeight, minWidth: minWidth }">
-      <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" @click="keyButtonClick(index)" :key="index" :x="key.x" :y="key.y"
+    <div class="keyboard no-select" :style="{ minHeight: minHeight, minWidth: minWidth, transition: 'all 0.5s ease'}">
+      <TransitionGroup name="list">
+        <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" :key="index" :x="key.x" :y="key.y"
         :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
         :rotation-angle="key.rotation_angle" :labels="key.labels" :color="key.color" />
+      </TransitionGroup>
     </div>
-    <slot>
-      
-    </slot>
   </div>
 </template>
 
@@ -60,6 +59,20 @@ function keyButtonClick(index: number) {
 .keyboard {
   background-color: transparent;
   padding: 10px;
+}
+
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+}
+
+.list-leave-active {
+  position: absolute;
 }
 
 </style>

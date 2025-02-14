@@ -76,6 +76,13 @@ export async function get_layout_json(){
     return CONTROLLER.get_layout_json() as string;
 }
 
+export async function get_dynamic_keys(){
+    return CONTROLLER.get_dynamic_keys() as ekc.IDynamicKey[];
+}
+export async function set_dynamic_keys(dynamic_keys: ekc.IDynamicKey[]){
+    return CONTROLLER.set_dynamic_keys(dynamic_keys);
+}
+
 export async function connect_device(){
     var d = await CONTROLLER.detect();
     if (d.length > 0) {

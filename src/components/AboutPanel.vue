@@ -19,7 +19,7 @@ const message = useMessage();
 const dynamic_key = ref<ekc.IDynamicKey>();
 
 const store = useMainStore();
-const { key_binding, selected_layer, keymap, advanced_keys } = storeToRefs(store);
+const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
 
 </script>
 

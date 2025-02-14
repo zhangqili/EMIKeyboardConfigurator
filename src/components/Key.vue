@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref } from "vue";
 import * as kle from "@ijprest/kle-serial";
+import { Translation } from "vue-i18n";
 
 const props = defineProps([
   "x",
@@ -40,6 +41,7 @@ const keycap_size = computed(() => {
     position: "absolute",
     left: usize.value * props.x + "px",
     top: usize.value * props.y + "px",
+    transition: 'all 0.5s ease'
   };
 });
 

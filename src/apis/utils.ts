@@ -1,4 +1,4 @@
-import { KeyCode, KeyMode, KeyModifier, MouseKeycode, SystemKeycode, RGBMode, Srgb, LayerControlKeycode } from "emi-keyboard-controller";
+import { KeyCode, KeyMode, KeyModifier, MouseKeycode, SystemKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex } from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
@@ -337,6 +337,7 @@ export const keyCodeToKeyName: { [key in KeyCode]: string } = {
   [KeyCode.ExSel]: 'ExSel',
   [KeyCode.MouseCollection]: 'Mouse',
   [KeyCode.LayerControl]: 'Layer Ctrl',
+  [KeyCode.DynamicKey]: 'Dynamic Key',
   [KeyCode.FN]: 'FN',
   [KeyCode.KeyUser]: 'User',
   [KeyCode.KeySystem]: 'System',
@@ -383,6 +384,15 @@ export const LayerControlToKeyName: { [key in LayerControlKeycode]: string } = {
   [LayerControlKeycode.LayerTurnOn]: 'Turn on',
   [LayerControlKeycode.LayerTurnOff]: 'Turn off',
   [LayerControlKeycode.LayerToggle]: 'Toggle',
+};
+
+export const DynamicKeyToKeyName: { [key in DynamicKeyType]: string } = {
+  [DynamicKeyType.DynamicKeyNone]: "None",
+  [DynamicKeyType.DynamicKeyStroke]: 'Dynamic Key Stroke',
+  [DynamicKeyType.DynamicKeyModTap]: 'Mod Tap',
+  [DynamicKeyType.DynamicKeyToggleKey]: 'Toggle Key',
+  [DynamicKeyType.DynamicKeyMutex]: 'Mutex',
+  [DynamicKeyType.DynamicKeyTypeNum]: ""
 };
 
 export function layoutControlToString(keybinding: number): string {
@@ -432,6 +442,10 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
       case KeyCode.KeyUser:
         mainString = "User " + modifier.toString();
         break;
+      case KeyCode.DynamicKey:
+        subString = "Dynamic Key"
+        mainString = modifier.toString();
+        break;
     }
   }
   return {mainString: mainString, subString: subString};
@@ -442,12 +456,46 @@ export function keyCodeToStringLabels(keycode: number): string[] {
   const label_item = keyCodeToString(keycode)
   return [label_item.subString,,,,,,label_item.mainString] as string[];
 }
-
-
 export interface DebugDataItem {
     name: string;
     value: [number, number];
 }
+
+export function mapDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey[]) : void{
+  keymap.forEach((layer,layer_index)=>{
+    layer.forEach((item,item_index)=>{
+      if ((item & 0xFF) == KeyCode.DynamicKey) {
+        keymap[layer_index][item_index] = KeyCode.NoEvent;
+      }
+    })
+  })
+  dynamic_keys.forEach((item,index)=>{
+    if (item.type != DynamicKeyType.DynamicKeyNone) {
+      item.target_keys_location.forEach((location)=>{
+        keymap[location.layer][location.id] = (KeyCode.DynamicKey & 0xFF | ((index & 0xFF) << 8));
+      });
+    }
+  });
+};
+
+export function mapBackDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey[]) : void{
+  keymap.forEach((layer,layer_index)=>{
+    layer.forEach((item,item_index)=>{
+      if ((item & 0xFF) == KeyCode.DynamicKey) {
+        console.log(1);
+        const index = ((item >> 8) & 0xFF);
+        if (dynamic_keys[index].type == DynamicKeyType.DynamicKeyMutex) {
+          dynamic_keys[index].target_keys_location[(dynamic_keys[index] as DynamicKeyMutex).is_key2_primary ? 1 : 0]={layer: layer_index, id: item_index};
+          (dynamic_keys[index] as DynamicKeyMutex).is_key2_primary = !(dynamic_keys[index] as DynamicKeyMutex).is_key2_primary;
+        }
+        else
+        {
+          dynamic_keys[index].target_keys_location[0]={layer: layer_index, id: item_index};
+        }
+      }
+    })
+  });
+};
 
 export class KeyConfig extends kle.Key {
   declare color: string;
