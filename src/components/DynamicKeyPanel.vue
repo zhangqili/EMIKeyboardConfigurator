@@ -254,97 +254,118 @@ const dynamic_key_mutex= computed({
 <!--     <n-radio-group v-model:value="dynamic_key_type" name="radiobuttongroup1">
       <n-radio-button v-for="mode in dynamic_key_types" :key="mode.value" :value="mode.value" :label="mode.label" />
     </n-radio-group> -->
-    <div style="flex: 1" v-if="dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone">
-      <n-layout has-sider>
-        <n-layout-sider>
-          <n-card title="Create a new dynamic key">
-            <n-menu
-              :options="dynamic_key_types" @update:value="handleDynamicTypeSelection">
-            </n-menu>
-          </n-card>
-        </n-layout-sider>
-        <n-layout-content>
-          <n-card title="Existing dynamic key">
-            <n-data-table
-                :columns="columns" :data="data">
-            </n-data-table>
-          </n-card>
-        </n-layout-content>
-      </n-layout>
+    <div style="flex: 1; display: flex; height: 100%;" v-if="dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone">
+      <n-card style="height: 100%; flex:400px;" title="Create a new dynamic key">
+        <n-menu
+          :options="dynamic_key_types" @update:value="handleDynamicTypeSelection">
+        </n-menu>
+      </n-card>
+      <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;"
+      title="Existing dynamic key">
+        <n-scrollbar>
+        <n-data-table
+            :columns="columns" :data="data">
+        </n-data-table>
+        </n-scrollbar>
+      </n-card>
     </div>
-    <div style="flex: 1; display: flex; flex-direction: column;" v-if="!(dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone)">
-      <div style="flex: 1; display: flex; flex-direction: column;">
-        <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyStroke"
-            content-style="flex: 1; display: flex;" title="Dynamic Key Stroke">
-            <DynamicKeyStrokePanel style="flex: 1;" v-model:dynamic_key="dynamic_key_stroke"></DynamicKeyStrokePanel>
-            <div style="flex: 1;">
+      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyStroke"
+        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Dynamic Key Stroke">
+          <div style="flex: 1; display: flex; height: 100%;">
+            <n-scrollbar style="flex: 1; overflow-y: auto;">
+            <DynamicKeyStrokePanel v-model:dynamic_key="dynamic_key_stroke"></DynamicKeyStrokePanel>
+            </n-scrollbar>
+            <n-scrollbar style="flex: 1; overflow-y: auto;">
+            <div>
               <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
               <n-divider></n-divider>
               <KeySelector v-model:binding="key_binding"></KeySelector>
             </div>
-          <template #header-extra>
-            <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-                Cancel
-            </n-button>
-            <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-                Confirm
-            </n-button>
-          </template>
-        </n-card>
-        <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyModTap"
-          content-style="flex: 1; display: flex;" title="Mod Tap">
-          <DynamicKeyModTapPanel style="flex: 1;" v-model:dynamic_key="dynamic_key_mt"></DynamicKeyModTapPanel>
-          <div style="flex: 1;">
+          </n-scrollbar>
+          </div>
+        <template #header-extra>
+          <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
+              Cancel
+          </n-button>
+          <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
+              Confirm
+          </n-button>
+        </template>
+      </n-card>
+      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyModTap"
+        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Mod Tap">
+
+        <div style="flex: 1; display: flex; height: 100%;">
+          <n-scrollbar style="flex: 1; overflow-y: auto;">
+            <DynamicKeyModTapPanel v-model:dynamic_key="dynamic_key_mt"></DynamicKeyModTapPanel>
+          </n-scrollbar>
+          <n-scrollbar style="flex: 1; overflow-y: auto;">
+            <div>
+              <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+              <n-divider></n-divider>
+              <KeySelector v-model:binding="key_binding"></KeySelector>
+            </div>
+          </n-scrollbar>
+        </div>
+        <template #header-extra>
+          <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
+              Cancel
+          </n-button>
+          <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
+              Confirm
+          </n-button>
+        </template>
+      </n-card>
+      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyToggleKey"
+        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Toggle Key">
+
+        <div style="flex: 1; display: flex; height: 100%;">
+          <n-scrollbar style="flex: 1; overflow-y: auto;">
+            <DynamicKeyToggleKeyPanel v-model:dynamic_key="dynamic_key_tk"></DynamicKeyToggleKeyPanel>
+          </n-scrollbar>
+          <n-scrollbar style="flex: 1; overflow-y: auto;">
+          <div style="flex: 1; overflow-y: auto;">
             <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
             <n-divider></n-divider>
             <KeySelector v-model:binding="key_binding"></KeySelector>
           </div>
-          <template #header-extra>
-            <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-                Cancel
-            </n-button>
-            <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-                Confirm
-            </n-button>
-          </template>
-        </n-card>
-        <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyToggleKey"
-          content-style="flex: 1; display: flex;" title="Toggle Key">
-          <DynamicKeyToggleKeyPanel style="flex: 1;" v-model:dynamic_key="dynamic_key_tk"></DynamicKeyToggleKeyPanel>
-          <div style="flex: 1;">
-              <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
-              <n-divider></n-divider>
-              <KeySelector v-model:binding="key_binding"></KeySelector>
-            </div>
-          <template #header-extra>
-            <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-                Cancel
-            </n-button>
-            <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-                Confirm
-            </n-button>
-          </template>
-        </n-card>
-        <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyMutex"
-          content-style="flex: 1; display: flex;" title="Mutex Key">
-          <DynamicKeyMutexPanel style="flex: 1;" v-model:dynamic_key="dynamic_key_mutex"></DynamicKeyMutexPanel>
-          <div style="flex: 1;">
-              <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
-              <n-divider></n-divider>
-              <KeySelector v-model:binding="key_binding"></KeySelector>
-            </div>
-          <template #header-extra>
-            <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-                Cancel
-            </n-button>
-            <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-                Confirm
-            </n-button>
-          </template>
-        </n-card>
-      </div>
-    </div>
+          </n-scrollbar>
+        </div>
+        <template #header-extra>
+          <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
+              Cancel
+          </n-button>
+          <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
+              Confirm
+          </n-button>
+        </template>
+      </n-card>
+      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyMutex"
+      style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Mutex Key">
+      <div style="flex: 1; display: flex; height: 100%;">
+        <n-scrollbar style="flex: 1; overflow-y: auto;">
+          <DynamicKeyMutexPanel v-model:dynamic_key="dynamic_key_mutex"></DynamicKeyMutexPanel>
+        </n-scrollbar>
+        <n-scrollbar style="flex: 1; overflow-y: auto;">
+          <div>
+            <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+            <n-divider></n-divider>
+            <KeySelector v-model:binding="key_binding"></KeySelector>
+          </div>
+
+        </n-scrollbar>
+        </div>
+        <template #header-extra>
+          <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
+              Cancel
+          </n-button>
+          <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
+              Confirm
+          </n-button>
+        </template>
+      </n-card>
 </template>
 
 <style scoped>
+
 </style>

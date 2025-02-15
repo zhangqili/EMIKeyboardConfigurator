@@ -584,9 +584,11 @@ const layers = computed(()=>
                 </n-radio-group>
               </Transition>
             </div>
-            <div style="position: relative;">
-              <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">Apply to all</n-button>
-            </div>
+            <Transition>
+              <div style="position: relative;"  v-if="tab_selection == 'PerformancePanel'||tab_selection == 'KeymapPanel'||tab_selection == 'RGBPanel'">
+                <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">Apply to all</n-button>
+              </div>
+            </Transition>
             <n-divider style="margin: 0px;"/>
           </div>
           <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">

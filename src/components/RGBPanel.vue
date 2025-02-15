@@ -87,7 +87,7 @@ const modes =
 </script>
 
 <template>
-  <n-card>
+  <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
     <n-space vertical>
       <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
         <n-form-item label="Mode">

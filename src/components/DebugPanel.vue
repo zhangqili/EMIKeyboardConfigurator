@@ -151,7 +151,8 @@ const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
 </script>
 
 <template>
-    <n-card>
+    <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
+        <n-scrollbar>
         <n-flex vertical>
             <n-flex>
                 <div>Enable Debug</div>
@@ -176,6 +177,8 @@ const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
                 </n-collapse-item>
             </n-collapse> -->
         </n-flex>
+
+        </n-scrollbar>
     </n-card>
 </template>
 

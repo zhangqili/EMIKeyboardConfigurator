@@ -95,7 +95,7 @@ const modes =
 </script>
 
 <template>
-  <n-card>
+  <n-card style="height: 100%;">
     <n-space vertical>
       <n-radio-group v-model:value="mode" name="radiobuttongroup1">
         <n-radio-button v-for="mode in modes" :key="mode.value" :value="mode.value" :label="mode.label" />

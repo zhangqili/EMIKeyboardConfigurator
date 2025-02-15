@@ -24,8 +24,8 @@ const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store)
 </script>
 
 <template>
-  <n-card>
-    <n-a href="https://github.com/zhangqili/EMIKeyboardConfigurator">Visit source on Github</n-a>
+  <n-card title="About" style="height: 100%;">
+    <n-a href="https://github.com/zhangqili/EMIKeyboardConfigurator">View source on Github</n-a>
   </n-card>
 </template>
 
