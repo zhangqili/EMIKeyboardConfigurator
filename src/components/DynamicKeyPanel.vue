@@ -251,9 +251,7 @@ const dynamic_key_mutex= computed({
 
 </script>
 <template>
-<!--     <n-radio-group v-model:value="dynamic_key_type" name="radiobuttongroup1">
-      <n-radio-button v-for="mode in dynamic_key_types" :key="mode.value" :value="mode.value" :label="mode.label" />
-    </n-radio-group> -->
+  <div style="flex: 1; display: flex; height: 100%;">
     <div style="flex: 1; display: flex; height: 100%;" v-if="dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone">
       <n-card style="height: 100%; flex:400px;" title="Create a new dynamic key">
         <n-menu
@@ -364,6 +362,7 @@ const dynamic_key_mutex= computed({
           </n-button>
         </template>
       </n-card>
+  </div>
 </template>
 
 <style scoped>

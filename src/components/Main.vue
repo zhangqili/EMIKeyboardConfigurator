@@ -530,6 +530,17 @@ const layers = computed(()=>
     }
   }
 );
+const currentPanel = computed(() => {
+      switch (tab_selection.value) {
+        case 'PerformancePanel': return PerformancePanel;
+        case 'KeymapPanel': return KeymapPanel;
+        case 'RGBPanel': return RGBPanel;
+        case 'DynamicKeyPanel': return DynamicKeyPanel;
+        case 'DebugPanel': return DebugPanel;
+        case 'AboutPanel': return AboutPanel;
+        default: return null;
+      }
+    });
 
 </script>
 
@@ -592,13 +603,9 @@ const layers = computed(()=>
             <n-divider style="margin: 0px;"/>
           </div>
           <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
-            <PerformancePanel v-if="tab_selection == 'PerformancePanel'"/>
-            <KeymapPanel v-if="tab_selection == 'KeymapPanel'"/>
-            <RGBPanel v-if="tab_selection == 'RGBPanel'"/>
-            <DynamicKeyPanel v-if="tab_selection == 'DynamicKeyPanel'"/>
-            <DebugPanel v-if="tab_selection == 'DebugPanel'"/>
-            <AboutPanel v-if="tab_selection == 'AboutPanel'"/>
-            <n-back-top/>
+            <Transition name="fade" mode="out-in" >
+              <component :is="currentPanel"/>
+            </Transition>
           </div>
         </div>
       </div>
@@ -672,4 +679,11 @@ const layers = computed(()=>
     position: absolute;
   }
 
+  /* 淡入淡出动画 */
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity 0.25s ease-in-out;
+  }
+  .fade-enter-from, .fade-leave-to {
+    opacity: 0;
+  }
 </style>

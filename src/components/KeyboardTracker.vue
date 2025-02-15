@@ -80,9 +80,9 @@ onBeforeUnmount(() => {
         </n-button>
         <n-button strong secondary>{{ regularKey || 'NoEvent' }}</n-button>
       </div>
-      <div style="height: 100px; background: #222222; border-radius: 3px; border: 1px;">
-        
-      </div>
+      <n-card style="height: 100px;">
+        Press any key here
+      </n-card>
     </n-flex>
   </div>
 </template>
