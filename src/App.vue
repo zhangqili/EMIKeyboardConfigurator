@@ -17,23 +17,6 @@ async function greet() {
 
 window.addEventListener("contextmenu", (e) => e.preventDefault(), false);
 
-
-onMounted(async ()=>{
-  //var c = new controller.TrinityKeypadController();
-  //var d = await c.detect();
-  //console.log(d);
-  //await c.connect(d[0]);
-  //let send_buf = new Uint8Array(63);
-  //send_buf[9] = 1;
-  //send_buf[10] = 2;
-  //send_buf[11] = 3;
-  //send_buf[12] = 4;
-  //send_buf[13] = 5;
-  //c.write(send_buf);
-  //c.system_reset();
-})
-
-//c.write(send_buf);
 </script>
 
 <template>

@@ -8,7 +8,7 @@ import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
 import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels} from "../apis/utils";
-import { KeyCode } from 'emi-keyboard-controller';
+import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import Key from "./Key.vue";
 
@@ -102,7 +102,6 @@ function setAction(key : number, index : number, action : number)
 {
   dynamic_key_stroke.value.key_control[key] &= ~(0x0F << (index*4));
   dynamic_key_stroke.value.key_control[key] |= (action << (index*4));
-  //console.log(dynamic_key_stroke.value.key_control);
   triggerRef(dynamic_key_stroke);
 }
 

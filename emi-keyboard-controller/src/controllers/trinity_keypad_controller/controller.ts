@@ -1,4 +1,4 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode, KeyboardController, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, DynamicKey, IDynamicKey } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode, KeyboardController, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, DynamicKey, IDynamicKey } from './../../interface';
 
 const layout = `[[{"a": 7},"Z","X","C","V"]]`;
 
@@ -41,49 +41,49 @@ export class TrinityKeypadController extends KeyboardController {
         }));
         this.keymap = [
             [
-                KeyCode.Z,
-                KeyCode.X,
-                KeyCode.C,
-                KeyCode.V,
-                KeyCode.F8,
-                KeyCode.F12,
-                (KeyCode.F2 | ((KeyModifier.KeyLeftShift) << 8)),
-                KeyCode.F2,
-                KeyCode.LayerControl | ((2) << 8) | (LayerControlKeycode.LayerToggle << 12),
-                KeyCode.LayerControl | ((1) << 8) | (LayerControlKeycode.LayerToggle << 12),
-                KeyCode.Escape,
-                KeyCode.MouseCollection | ((MouseKeycode.MouseWheelUp) << 8),
-                KeyCode.MouseCollection | ((MouseKeycode.MouseWheelDown) << 8),
+                Keycode.Z,
+                Keycode.X,
+                Keycode.C,
+                Keycode.V,
+                Keycode.F8,
+                Keycode.F12,
+                (Keycode.F2 | ((KeyModifier.KeyLeftShift) << 8)),
+                Keycode.F2,
+                Keycode.LayerControl | ((2) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                Keycode.LayerControl | ((1) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                Keycode.Escape,
+                Keycode.MouseCollection | ((MouseKeycode.MouseWheelUp) << 8),
+                Keycode.MouseCollection | ((MouseKeycode.MouseWheelDown) << 8),
             ],
             [
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyUser | (0 << 8),
-                KeyCode.LayerControl | ((1) << 8) | (LayerControlKeycode.LayerToggle << 12),
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyUser | (0 << 8),
+                Keycode.LayerControl | ((1) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
             ],
             [
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.LayerControl | ((2) << 8) | (LayerControlKeycode.LayerToggle << 12),
-                KeyCode.KeyUser | (0 << 8),
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
-                KeyCode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.LayerControl | ((2) << 8) | (LayerControlKeycode.LayerToggle << 12),
+                Keycode.KeyUser | (0 << 8),
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
+                Keycode.KeyTransparent,
             ]
         ];
     }
@@ -107,7 +107,7 @@ export class TrinityKeypadController extends KeyboardController {
         this.device = device;
         var result : boolean = false;
         if (! this.device.opened) {
-            result = (await device.open()) == undefined
+            result = (await this.device.open()) == undefined
         }
         if (result) {
             this.request_config();
@@ -261,7 +261,7 @@ export class TrinityKeypadController extends KeyboardController {
             }
             this.dynamic_keys[dynamic_key_index] = dynamic_key;
         case 0x80: 
-            console.log("finished");
+            console.debug("finished");
             this.config_index = buf[1];
             this.dispatchEvent(new Event('updateData'));
             break;
@@ -286,19 +286,19 @@ export class TrinityKeypadController extends KeyboardController {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0x80;
         let res = this.write(send_buf);
-        console.log("Wrote Save Command: {:?} byte(s)", res);
+        console.debug("Wrote Save Command: {:?} byte(s)", res);
     }
     system_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0x81;
         let res = this.write(send_buf);
-        console.log("Wrote System Reset Command: {:?} byte(s)", res);
+        console.debug("Wrote System Reset Command: {:?} byte(s)", res);
     }
     factory_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0x82;
         let res = this.write(send_buf);
-        console.log("Wrote Factory Reset Command: {:?} byte(s)", res);
+        console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
     request_config(): void {
         let send_buf = new Uint8Array(63);
@@ -330,7 +330,7 @@ export class TrinityKeypadController extends KeyboardController {
             let key_bytes = AdvancedKeyToBytes(item);
             send_buf.set(key_bytes,3);
             let res = this.write(send_buf);
-            console.log("Wrote Advanced Key: {:?} byte(s)", res);
+            console.debug("Wrote Advanced Key: {:?} byte(s)", res);
 
         });
     }
@@ -342,7 +342,7 @@ export class TrinityKeypadController extends KeyboardController {
         send_buf[2] = this.rgb_switch ? 1 : 0;
         {
             let res = this.write(send_buf);
-            console.log("Wrote RGB Configs: {:?} byte(s)", res);
+            console.debug("Wrote RGB Configs: {:?} byte(s)", res);
         }
         send_buf[1] = 0x02;
         const rgb_page_num = Math.ceil(this.rgb_configs.length / 6);
@@ -352,7 +352,7 @@ export class TrinityKeypadController extends KeyboardController {
                 let rgb_index = rgb_page_index * 6 + j;
                 if (rgb_index < this.rgb_configs.length ){
                     let item = this.rgb_configs[rgb_index];
-                    console.log(rgb_index);
+                    console.debug(rgb_index);
                     send_buf[2 + 0 + 9 * j] = rgb_index;
                     send_buf[2 + 1 + 9 * j] = item.mode;
                     send_buf[2 + 2 + 9 * j] = item.rgb.red;
@@ -366,7 +366,7 @@ export class TrinityKeypadController extends KeyboardController {
                 }
             }
             let res = this.write(send_buf);
-            console.log("Wrote RGB Configs: {:?} byte(s)", res);
+            console.debug("Wrote RGB Configs: {:?} byte(s)", res);
         }
     }
 
@@ -391,9 +391,9 @@ export class TrinityKeypadController extends KeyboardController {
                 layer_seg.forEach((value,k) => {
                     dataView.setUint16(4 + k * 2,value,true);
                 });
-                //console.log(send_buf);
+                //console.debug(send_buf);
                 let res = this.write(send_buf);
-                console.log("Wrote Keymap: {:?} byte(s)", res);
+                console.debug("Wrote Keymap: {:?} byte(s)", res);
             }
         });
     }
@@ -405,7 +405,7 @@ export class TrinityKeypadController extends KeyboardController {
             send_buf[1] = 0x04;
             send_buf[2] = i;
             let dataView = new DataView(send_buf.buffer);
-            console.log(item);
+            console.debug(item);
             switch (item.type) {
                 case DynamicKeyType.DynamicKeyStroke:
                     const dynamic_key_stroke = item as DynamicKeyStroke4x4;
@@ -447,7 +447,7 @@ export class TrinityKeypadController extends KeyboardController {
                     break;
             }
             let res = this.write(send_buf);
-            console.log("Wrote dynamic key: {:?} byte(s)", res);
+            console.debug("Wrote dynamic key: {:?} byte(s)", res);
         });
     }
     

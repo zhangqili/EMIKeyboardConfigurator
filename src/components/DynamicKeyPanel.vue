@@ -12,7 +12,7 @@ import DynamicKeyToggleKeyPanel from './DynamicKeyToggleKeyPanel.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
 import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, mapDynamicKey } from "../apis/utils";
-import { KeyCode } from 'emi-keyboard-controller';
+import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import Key from "./Key.vue";
 
@@ -194,7 +194,7 @@ function cancelDynamicKey()
     deleteDynamicKey(dynamic_key_index.value);
   }
   dynamic_key.value = new ekc.DynamicKey();
-  console.log(dynamic_key);
+  console.debug(dynamic_key);
   if (keymap.value != undefined) {
     mapDynamicKey(keymap.value, dynamic_keys.value);
   }

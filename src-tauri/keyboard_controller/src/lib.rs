@@ -36,7 +36,7 @@ pub trait KeyboardController : Send{
 }
 
 #[derive(Debug)]
-pub enum KeyCode {
+pub enum Keycode {
     // Special Keys
     NoEvent = 0x00,
     ErrorOverflow = 0x01,

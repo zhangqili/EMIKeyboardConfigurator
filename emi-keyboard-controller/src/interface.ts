@@ -270,7 +270,7 @@ export class DynamicKeyMutex implements IDynamicKeyMutex {
 
 }
 
-export enum KeyCode {
+export enum Keycode {
     // Special Keys
     NoEvent = 0x00,
     ErrorOverflow = 0x01,
@@ -362,9 +362,11 @@ export enum KeyCode {
     MouseCollection = 0xa5,
     LayerControl = 0xa6,
     DynamicKey = 0xa7,
+    ConsumerCollection = 0xa8,
+    SystemCollection = 0xa9,
     FN = 0xac,
     KeyUser = 0xFD,
-    KeySystem = 0xFE,
+    KeyboardOperation = 0xFE,
     KeyTransparent = 0xFF,
 }
 
@@ -390,17 +392,18 @@ export enum MouseKeycode {
     MouseWheelUp = 5,
     MouseWheelDown = 6,
 }
-export enum SystemKeycode {
-    SystemReset = 0,
-    SystemFactoryReset = 1,
-    SystemSave = 2,
-    SystemBootloader = 3,
-    SystemDebug = 4,
-    SystemResetToDefault = 5,
-    SystemConfig0 = 0x10,
-    SystemConfig1 = 0x11,
-    SystemConfig2 = 0x12,
-    SystemConfig3 = 0x13,
+export enum KeyboardKeycode {
+    KeyboardReboot = 0,
+    KeyboardFactoryReset = 1,
+    KeyboardSave = 2,
+    KeyboardBootloader = 3,
+    KeyboardToggleDebug = 4,
+    KeyboardResetToDefault = 5,
+    KeyboardToggleNKRO = 6,
+    KeyboardConfig0 = 0x10,
+    KeyboardConfig1 = 0x11,
+    KeyboardConfig2 = 0x12,
+    KeyboardConfig3 = 0x13,
 }
 export enum LayerControlKeycode {
     LayerMomentary = 0,
@@ -408,6 +411,77 @@ export enum LayerControlKeycode {
     LayerTurnOff = 2,
     LayerToggle = 3,
 }
+
+export enum ConsumerKeycode {
+    // 15.5 Display Controls
+    ConsumerSnapshot = 0x00,
+    ConsumerBrightnessUp = 0x01,
+    ConsumerBrightnessDown = 0x02,
+    
+    // 15.7 Transport Controls
+    ConsumerTransportRecord = 0x03,
+    ConsumerTransportFastForward = 0x04,
+    ConsumerTransportRewind = 0x05,
+    ConsumerTransportNextTrack = 0x06,
+    ConsumerTransportPrevTrack = 0x07,
+    ConsumerTransportStop = 0x08,
+    ConsumerTransportEject = 0x09,
+    ConsumerTransportRandomPlay = 0x0A,
+    ConsumerTransportStopEject = 0x0B,
+    ConsumerTransportPlayPause = 0x0C,
+    
+    // 15.9.1 Audio Controls - Volume
+    ConsumerAudioMute = 0x0D,
+    ConsumerAudioVolUp = 0x0E,
+    ConsumerAudioVolDown = 0x0F,
+    
+    // 15.15 Application Launch Buttons
+    ConsumerAlCcConfig = 0x10,
+    ConsumerAlEmail = 0x11,
+    ConsumerAlCalculator = 0x12,
+    ConsumerAlLocalBrowser = 0x13,
+    ConsumerAlLock = 0x14,
+    ConsumerAlControlPanel = 0x15,
+    ConsumerAlAssistant = 0x16,
+    ConsumerAlKeyboardLayout = 0x17,
+    
+    // 15.16 Generic GUI Application Controls
+    ConsumerAcNew = 0x18,
+    ConsumerAcOpen = 0x19,
+    ConsumerAcClose = 0x1A,
+    ConsumerAcExit = 0x1B,
+    ConsumerAcMaximize = 0x1C,
+    ConsumerAcMinimize = 0x1D,
+    ConsumerAcSave = 0x1E,
+    ConsumerAcPrint = 0x1F,
+    ConsumerAcProperties = 0x20,
+    ConsumerAcUndo = 0x21,
+    ConsumerAcCopy = 0x22,
+    ConsumerAcCut = 0x23,
+    ConsumerAcPaste = 0x24,
+    ConsumerAcSelectAll = 0x25,
+    ConsumerAcFind = 0x26,
+    ConsumerAcSearch = 0x27,
+    ConsumerAcHome = 0x28,
+    ConsumerAcBack = 0x29,
+    ConsumerAcForward = 0x2A,
+    ConsumerAcStop = 0x2B,
+    ConsumerAcRefresh = 0x2C,
+    ConsumerAcBookmarks = 0x2D,
+    ConsumerAcNextKeyboardLayoutSelect = 0x2E,
+    ConsumerAcDesktopShowAllWindows = 0x2F,
+    ConsumerAcSoftKeyLeft = 0x30,
+};
+  
+
+export enum SystemRawKeycode {
+    SystemPowerDown           = 0x81,
+    SystemSleep               = 0x82,
+    SystemWakeUp              = 0x83,
+    SystemRestart             = 0x8F,
+    SystemDisplayToggleIntExt = 0xB5,
+};
+
 
 // Generic color interfaces
 export interface Srgb {

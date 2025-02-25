@@ -1,4 +1,4 @@
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, KeyCode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, SystemKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex } from './../../interface';
 
 const layout = `[["Esc","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7","*\\n8","(\\n9",")\\n0","_\\n-","+\\n=",{"w":2},"Backspace"],[{"w":1.5},"Tab","Q","W","E","R","T","Y","U","I","O","P","{\\n[","}\\n]",{"w":1.5},"|\\n\\\\"],[{"w":1.75},"Caps Lock","A","S","D","F","G","H","J","K","L",":\\n;","\\"\\n'",{"w":2.25},"Enter"],[{"w":2},"Shift","Z","X","C","V","B","N","M","<\\n,",">\\n.","?\\n/","Shift","↑","Del"],[{"w":1.25},"Ctrl",{"w":1.25},"Win",{"w":1.25},"Alt",{"a":7,"w":6.25},"",{"a":4},"Alt","Fn","←","↓","→"]]`;
 
@@ -41,39 +41,39 @@ export class OholeoKeyboardController extends KeyboardController {
         }));
         this.keymap = [
                 [
-                    KeyCode.Escape/*0*/,    KeyCode.Key1/*1*/,  KeyCode.Key2/*2*/,  KeyCode.Key3/*3*/,  KeyCode.Key4/*4*/,  KeyCode.Key5/*5*/,  KeyCode.Key6/*6*/,  KeyCode.Key7/*7*/,  KeyCode.Key8/*8*/,  KeyCode.Key9/*9*/,  KeyCode.Key0/*10*/,     KeyCode.Minus/*11*/,        KeyCode.Equal/*12*/,        KeyCode.Backspace/*13*/,
-                    KeyCode.Tab/*14*/,      KeyCode.Q/*15*/,    KeyCode.W/*16*/,    KeyCode.E/*17*/,    KeyCode.R/*18*/,    KeyCode.T/*19*/,    KeyCode.Y/*20*/,    KeyCode.U/*21*/,    KeyCode.I/*22*/,    KeyCode.O/*23*/,    KeyCode.P/*24*/,        KeyCode.LeftBrace/*25*/,    KeyCode.RightBrace/*26*/,   KeyCode.Backslash/*27*/,
-                    KeyCode.CapsLock/*28*/, KeyCode.A/*29*/,    KeyCode.S/*30*/,    KeyCode.D/*31*/,    KeyCode.F/*32*/,    KeyCode.G/*33*/,    KeyCode.H/*34*/,    KeyCode.J/*35*/,    KeyCode.K/*36*/,    KeyCode.L/*37*/,    KeyCode.Semicolon/*38*/,KeyCode.Apostrophe/*39*/,   KeyCode.Enter/*40*/,
-                    ((KeyModifier.KeyLeftShift) << 8)/*41*/,    KeyCode.Z/*42*/,    KeyCode.X/*43*/,    KeyCode.C/*44*/,    KeyCode.V/*45*/,    KeyCode.B/*46*/,    KeyCode.N/*47*/,    KeyCode.M/*48*/,    KeyCode.Comma/*49*/,KeyCode.Dot/*50*/,      KeyCode.Slash/*51*/,        ((KeyModifier.KeyRightShift) << 8)/*52*/, KeyCode.UpArrow/*53*/, KeyCode.Delete/*54*/,
-                    ((KeyModifier.KeyLeftCtrl) << 8)/*55*/, ((KeyModifier.KeyLeftGui) << 8)/*56*/, ((KeyModifier.KeyLeftAlt) << 8)/*57*/, KeyCode.Spacebar/*58*/, ((KeyModifier.KeyRightAlt) << 8)/*59*/,   KeyCode.LayerControl | (1<<8) | (LayerControlKeycode.LayerMomentary << 12)/*60*/, KeyCode.LeftArrow/*61*/, KeyCode.DownArrow/*62*/, KeyCode.RightArrow/*63*/,
+                    Keycode.Escape/*0*/,    Keycode.Key1/*1*/,  Keycode.Key2/*2*/,  Keycode.Key3/*3*/,  Keycode.Key4/*4*/,  Keycode.Key5/*5*/,  Keycode.Key6/*6*/,  Keycode.Key7/*7*/,  Keycode.Key8/*8*/,  Keycode.Key9/*9*/,  Keycode.Key0/*10*/,     Keycode.Minus/*11*/,        Keycode.Equal/*12*/,        Keycode.Backspace/*13*/,
+                    Keycode.Tab/*14*/,      Keycode.Q/*15*/,    Keycode.W/*16*/,    Keycode.E/*17*/,    Keycode.R/*18*/,    Keycode.T/*19*/,    Keycode.Y/*20*/,    Keycode.U/*21*/,    Keycode.I/*22*/,    Keycode.O/*23*/,    Keycode.P/*24*/,        Keycode.LeftBrace/*25*/,    Keycode.RightBrace/*26*/,   Keycode.Backslash/*27*/,
+                    Keycode.CapsLock/*28*/, Keycode.A/*29*/,    Keycode.S/*30*/,    Keycode.D/*31*/,    Keycode.F/*32*/,    Keycode.G/*33*/,    Keycode.H/*34*/,    Keycode.J/*35*/,    Keycode.K/*36*/,    Keycode.L/*37*/,    Keycode.Semicolon/*38*/,Keycode.Apostrophe/*39*/,   Keycode.Enter/*40*/,
+                    ((KeyModifier.KeyLeftShift) << 8)/*41*/,    Keycode.Z/*42*/,    Keycode.X/*43*/,    Keycode.C/*44*/,    Keycode.V/*45*/,    Keycode.B/*46*/,    Keycode.N/*47*/,    Keycode.M/*48*/,    Keycode.Comma/*49*/,Keycode.Dot/*50*/,      Keycode.Slash/*51*/,        ((KeyModifier.KeyRightShift) << 8)/*52*/, Keycode.UpArrow/*53*/, Keycode.Delete/*54*/,
+                    ((KeyModifier.KeyLeftCtrl) << 8)/*55*/, ((KeyModifier.KeyLeftGui) << 8)/*56*/, ((KeyModifier.KeyLeftAlt) << 8)/*57*/, Keycode.Spacebar/*58*/, ((KeyModifier.KeyRightAlt) << 8)/*59*/,   Keycode.LayerControl | (1<<8) | (LayerControlKeycode.LayerMomentary << 12)/*60*/, Keycode.LeftArrow/*61*/, Keycode.DownArrow/*62*/, Keycode.RightArrow/*63*/,
                 ],
                 [ 
-                    KeyCode.Grave,          KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4, KeyCode.F5, KeyCode.F6, KeyCode.F7, KeyCode.F8, KeyCode.F9, KeyCode.F10, KeyCode.F11, KeyCode.F12, KeyCode.Backspace,
-                    KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.PrintScreen, KeyCode.ScrollLock, KeyCode.Pause,
-                    KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent,                         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.Insert, KeyCode.PageUp, KeyCode.LayerControl | (2<<8) | (LayerControlKeycode.LayerMomentary << 12),
-                    KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.Home, KeyCode.PageDown, KeyCode.End,
+                    Keycode.Grave,          Keycode.F1, Keycode.F2, Keycode.F3, Keycode.F4, Keycode.F5, Keycode.F6, Keycode.F7, Keycode.F8, Keycode.F9, Keycode.F10, Keycode.F11, Keycode.F12, Keycode.Backspace,
+                    Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.PrintScreen, Keycode.ScrollLock, Keycode.Pause,
+                    Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,                         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.Insert, Keycode.PageUp, Keycode.LayerControl | (2<<8) | (LayerControlKeycode.LayerMomentary << 12),
+                    Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.Home, Keycode.PageDown, Keycode.End,
                 ],
                 [ 
-                    KeyCode.KeySystem | (SystemKeycode.SystemBootloader << 8),  KeyCode.KeySystem | (SystemKeycode.SystemConfig0 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig1 << 8), KeyCode.KeySystem | (SystemKeycode.SystemConfig2 << 8),     KeyCode.KeySystem | (SystemKeycode.SystemConfig3 << 8), KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeySystem | (SystemKeycode.SystemResetToDefault << 8),
-                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemReset << 8),       KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyUser | (16 << 8),                                KeyCode.KeyTransparent,                                 KeyCode.KeySystem | (SystemKeycode.SystemSave << 8),    KeyCode.KeySystem | (SystemKeycode.SystemDebug << 8),   KeyCode.KeySystem | (SystemKeycode.SystemFactoryReset << 8),KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent,                                                                                             KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyUser | (1 << 8),                             KeyCode.KeyUser | (0 << 8), KeyCode.KeyUser | (0xFF << 8),  KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent, KeyCode.KeyTransparent,
-                    KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,                                     KeyCode.KeyTransparent,                                 KeyCode.KeyTransparent,     KeyCode.KeyTransparent,         KeyCode.KeyTransparent, 
+                    Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardBootloader << 8),  Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardConfig0 << 8), Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardConfig1 << 8), Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardConfig2 << 8),     Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardConfig3 << 8), Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardResetToDefault << 8),
+                    Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardReboot << 8),       Keycode.KeyTransparent,                                 Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
+                    Keycode.KeyUser | (16 << 8),                                Keycode.KeyTransparent,                                 Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardSave << 8),    Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardToggleDebug << 8),   Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardFactoryReset << 8),Keycode.KeyTransparent,                                 Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,                                                                                             Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                     Keycode.KeyUser | (1 << 8),                             Keycode.KeyUser | (0 << 8), Keycode.KeyUser | (0xFF << 8),  Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, 
                 ],
-                Array(64).fill(KeyCode.KeyTransparent),
-                Array(64).fill(KeyCode.KeyTransparent)
+                Array(64).fill(Keycode.KeyTransparent),
+                Array(64).fill(Keycode.KeyTransparent)
         ];
 
     }
 
     async detect(): Promise<HIDDevice[]> {
         return await navigator.hid.requestDevice({
-            filters: [{ vendorId: 1156, productId: 22319, usagePage:0xFFC0}]  // 使用示例，过滤器可以根据需求进行调整
+            filters: [{ vendorId: 1156, productId: 22319, usagePage: 0xFF60}]  // 使用示例，过滤器可以根据需求进行调整
         });;
     }
     write(buf: Uint8Array): number {
-        this.device?.sendReport(2, buf);
+        this.device?.sendReport(0, buf);
         return (buf.byteLength + 1);
     }
     read(buf: Uint8Array): number {
@@ -86,7 +86,7 @@ export class OholeoKeyboardController extends KeyboardController {
         this.device = device;
         var result : boolean = false;
         if (! this.device.opened) {
-            result = (await device.open()) == undefined
+            result = (await this.device.open()) == undefined
         }
         if (result) {
             this.request_config();
@@ -189,7 +189,7 @@ export class OholeoKeyboardController extends KeyboardController {
             }
             break;
         case 4:   
-            console.log(buf);
+            console.debug(buf);
             const dynamic_key_index = buf[1];
             var dynamic_key : IDynamicKey;
             const dynamic_key_type = dataView.getUint32(2,true);
@@ -265,19 +265,19 @@ export class OholeoKeyboardController extends KeyboardController {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0x80;
         let res = this.write(send_buf);
-        console.log("Wrote Save Command: {:?} byte(s)", res);
+        console.debug("Wrote Save Command: {:?} byte(s)", res);
     }
     system_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0x81;
         let res = this.write(send_buf);
-        console.log("Wrote System Reset Command: {:?} byte(s)", res);
+        console.debug("Wrote System Reset Command: {:?} byte(s)", res);
     }
     factory_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0x82;
         let res = this.write(send_buf);
-        console.log("Wrote Factory Reset Command: {:?} byte(s)", res);
+        console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
     request_config(): void {
         let send_buf = new Uint8Array(63);
@@ -309,7 +309,7 @@ export class OholeoKeyboardController extends KeyboardController {
             let key_bytes = AdvancedKeyToBytes(item);
             send_buf.set(key_bytes,3);
             let res = this.write(send_buf);
-            console.log("Wrote Advanced Key: {:?} byte(s)", res);
+            console.debug("Wrote Advanced Key: {:?} byte(s)", res);
 
         });
     }
@@ -321,7 +321,7 @@ export class OholeoKeyboardController extends KeyboardController {
         send_buf[2] = this.rgb_switch ? 1 : 0;
         {
             let res = this.write(send_buf);
-            console.log("Wrote RGB Configs: {:?} byte(s)", res);
+            console.debug("Wrote RGB Configs: {:?} byte(s)", res);
         }
         send_buf[1] = 0x02;
         const rgb_page_num = Math.ceil(this.rgb_configs.length / 6);
@@ -331,7 +331,7 @@ export class OholeoKeyboardController extends KeyboardController {
                 let rgb_index = rgb_page_index * 6 + j;
                 if (rgb_index < this.rgb_configs.length ){
                     let item = this.rgb_configs[rgb_index];
-                    console.log(rgb_index);
+                    console.debug(rgb_index);
                     send_buf[2 + 0 + 9 * j] = rgb_index;
                     send_buf[2 + 1 + 9 * j] = item.mode;
                     send_buf[2 + 2 + 9 * j] = item.rgb.red;
@@ -346,7 +346,7 @@ export class OholeoKeyboardController extends KeyboardController {
                 }
             }
             let res = this.write(send_buf);
-            console.log("Wrote RGB Configs: {:?} byte(s)", res);
+            console.debug("Wrote RGB Configs: {:?} byte(s)", res);
         }
     }
 
@@ -371,9 +371,9 @@ export class OholeoKeyboardController extends KeyboardController {
                 layer_seg.forEach((value,k) => {
                     dataView.setUint16(4 + k * 2,value,true);
                 });
-                //console.log(send_buf);
+                //console.debug(send_buf);
                 let res = this.write(send_buf);
-                console.log("Wrote Keymap: {:?} byte(s)", res);
+                console.debug("Wrote Keymap: {:?} byte(s)", res);
             }
         });
     }
@@ -385,7 +385,7 @@ export class OholeoKeyboardController extends KeyboardController {
             send_buf[1] = 0x04;
             send_buf[2] = i;
             let dataView = new DataView(send_buf.buffer);
-            console.log(item);
+            console.debug(item);
             switch (item.type) {
                 case DynamicKeyType.DynamicKeyStroke:
                     const dynamic_key_stroke = item as DynamicKeyStroke4x4;
@@ -427,7 +427,7 @@ export class OholeoKeyboardController extends KeyboardController {
                     break;
             }
             let res = this.write(send_buf);
-            console.log("Wrote dynamic key: {:?} byte(s)", res);
+            console.debug("Wrote dynamic key: {:?} byte(s)", res);
         });
     }
 

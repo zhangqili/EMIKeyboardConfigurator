@@ -48,7 +48,7 @@ const isConnected = ref<boolean>(false);
 
 const key_containers = computed(() => {
   var keys = keyboard_keys.value;
-  //console.log(tab_selection.value);
+  //console.debug(tab_selection.value);
   switch (tab_selection.value) {
     case "PerformancePanel": {
       keys.forEach((item, index) => {
@@ -84,7 +84,7 @@ const key_containers = computed(() => {
       keys.forEach((item, index) => {
         item.labels = item.labels.map(() => "");
         if (keymap.value != undefined) {
-          if((keymap.value[current_layer.value][index] & 0xFF) == ekc.KeyCode.DynamicKey)
+          if((keymap.value[current_layer.value][index] & 0xFF) == ekc.Keycode.DynamicKey)
           {
             const strings = keyCodeToString(keymap.value[current_layer.value][index]);
             const dk_index = ((keymap.value[current_layer.value][index] >> 8) & 0xFF)
@@ -197,7 +197,7 @@ async function saveCommand() {
     apis.set_rgb_configs(rgb_configs.value);
     apis.set_dynamic_keys(dynamic_keys.value);
     var result = await apis.save_config();
-    console.log(result);
+    console.debug(result);
 
   }
 }
@@ -205,7 +205,7 @@ async function saveCommand() {
 async function flashCommand() {
   if (isConnected.value) {
     var result = await apis.flash_config();
-    console.log(result);
+    console.debug(result);
 
   }
 }
@@ -225,7 +225,7 @@ async function getController() {
   }
   current_layer.value = 0;
   triggerRef(keymap);
-  //console.log(rgb_configs.value);
+  //console.debug(rgb_configs.value);
 }
 
 function updateData()
@@ -239,7 +239,7 @@ function updateData()
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
   await apis.set_device(option.label as string);
   var layout_json: string = await apis.get_layout_json();
-  //console.log(layout_json);
+  //console.debug(layout_json);
   renderKeyboardFromJson(layout_json);
   getController();
   apis.addEventListener('updateData',(event: Event) => {updateData();});
@@ -279,7 +279,7 @@ function applyToSelectedKey(id: number) {
                 dynamic_key_mutex.is_key2_primary = false;
                 const binding = keymap.value[current_layer.value][id];
                 dynamic_key_mutex.target_keys_location[0] = {layer: current_layer.value, id: id};
-                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
                 dynamic_key.value = dynamic_key_mutex;
                 dynamic_key_mutex.key_id[0] = id;
@@ -290,7 +290,7 @@ function applyToSelectedKey(id: number) {
                 dynamic_key_mutex.is_key2_primary = true;
                 const binding = keymap.value[current_layer.value][id];
                 dynamic_key_mutex.target_keys_location[1] = {layer: current_layer.value, id: id};
-                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
                 dynamic_key_mutex.key_id[1] = id;
                 dynamic_key.value = dynamic_key_mutex;
@@ -302,7 +302,7 @@ function applyToSelectedKey(id: number) {
                   keymap.value[dynamic_key.value.target_keys_location[1].layer][dynamic_key.value.target_keys_location[1].id] = last_binding;
                   const binding = keymap.value[current_layer.value][id];
                   dynamic_key.value.target_keys_location[1] = {layer: current_layer.value, id: id};
-                  keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                  keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                   dynamic_key_mutex.key_id[1] = id;
                   dynamic_key.value.set_primary_binding(binding);
                 }
@@ -312,7 +312,7 @@ function applyToSelectedKey(id: number) {
                   keymap.value[dynamic_key.value.target_keys_location[0].layer][dynamic_key.value.target_keys_location[0].id] = last_binding;
                   const binding = keymap.value[current_layer.value][id];
                   dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
-                  keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                  keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                   dynamic_key_mutex.key_id[0] = id;
                   dynamic_key.value.set_primary_binding(binding);
 
@@ -327,7 +327,7 @@ function applyToSelectedKey(id: number) {
               if (dynamic_key.value.target_keys_location.length == 0) {
                 const binding = keymap.value[current_layer.value][id];
                 dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
-                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                 dynamic_key.value.set_primary_binding(binding);
               }
               else
@@ -336,7 +336,7 @@ function applyToSelectedKey(id: number) {
                 keymap.value[dynamic_key.value.target_keys_location[0].layer][dynamic_key.value.target_keys_location[0].id] = last_binding;
                 const binding = keymap.value[current_layer.value][id];
                 dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
-                keymap.value[current_layer.value][id] = (ekc.KeyCode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                 dynamic_key.value.set_primary_binding(binding);
               }
               mapDynamicKey(keymap.value, dynamic_keys.value);
