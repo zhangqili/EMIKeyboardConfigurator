@@ -90,11 +90,11 @@ export class TrinityKeypadController extends KeyboardController {
 
     async detect(): Promise<HIDDevice[]> {
         return await navigator.hid.requestDevice({
-            filters: [{ vendorId: 0xFFFF, productId: 0xFFFF, usagePage: 0xFF00 }]  // 使用示例，过滤器可以根据需求进行调整
+            filters: [{ vendorId: 0xFFFF, productId: 0xFFFF, usagePage: 0xFF60 }]  // 使用示例，过滤器可以根据需求进行调整
         });;
     }
     write(buf: Uint8Array): number {
-        this.device?.sendReport(1, buf);
+        this.device?.sendReport(0, buf);
         return (buf.byteLength + 1);
     }
     read(buf: Uint8Array): number {

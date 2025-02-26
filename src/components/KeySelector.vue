@@ -213,16 +213,6 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                             {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
                     </n-thing>
                 </n-list-item>
-                <n-list-item>
-                    <n-thing title="Mouse">
-                        <n-button v-for="(key, code) in Object.keys(MouseKeycode)
-                            //.filter(key => isNaN(Number(key)))
-                            .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelDown + 1)"
-                            :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                            @click="handleKeycodeClick(key)">
-                            {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
-                    </n-thing>
-                </n-list-item>
             </n-list>
         </n-tab-pane>
         <n-tab-pane name="Others" title="others">
