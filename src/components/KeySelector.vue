@@ -241,7 +241,7 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                     <n-thing title="Consumer">
                         <n-button v-for="(key, code) in Object.keys(ConsumerKeycode)
                             //.filter(key => isNaN(Number(key)))
-                            .slice(ConsumerKeycode.ConsumerSnapshot, ConsumerKeycode.ConsumerAcSoftKeyLeft + 1)"
+                            .slice(0, 0x31)"
                             :type="((binding & 0xFF) == Keycode.ConsumerCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.ConsumerCollection)">
                             {{ ConsumerKeyToKeyName[key as unknown as ConsumerKeycode] }}</n-button>
