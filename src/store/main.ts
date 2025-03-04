@@ -1,13 +1,15 @@
 import { AdvancedKey, DynamicKey, DynamicKeyType, IAdvancedKey, IDynamicKey, IRGBConfig, RGBConfig } from 'emi-keyboard-controller'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { DebugDataItem } from '../apis/utils';
+import { DebugDataItem, KeyConfig } from '../apis/utils';
 import { LineSeriesOption, SeriesOption } from 'echarts';
 
 export const useMainStore = defineStore('main', 
     // 为了完整类型推理，推荐使用箭头函数
     () => {
         // 所有这些属性都将自动推断出它们的类型
+        const keyboard_keys = ref<KeyConfig[]>([]);
+
         const selected_device = ref<string | undefined>(undefined);
         const advanced_key = ref<IAdvancedKey>(new AdvancedKey());
         const rgb_config = ref<IRGBConfig>(new RGBConfig());
@@ -92,6 +94,8 @@ export const useMainStore = defineStore('main',
         //keymap: [][] as number[][],
         //hasChanged: true,
         return {
+            keyboard_keys,
+
             selected_device,
             advanced_key,
             rgb_config,

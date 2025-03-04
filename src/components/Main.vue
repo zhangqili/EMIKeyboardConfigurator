@@ -37,13 +37,13 @@ const {
   selected_config_file_index,
   debug_raw_chart_option, 
   debug_value_chart_option,
-  dynamic_keys
+  dynamic_keys,
+  keyboard_keys
 } = storeToRefs(store);
 
 const message = useMessage();
 const notification = useNotification();
 const tab_selection = ref<string | null>("PerformancePanel");
-const keyboard_keys = ref<KeyConfig[]>([]);
 const isConnected = ref<boolean>(false);
 
 const key_containers = computed(() => {
