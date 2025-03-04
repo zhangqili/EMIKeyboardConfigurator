@@ -6,6 +6,7 @@ export class TrinityKeypadController extends KeyboardController {
     device: HIDDevice | undefined;
     ADVANCED_KEY_NUM: number = 4;
     config_file_number:number = 4;
+    private handleInputReport: (event: HIDInputReportEvent) => void;
 
     constructor() {
         super();
@@ -86,6 +87,10 @@ export class TrinityKeypadController extends KeyboardController {
                 Keycode.KeyTransparent,
             ]
         ];
+        this.handleInputReport = (event: HIDInputReportEvent) => {
+            const { data } = event;
+            this.prase_buffer(new Uint8Array(data.buffer));
+        };
     }
 
     async detect(): Promise<HIDDevice[]> {
@@ -111,15 +116,13 @@ export class TrinityKeypadController extends KeyboardController {
         }
         if (result) {
             this.request_config();
-            this.device.addEventListener("inputreport", (event : HIDInputReportEvent) => {
-                const { data, device, reportId } = event;
-                this.prase_buffer(new Uint8Array(data.buffer));
-            });
+            this.device.addEventListener("inputreport", this.handleInputReport);
         }
         return result;
     }
     disconnect(): void {
         this.device?.close();
+        this.device?.removeEventListener("inputreport", this.handleInputReport);
     }
     prase_buffer(buf: Uint8Array): void {
         switch (buf[0]) {

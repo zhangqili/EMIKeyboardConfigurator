@@ -100,7 +100,7 @@ function applyRainbowEffect() {
     rgb_configs.value[index].rgb.red = real_color.r;
     rgb_configs.value[index].rgb.green = real_color.g;
     rgb_configs.value[index].rgb.blue = real_color.b;
-    rgb_configs.value[index].mode = ekc.RGBMode.RgbModeCycle;
+    rgb_configs.value[index].mode = rgb_config.value.mode;
     rgb_configs.value[index].speed = isNaN(speed.value) ? 0 : Math.round(speed.value) / 1000;
   });
 }
@@ -120,7 +120,7 @@ function applyRainbowEffect() {
           <n-color-picker v-model:value="color" :show-preview="true" :show-alpha="false"/>
         </n-form-item>
         <n-form-item label="Speed">
-          <n-input-number v-model:value="speed" placeholder="Speed" :min="0" :max="100" />
+          <n-input-number v-model:value="speed" placeholder="Speed"/>
         </n-form-item>
       </n-form>
       <n-collapse>
