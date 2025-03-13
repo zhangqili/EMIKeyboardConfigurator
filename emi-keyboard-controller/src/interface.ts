@@ -532,6 +532,7 @@ export interface IKeyboardController{
     set_keymap(keymap : number[][]) : void;
     get_dynamic_keys(): IDynamicKey[];
     set_dynamic_keys(dynamic_keys: IDynamicKey[]): void;
+    reset_to_default() : void;
     fetch_config() : void;
     save_config() : void;
     flash_config() : void;
@@ -548,22 +549,17 @@ export interface IKeyboardController{
 
 export abstract class KeyboardController implements IKeyboardController, EventTarget{
     device: HIDDevice | undefined;
-    advanced_keys: AdvancedKey[];
-    rgb_switch: boolean;
-    rgb_configs: IRGBConfig[];
-    keymap: number[][];
-    dynamic_keys: IDynamicKey[];
-    config_index:number;
+    advanced_keys!: AdvancedKey[];
+    rgb_switch!: boolean;
+    rgb_configs!: IRGBConfig[];
+    keymap!: number[][];
+    dynamic_keys!: IDynamicKey[];
+    config_index!: number;
     private listeners: { [key: string]: EventListener[] } = {};
 
     constructor() {
         this.device = undefined;
-        this.advanced_keys = new Array<IAdvancedKey>();
-        this.rgb_switch = false;
-        this.rgb_configs = new Array<IRGBConfig>();
-        this.keymap = new Array<Array<number>>();
-        this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
-        this.config_index = 0;
+        this.reset_to_default();
     }
 
     // 添加事件监听
@@ -662,6 +658,15 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     set_dynamic_keys(dynamic_keys: IDynamicKey[]): void {
         this.dynamic_keys = dynamic_keys;
+    }
+    reset_to_default() : void
+    {
+        this.advanced_keys = new Array<IAdvancedKey>();
+        this.rgb_switch = false;
+        this.rgb_configs = new Array<IRGBConfig>();
+        this.keymap = new Array<Array<number>>();
+        this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
+        this.config_index = 0;
     }
     fetch_config() : void
     {

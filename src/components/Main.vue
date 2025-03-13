@@ -19,6 +19,12 @@ import KeymapPanel from "./KeymapPanel.vue";
 import DebugPanel from "./DebugPanel.vue";
 import KeyboardRender from "./KeyboardRender.vue";
 import AboutPanel from "./AboutPanel.vue";
+import cloneDeep from "lodash/cloneDeep";
+
+interface Window {
+  showOpenFilePicker?: any;
+  showSaveFilePicker?: any;
+}
 
 const { t } = useI18n();
 const store = useMainStore();
@@ -234,6 +240,9 @@ function updateData()
     mapBackDynamicKey(keymap.value, dynamic_keys.value);
   }
   triggerRef(advanced_keys);
+  triggerRef(keymap);
+  triggerRef(rgb_configs);
+  triggerRef(dynamic_keys);
 }
 
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
@@ -260,7 +269,7 @@ function applyToSelectedKey(id: number) {
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
     case "PerformancePanel": {
-      advanced_keys.value[id] = JSON.parse(JSON.stringify(advanced_key.value));
+      advanced_keys.value[id] = cloneDeep(advanced_key.value);
       break;
     }
     case "KeymapPanel": {
@@ -347,7 +356,7 @@ function applyToSelectedKey(id: number) {
       break;
     }
     case "RGBPanel": {
-      rgb_configs.value[id] = JSON.parse(JSON.stringify(rgb_config.value));
+      rgb_configs.value[id] = cloneDeep(rgb_config.value);
       break;
     }
     case "DebugPanel": {
@@ -372,6 +381,103 @@ function applyToSelectedKey(id: number) {
     default: {
       break;
     }
+  }
+}
+
+
+interface IConfig {
+  device : string;
+  advanced_keys : ekc.IAdvancedKey[];
+  rgb_switch : boolean;
+  keymap : number[][];
+  rgb_configs : ekc.IRGBConfig[];
+  dynamic_keys : ekc.IDynamicKey[];
+}
+
+
+async function loadDefaultConfig() {
+  apis.reset_to_default();
+  advanced_keys.value = await apis.get_advanced_keys();
+  keymap.value = await apis.get_keymap();
+  rgb_configs.value = await apis.get_rgb_configs();
+  dynamic_keys.value = await apis.get_dynamic_keys();
+}
+
+async function importConfig() {
+  if (!(window as any).showOpenFilePicker) {
+    return;
+  }
+  try {
+    // 让用户选择 JSON 文件
+    const [fileHandle] = await (window as any).showOpenFilePicker({
+      types: [{ description: "JSON Files", accept: { "application/json": [".json"] } }],
+      multiple: false,
+    });
+
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    const configData = JSON.parse(text) as IConfig;
+    if (selected_device.value == configData.device) {
+      advanced_keys.value.forEach((item,index)=>{
+        advanced_keys.value[index] = configData.advanced_keys[index];
+      });
+      if (keymap.value != undefined) {
+        keymap.value.forEach((item,index)=>{
+          item = configData.keymap[index];
+        });
+      }
+      rgb_configs.value.forEach((item,index)=>{
+        rgb_configs.value[index] = configData.rgb_configs[index];
+        });
+      dynamic_keys.value.forEach((item,index)=>{
+        dynamic_keys.value[index] = configData.dynamic_keys[index];
+      });
+      mapDynamicKey(keymap.value, dynamic_keys.value);
+    }
+    else
+    {
+      message.error("Device mismatch");
+      return;
+    }
+    message.success("Config file imported.");
+  } catch (error) {
+    message.error("Config file import failed.");
+    console.error(error);
+  }
+}
+
+async function exportConfig() {
+  const jsonStr = JSON.stringify(
+    {
+      device : selected_device.value,
+      advanced_keys : advanced_keys.value,
+      keymap : keymap.value,
+      rgb_switch : true,
+      rgb_configs : rgb_configs.value,
+      dynamic_keys : dynamic_keys.value,
+    }, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+
+  if ((window as any).showSaveFilePicker) {
+    try {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: "keyboard-config.json",
+        types: [
+          {
+            description: "JSON Files",
+            accept: { "application/json": [".json"] },
+          },
+        ],
+      });
+
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      message.success("Config file exported.");
+    } catch (error) {
+      console.error(error);
+    }
+  } else {
   }
 }
 
@@ -564,8 +670,6 @@ const currentPanel = computed(() => {
           </n-gi>
           <n-gi :span="1">
             <n-flex justify="end">
-              <!--<n-button >Import</n-button>
-              <n-button >Export</n-button>-->
               <n-button>{{ t('toolbar_settings') }}</n-button>
             </n-flex>
           </n-gi>
@@ -573,11 +677,28 @@ const currentPanel = computed(() => {
       </n-layout-header>
       <div class="container">
         <n-layout-sider :width="200" style="flex-shrink: 0;">
+          <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
+            <n-select style="font-size: 14px;" size="large" placeholder="Config file" @update:value="handleUpdateFileValue" 
+            v-model:value="selected_config_file_index" v-model:options="files"></n-select>
+          </div>
           <n-space vertical>
-            <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px; margin-bottom: -8px;">
-              <n-select style="font-size: 14px;" size="large" placeholder="Config file" @update:value="handleUpdateFileValue" 
-              v-model:value="selected_config_file_index" v-model:options="files"></n-select>
-            </div>
+            <n-grid :cols="3" style=" margin-top: 8px; margin-bottom: -8px;" justify="space-between">
+              <n-gi>
+                <div style="margin-left: 8px;margin-right: 4px;">
+                  <n-button size="tiny" block @click="loadDefaultConfig">Default</n-button>
+                </div>
+              </n-gi>
+              <n-gi>
+                <div style="margin-left: 4px;margin-right: 4px;">
+                  <n-button size="tiny" block @click="importConfig">Import</n-button>
+                </div>
+              </n-gi>
+              <n-gi>
+                <div style="margin-left: 4px;margin-right: 8px;">
+                  <n-button size="tiny" block @click="exportConfig">Export</n-button>
+                </div>
+              </n-gi>
+            </n-grid>
             <n-menu
               :indent="20" :options="menuOptions" v-model:value="tab_selection">
             </n-menu>
@@ -685,5 +806,10 @@ const currentPanel = computed(() => {
   }
   .fade-enter-from, .fade-leave-to {
     opacity: 0;
+  }
+
+  .nav-end {
+    display: flex;
+    align-items: center;
   }
 </style>

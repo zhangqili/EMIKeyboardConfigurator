@@ -15,6 +15,7 @@ import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, key
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import Key from "./Key.vue";
+import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 
@@ -74,7 +75,7 @@ function deleteDynamicKey(index : number)
 function editDynamicKey(index : number)
 {
   edit_mode = true;
-  dynamic_key_cache = JSON.parse(JSON.stringify(dynamic_keys.value[index]));
+  dynamic_key_cache = cloneDeep(dynamic_keys.value[index]);
   dynamic_key.value = dynamic_keys.value[index];
   dynamic_key_index.value = index;
 }

@@ -18,7 +18,7 @@ export const useMainStore = defineStore('main',
 
         const advanced_keys = ref<IAdvancedKey[]>([]);
         const rgb_configs = ref<IRGBConfig[]>([]);
-        const keymap = ref<number[][] | undefined>(undefined);
+        const keymap = ref<number[][]>([]);
         const dynamic_keys = ref<IDynamicKey[]>([]);
 
         const key_binding = ref<number>(0);

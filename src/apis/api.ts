@@ -83,6 +83,10 @@ export async function set_dynamic_keys(dynamic_keys: ekc.IDynamicKey[]){
     return CONTROLLER.set_dynamic_keys(dynamic_keys);
 }
 
+export async function reset_to_default(){
+    return CONTROLLER.reset_to_default();
+}
+
 export async function connect_device(){
     var d = await CONTROLLER.detect();
     if (d.length > 0) {
