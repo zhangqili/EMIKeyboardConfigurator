@@ -85,14 +85,14 @@ export class TrinityKeypadController extends KeyboardController {
         case 0: // Advanced Key
             const key_index = dataView.getUint16(2, true);
             this.advanced_keys[key_index].mode = buf[4];
-            this.advanced_keys[key_index].activation_value = dataView.getFloat32(5 + 4 * 0, true);
-            this.advanced_keys[key_index].deactivation_value = dataView.getFloat32(5 + 4 * 1, true);
-            this.advanced_keys[key_index].trigger_distance = dataView.getFloat32(5 + 4 * 2, true);
-            this.advanced_keys[key_index].release_distance = dataView.getFloat32(5 + 4 * 3, true);
-            this.advanced_keys[key_index].trigger_speed = dataView.getFloat32(5 + 4 * 4, true);
-            this.advanced_keys[key_index].release_speed = dataView.getFloat32(5 + 4 * 5, true);
-            this.advanced_keys[key_index].upper_deadzone = dataView.getFloat32(5 + 4 * 6, true);
-            this.advanced_keys[key_index].lower_deadzone = dataView.getFloat32(5 + 4 * 7, true);
+            this.advanced_keys[key_index].activation_value = dataView.getFloat32(8 + 4 * 0, true);
+            this.advanced_keys[key_index].deactivation_value = dataView.getFloat32(8 + 4 * 1, true);
+            this.advanced_keys[key_index].trigger_distance = dataView.getFloat32(8 + 4 * 2, true);
+            this.advanced_keys[key_index].release_distance = dataView.getFloat32(8 + 4 * 3, true);
+            this.advanced_keys[key_index].trigger_speed = dataView.getFloat32(8 + 4 * 4, true);
+            this.advanced_keys[key_index].release_speed = dataView.getFloat32(8 + 4 * 5, true);
+            this.advanced_keys[key_index].upper_deadzone = dataView.getFloat32(8 + 4 * 6, true);
+            this.advanced_keys[key_index].lower_deadzone = dataView.getFloat32(8 + 4 * 7, true);
             //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].upper_bound = fill_in_float(&buf[2 + 4 * 8]);
             //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].lower_bound = fill_in_float(&buf[2 + 4 * 9]);
             break;

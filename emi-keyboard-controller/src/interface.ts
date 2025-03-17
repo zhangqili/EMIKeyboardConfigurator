@@ -719,9 +719,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
 
 
 export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
-    const bytes = new Uint8Array(45); // 总共 45 字节
+    const bytes = new Uint8Array(48); // 总共 45 字节
     bytes[0] = key.mode; // 写入 mode (1 字节)
-
+    bytes[1] = key.calibration_mode;
     const fields = [
         key.activation_value,
         key.deactivation_value,
@@ -735,7 +735,7 @@ export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
         key.lower_bound,
     ];
 
-    let offset = 1; // 从第 2 个字节开始写入
+    let offset = 4; // 从第 2 个字节开始写入
     const dataView = new DataView(bytes.buffer);
 
     for (let field of fields) {
