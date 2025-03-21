@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
@@ -339,6 +339,7 @@ export const keyCodeToKeyName: { [key in Keycode]: string } = {
   [Keycode.DynamicKey]: 'Dynamic Key',
   [Keycode.ConsumerCollection]: "Consumer",
   [Keycode.SystemCollection]: "System",
+  [Keycode.JoystickCollection]: "Joystick",
   [Keycode.FN]: 'FN',
   [Keycode.KeyUser]: 'User',
   [Keycode.KeyboardOperation]: 'Keyboard',
@@ -386,6 +387,14 @@ export const LayerControlToKeyName: { [key in LayerControlKeycode]: string } = {
   [LayerControlKeycode.LayerTurnOn]: 'Turn on',
   [LayerControlKeycode.LayerTurnOff]: 'Turn off',
   [LayerControlKeycode.LayerToggle]: 'Toggle',
+};
+
+export const JoystickKeycodeToKeyName: { [key in JoystickKeycode]: string } = {
+  [JoystickKeycode.JoystickButton]: 'Joystick Button',
+  [JoystickKeycode.JoystickPositive]: 'Positive',
+  [JoystickKeycode.JoystickNegative]: 'Negative',
+  [JoystickKeycode.JoystickWhole]: 'Whole',
+  [JoystickKeycode.JoystickWholeInvert]: 'Whole Invert',
 };
 
 export const DynamicKeyToKeyName: { [key in DynamicKeyType]: string } = {
@@ -512,6 +521,10 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
         break;
       case Keycode.SystemCollection:
         mainString = SystemKeyToKeyName[modifier as SystemRawKeycode];
+        break;
+      case Keycode.JoystickCollection:
+        subString = "Joystick";
+        mainString = JoystickKeycodeToKeyName[((modifier >> 5) & 0x0F) as LayerControlKeycode] + ((modifier) & 0x1F).toString();
         break;
     }
   }

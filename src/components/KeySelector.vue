@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName } from "../apis/utils"
-import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode } from "emi-keyboard-controller"
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName } from "../apis/utils"
+import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 
 const message = useMessage();
@@ -27,9 +27,6 @@ function handleFullKeycodeClick(key: number | string | Keycode) {
     binding.value = key as number;
 }
 
-function handleLayerNumber(n: number | null) {
-    binding.value = ((Number(layer_control_value.value) << 12) | (n as number) << 8 | Keycode.LayerControl);
-}
 
 function handleUserNumber(n: number | null) {
     binding.value = ((n as number & 0xFF) << 8 | Keycode.KeyUser);
@@ -39,14 +36,37 @@ function handleLayerControl(value: string, option: SelectOption) {
     binding.value = (Number(value) << 12) | layer_value.value << 8 | Keycode.LayerControl;
 }
 
+function handleLayerNumber(n: number | null) {
+    binding.value = ((Number(layer_control_value.value) << 12) | (n as number) << 8 | Keycode.LayerControl);
+}
+
+function handleJoystickControl(value: string, option: SelectOption) {
+    binding.value = (Number(value) << 13) | joystick_value.value << 8 | Keycode.JoystickCollection;
+}
+
+function handleJoystickNumber(n: number | null) {
+    binding.value = ((Number(joystick_collection_value.value) << 13) | (n as number) << 8 | Keycode.JoystickCollection);
+}
+
+
 const layer_options = Object.keys(LayerControlKeycode).slice(0,4).map((key) => {
     return {
         value: key,
         label: LayerControlToKeyName[key as unknown as LayerControlKeycode]
     };
 });
+
+const joystick_options = Object.keys(JoystickKeycode).slice(0,5).map((key) => {
+    return {
+        value: key,
+        label: JoystickKeycodeToKeyName[key as unknown as JoystickKeycode]
+    };
+});
+
 const layer_value = ref(0);
 const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).toString());
+const joystick_value = ref(0);
+const joystick_collection_value = ref((JoystickKeycode.JoystickButton as number).toString());
 
 </script>
 <template>
@@ -248,7 +268,25 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
+                    <n-thing title="Joystick">
+                        <n-button :type="((binding & 0xFF) == Keycode.JoystickCollection) ? 'primary' : ''"
+                            @click="handleKeycodeClick(Keycode.JoystickCollection)">
+                            {{ keyCodeToKeyName[Keycode.JoystickCollection] }}</n-button>
+                        <n-grid :cols="4">
+                            <n-gi :span="1">
+                                <n-select :options="joystick_options" @update:value="handleJoystickControl" v-model:value="joystick_collection_value" ></n-select>
+                            </n-gi>
+                            <n-gi :span="3">
+                                <n-input-number @update:value="handleJoystickNumber" v-model:value="joystick_value" max="15" min="0"></n-input-number>
+                            </n-gi>
+                        </n-grid>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
                     <n-thing title="Layer">
+                        <n-button :type="((binding & 0xFF) == Keycode.LayerControl) ? 'primary' : ''"
+                            @click="handleKeycodeClick(Keycode.LayerControl)">
+                            {{ keyCodeToKeyName[Keycode.LayerControl] }}</n-button>
                         <n-flex>
                             <n-grid :cols="4">
                                 <n-gi :span="1">
@@ -273,6 +311,9 @@ const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).t
                 </n-list-item>
                 <n-list-item>
                     <n-thing title="User">
+                        <n-button :type="((binding & 0xFF) == Keycode.KeyUser) ? 'primary' : ''"
+                            @click="handleKeycodeClick(Keycode.KeyUser)">
+                            {{ keyCodeToKeyName[Keycode.KeyUser] }}</n-button>
                         <n-flex>
                             <n-input-number @update:value="handleUserNumber" max="255" min="0"></n-input-number>
                         </n-flex>

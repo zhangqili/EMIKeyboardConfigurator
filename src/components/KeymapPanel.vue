@@ -39,7 +39,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 <template>
   <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
     <n-scrollbar>
-      <n-flex vertical  v-if="keymap != undefined && keymap[0].length > advanced_keys.length">
+      <n-flex vertical  v-if="keymap != undefined && keymap.length>0 &&  keymap[0].length> advanced_keys.length">
         <div class="keyboard no-select" style="height: 54px;">
           <Key v-for="(binding,index) in keymap[current_layer].slice(advanced_keys == undefined ? 0 : advanced_keys.length)"
             @mousedown="(event : MouseEvent) => handleMouseDown(event, index + advanced_keys.length)"

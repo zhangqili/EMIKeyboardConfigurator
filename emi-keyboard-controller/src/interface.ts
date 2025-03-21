@@ -364,6 +364,7 @@ export enum Keycode {
     DynamicKey = 0xa7,
     ConsumerCollection = 0xa8,
     SystemCollection = 0xa9,
+    JoystickCollection = 0xaa,
     FN = 0xac,
     KeyUser = 0xFD,
     KeyboardOperation = 0xFE,
@@ -410,6 +411,14 @@ export enum LayerControlKeycode {
     LayerTurnOn = 1,
     LayerTurnOff = 2,
     LayerToggle = 3,
+}
+
+export enum JoystickKeycode {
+    JoystickButton = 0x00,
+    JoystickPositive = 0x01,
+    JoystickNegative = 0x02,
+    JoystickWhole = 0x03,
+    JoystickWholeInvert = 0x07,
 }
 
 export enum ConsumerKeycode {
