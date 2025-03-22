@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName } from "../apis/utils"
-import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode } from "emi-keyboard-controller"
+import { ref, triggerRef } from 'vue';
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName } from "../apis/utils"
+import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 
 const message = useMessage();
@@ -48,6 +48,25 @@ function handleJoystickNumber(n: number | null) {
     binding.value = ((Number(joystick_collection_value.value) << 13) | (n as number) << 8 | Keycode.JoystickCollection);
 }
 
+function handleMIDINote(value: string, option: SelectOption) {
+    let temp_value = (Number(value) + midi_value.value * 12);
+    if (temp_value > 127) {
+        temp_value = 127;
+        midi_note_value.value = temp_value % 12;
+        midi_value.value = (temp_value - temp_value % 12)/12;
+    }
+    binding.value = temp_value << 8 | Keycode.MIDINote;
+}
+
+function handleMIDINoteNumber(n: number | null) {
+    let temp_value = ((midi_note_value.value as number) + (n as number)*12);
+    if (temp_value > 127) {
+        temp_value = 127;
+        midi_note_value.value = temp_value % 12;
+        midi_value.value = (temp_value - temp_value % 12)/12;
+    }
+    binding.value =  temp_value << 8 | Keycode.MIDINote;
+}
 
 const layer_options = Object.keys(LayerControlKeycode).slice(0,4).map((key) => {
     return {
@@ -63,10 +82,19 @@ const joystick_options = Object.keys(JoystickKeycode).slice(0,5).map((key) => {
     };
 });
 
+const midi_note_options = MIDINoteName.map((key,index) => {
+    return {
+        value: index,
+        label: key
+    };
+});
+
 const layer_value = ref(0);
 const layer_control_value = ref((LayerControlKeycode.LayerMomentary as number).toString());
 const joystick_value = ref(0);
 const joystick_collection_value = ref((JoystickKeycode.JoystickButton as number).toString());
+const midi_value = ref(0);
+const midi_note_value = ref(0);
 
 </script>
 <template>
@@ -280,6 +308,117 @@ const joystick_collection_value = ref((JoystickKeycode.JoystickButton as number)
                                 <n-input-number @update:value="handleJoystickNumber" v-model:value="joystick_value" max="15" min="0"></n-input-number>
                             </n-gi>
                         </n-grid>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="MIDI">
+                        <n-flex vertical>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.On, MIDIKeycode.Toggle + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.NoteC0, MIDIKeycode.NoteB0 + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.NoteC1, MIDIKeycode.NoteB1 + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.NoteC2, MIDIKeycode.NoteB2 + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.NoteC3, MIDIKeycode.NoteB3 + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.NoteC4, MIDIKeycode.NoteB4 + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.OctaveN2, MIDIKeycode.OctaveUp + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.TransposeN6, MIDIKeycode.TransposeUp + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.Velocity0, MIDIKeycode.VelocityUp + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.Channel1, MIDIKeycode.ChannelUp + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(MIDIKeycode.AllNotesOff, MIDIKeycode.PitchBendUp + 1)"
+                                :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
+                                {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
+                            </n-flex>
+                        </n-flex>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="MIDI Note">
+                        <n-button :type="((binding & 0xFF) == Keycode.MIDINote) ? 'primary' : ''"
+                            @click="handleKeycodeClick(Keycode.MIDINote)">
+                            {{ keyCodeToKeyName[Keycode.MIDINote] }}</n-button>
+                        <n-flex>
+                            <n-grid :cols="4">
+                                <n-gi :span="1">
+                                    <n-select :options="midi_note_options" @update:value="handleMIDINote" v-model:value="midi_note_value" ></n-select>
+                                </n-gi>
+                                <n-gi :span="3">
+                                    <n-input-number @update:value="handleMIDINoteNumber" v-model:value="midi_value" max="10" min="0"></n-input-number>
+                                </n-gi>
+                            </n-grid>
+                        </n-flex>
                     </n-thing>
                 </n-list-item>
                 <n-list-item>

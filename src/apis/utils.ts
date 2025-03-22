@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
@@ -340,7 +340,8 @@ export const keyCodeToKeyName: { [key in Keycode]: string } = {
   [Keycode.ConsumerCollection]: "Consumer",
   [Keycode.SystemCollection]: "System",
   [Keycode.JoystickCollection]: "Joystick",
-  [Keycode.FN]: 'FN',
+  [Keycode.MIDICollection]: 'MIDI',
+  [Keycode.MIDINote]: 'MIDI Note',
   [Keycode.KeyUser]: 'User',
   [Keycode.KeyboardOperation]: 'Keyboard',
   [Keycode.KeyTransparent]: '∇',
@@ -465,6 +466,181 @@ export const SystemKeyToKeyName: { [key in SystemRawKeycode]: string } = {
   [SystemRawKeycode.SystemRestart]: "Restart",
   [SystemRawKeycode.SystemDisplayToggleIntExt]: "Display Toggle Int Ext"
 }
+
+export const MIDIKeyToKeyName: { [key in MIDIKeycode]: string } = {
+  [MIDIKeycode.On]: "MIDI On",
+  [MIDIKeycode.Off]: "MIDI Off",
+  [MIDIKeycode.Toggle]: "MIDI Toggle",
+
+  [MIDIKeycode.NoteC0]: "C0",
+  [MIDIKeycode.NoteCSharp0]: "C♯0",
+  [MIDIKeycode.NoteD0]: "D0",
+  [MIDIKeycode.NoteDSharp0]: "D♯0",
+  [MIDIKeycode.NoteE0]: "E0",
+  [MIDIKeycode.NoteF0]: "F0",
+  [MIDIKeycode.NoteFSharp0]: "F♯0",
+  [MIDIKeycode.NoteG0]: "G0",
+  [MIDIKeycode.NoteGSharp0]: "G♯0",
+  [MIDIKeycode.NoteA0]: "A0",
+  [MIDIKeycode.NoteASharp0]: "A♯0",
+  [MIDIKeycode.NoteB0]: "B0",
+
+  [MIDIKeycode.NoteC1]: "C1",
+  [MIDIKeycode.NoteCSharp1]: "C♯1",
+  [MIDIKeycode.NoteD1]: "D1",
+  [MIDIKeycode.NoteDSharp1]: "D♯1",
+  [MIDIKeycode.NoteE1]: "E1",
+  [MIDIKeycode.NoteF1]: "F1",
+  [MIDIKeycode.NoteFSharp1]: "F♯1",
+  [MIDIKeycode.NoteG1]: "G1",
+  [MIDIKeycode.NoteGSharp1]: "G♯1",
+  [MIDIKeycode.NoteA1]: "A1",
+  [MIDIKeycode.NoteASharp1]: "A♯1",
+  [MIDIKeycode.NoteB1]: "B1",
+
+  [MIDIKeycode.NoteC2]: "C2",
+  [MIDIKeycode.NoteCSharp2]: "C♯2",
+  [MIDIKeycode.NoteD2]: "D2",
+  [MIDIKeycode.NoteDSharp2]: "D♯2",
+  [MIDIKeycode.NoteE2]: "E2",
+  [MIDIKeycode.NoteF2]: "F2",
+  [MIDIKeycode.NoteFSharp2]: "F♯2",
+  [MIDIKeycode.NoteG2]: "G2",
+  [MIDIKeycode.NoteGSharp2]: "G♯2",
+  [MIDIKeycode.NoteA2]: "A2",
+  [MIDIKeycode.NoteASharp2]: "A♯2",
+  [MIDIKeycode.NoteB2]: "B2",
+
+  [MIDIKeycode.NoteC3]: "C3",
+  [MIDIKeycode.NoteCSharp3]: "C♯3",
+  [MIDIKeycode.NoteD3]: "D3",
+  [MIDIKeycode.NoteDSharp3]: "D♯3",
+  [MIDIKeycode.NoteE3]: "E3",
+  [MIDIKeycode.NoteF3]: "F3",
+  [MIDIKeycode.NoteFSharp3]: "F♯3",
+  [MIDIKeycode.NoteG3]: "G3",
+  [MIDIKeycode.NoteGSharp3]: "G♯3",
+  [MIDIKeycode.NoteA3]: "A3",
+  [MIDIKeycode.NoteASharp3]: "A♯3",
+  [MIDIKeycode.NoteB3]: "B3",
+
+  [MIDIKeycode.NoteC4]: "C4",
+  [MIDIKeycode.NoteCSharp4]: "C♯4",
+  [MIDIKeycode.NoteD4]: "D4",
+  [MIDIKeycode.NoteDSharp4]: "D♯4",
+  [MIDIKeycode.NoteE4]: "E4",
+  [MIDIKeycode.NoteF4]: "F4",
+  [MIDIKeycode.NoteFSharp4]: "F♯4",
+  [MIDIKeycode.NoteG4]: "G4",
+  [MIDIKeycode.NoteGSharp4]: "G♯4",
+  [MIDIKeycode.NoteA4]: "A4",
+  [MIDIKeycode.NoteASharp4]: "A♯4",
+  [MIDIKeycode.NoteB4]: "B4",
+
+  [MIDIKeycode.NoteC5]: "C5",
+  [MIDIKeycode.NoteCSharp5]: "C♯5",
+  [MIDIKeycode.NoteD5]: "D5",
+  [MIDIKeycode.NoteDSharp5]: "D♯5",
+  [MIDIKeycode.NoteE5]: "E5",
+  [MIDIKeycode.NoteF5]: "F5",
+  [MIDIKeycode.NoteFSharp5]: "F♯5",
+  [MIDIKeycode.NoteG5]: "G5",
+  [MIDIKeycode.NoteGSharp5]: "G♯5",
+  [MIDIKeycode.NoteA5]: "A5",
+  [MIDIKeycode.NoteASharp5]: "A♯5",
+  [MIDIKeycode.NoteB5]: "B5",
+
+  [MIDIKeycode.OctaveN2]: "Octave -2",
+  [MIDIKeycode.OctaveN1]: "Octave -1",
+  [MIDIKeycode.Octave0]: "Octave 0",
+  [MIDIKeycode.Octave1]: "Octave 1",
+  [MIDIKeycode.Octave2]: "Octave 2",
+  [MIDIKeycode.Octave3]: "Octave 3",
+  [MIDIKeycode.Octave4]: "Octave 4",
+  [MIDIKeycode.Octave5]: "Octave 5",
+  [MIDIKeycode.Octave6]: "Octave 6",
+  [MIDIKeycode.Octave7]: "Octave 7",
+  [MIDIKeycode.OctaveDown]: "Octave Down",
+  [MIDIKeycode.OctaveUp]: "Octave Up",
+
+  [MIDIKeycode.TransposeN6]: "Transpose -6",
+  [MIDIKeycode.TransposeN5]: "Transpose -5",
+  [MIDIKeycode.TransposeN4]: "Transpose -4",
+  [MIDIKeycode.TransposeN3]: "Transpose -3",
+  [MIDIKeycode.TransposeN2]: "Transpose -2",
+  [MIDIKeycode.TransposeN1]: "Transpose -1",
+  [MIDIKeycode.Transpose0]: "Transpose 0",
+  [MIDIKeycode.Transpose1]: "Transpose +1",
+  [MIDIKeycode.Transpose2]: "Transpose +2",
+  [MIDIKeycode.Transpose3]: "Transpose +3",
+  [MIDIKeycode.Transpose4]: "Transpose +4",
+  [MIDIKeycode.Transpose5]: "Transpose +5",
+  [MIDIKeycode.Transpose6]: "Transpose +6",
+  [MIDIKeycode.TransposeDown]: "Transpose Down",
+  [MIDIKeycode.TransposeUp]: "Transpose Up",
+
+  [MIDIKeycode.Velocity0]: "Velocity 0",
+  [MIDIKeycode.Velocity1]: "Velocity 1",
+  [MIDIKeycode.Velocity2]: "Velocity 2",
+  [MIDIKeycode.Velocity3]: "Velocity 3",
+  [MIDIKeycode.Velocity4]: "Velocity 4",
+  [MIDIKeycode.Velocity5]: "Velocity 5",
+  [MIDIKeycode.Velocity6]: "Velocity 6",
+  [MIDIKeycode.Velocity7]: "Velocity 7",
+  [MIDIKeycode.Velocity8]: "Velocity 8",
+  [MIDIKeycode.Velocity9]: "Velocity 9",
+  [MIDIKeycode.Velocity10]: "Velocity 10",
+  [MIDIKeycode.VelocityDown]: "Velocity Down",
+  [MIDIKeycode.VelocityUp]: "Velocity Up",
+
+  [MIDIKeycode.Channel1]: "Channel 1",
+  [MIDIKeycode.Channel2]: "Channel 2",
+  [MIDIKeycode.Channel3]: "Channel 3",
+  [MIDIKeycode.Channel4]: "Channel 4",
+  [MIDIKeycode.Channel5]: "Channel 5",
+  [MIDIKeycode.Channel6]: "Channel 6",
+  [MIDIKeycode.Channel7]: "Channel 7",
+  [MIDIKeycode.Channel8]: "Channel 8",
+  [MIDIKeycode.Channel9]: "Channel 9",
+  [MIDIKeycode.Channel10]: "Channel 10",
+  [MIDIKeycode.Channel11]: "Channel 11",
+  [MIDIKeycode.Channel12]: "Channel 12",
+  [MIDIKeycode.Channel13]: "Channel 13",
+  [MIDIKeycode.Channel14]: "Channel 14",
+  [MIDIKeycode.Channel15]: "Channel 15",
+  [MIDIKeycode.Channel16]: "Channel 16",
+  [MIDIKeycode.ChannelDown]: "Channel Down",
+  [MIDIKeycode.ChannelUp]: "Channel Up",
+
+  [MIDIKeycode.AllNotesOff]: "All Notes Off",
+  [MIDIKeycode.Sustain]: "Sustain",
+  [MIDIKeycode.Portamento]: "Portamento",
+  [MIDIKeycode.Sostenuto]: "Sostenuto",
+  [MIDIKeycode.Soft]: "Soft Pedal",
+  [MIDIKeycode.Legato]: "Legato",
+  [MIDIKeycode.Modulation]: "Modulation",
+  [MIDIKeycode.ModulationSpeedDown]: "Modulation Speed Down",
+  [MIDIKeycode.ModulationSpeedUp]: "Modulation Speed Up",
+  [MIDIKeycode.PitchBendDown]: "Pitch Bend Down",
+  [MIDIKeycode.PitchBendUp]: "Pitch Bend Up",
+};
+
+export const MIDINoteName: string[] =
+[
+  "C",
+  "C♯",
+  "D",
+  "D♯",
+  "E",
+  "F",
+  "F♯",
+  "G",
+  "G♯",
+  "A",
+  "A♯",
+  "B",
+];
+
 export function layoutControlToString(keybinding: number): string {
   var desc = "";
   for (let i = 0; i < 8; i++) {
@@ -525,6 +701,14 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
       case Keycode.JoystickCollection:
         subString = "Joystick";
         mainString = JoystickKeycodeToKeyName[((modifier >> 5) & 0x0F) as LayerControlKeycode] + ((modifier) & 0x1F).toString();
+        break;
+      case Keycode.MIDICollection:
+        subString = "MIDI";
+        mainString = MIDIKeyToKeyName[modifier as MIDIKeycode].toString();
+        break;
+      case Keycode.MIDINote:
+        subString = "MIDI Note";
+        mainString = MIDINoteName[modifier%12]+((modifier-modifier%12)/12).toString();
         break;
     }
   }
