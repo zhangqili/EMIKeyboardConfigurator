@@ -157,5 +157,8 @@
     "import" : "Import",
     "export" : "Export",
     "dont_show_again" : "Don't show again",
-    "about" : "About"
+    "about" : "About",
+
+    "dark" : "Dark",
+    "light" : "Light"
 }

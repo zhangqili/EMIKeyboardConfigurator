@@ -21,9 +21,10 @@ export function setupI18n(): I18n {
 }
 
 export function setI18nLanguage(locale: string): void {
+  //lang.value = locale;
   (i18n.global.locale as any).value = locale;
 
-  document.querySelector('html')?.setAttribute('lang', locale);
+  //document.querySelector('html')?.setAttribute('lang', locale);
 }
 
 export const i18n = setupI18n()

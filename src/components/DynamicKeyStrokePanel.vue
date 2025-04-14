@@ -31,7 +31,7 @@ const dynamic_key_stroke = defineModel<ekc.IDynamicKeyStroke4x4>("dynamic_key",{
   }
 });
 
-const action_options = [
+const action_options = computed(() => [
         {
           label: t('dynamic_key_s_panel_deactivate'),
           value: 0
@@ -44,7 +44,7 @@ const action_options = [
           label: t('dynamic_key_s_panel_keep_activating'),
           value: 3
         }
-      ];
+      ]);
 
 const press_begin_distance = computed<number>({
   get: () => (Math.round(dynamic_key_stroke.value.press_begin_distance * 1000) / 10),

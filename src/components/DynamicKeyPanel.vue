@@ -141,26 +141,11 @@ function createColumns({
   ]
 }
 
-const action_options = [
-        {
-          label: 'Deactivate',
-          value: 'deactivate'
-        },
-        {
-          label: 'Activate once',
-          value: 'activate_once'
-        },
-        {
-          label: 'Keep activating',
-          value: 'keep_activating'
-        }
-      ];
-
-const columns = createColumns({
+const columns = computed(()=> createColumns({
         execute(row: DynamicKeyRow) {
           message.info(`Play ${row.index}`)
         }
-      });
+      }));
 
 function handleDynamicTypeSelection(key: string, item: MenuOption) 
 {

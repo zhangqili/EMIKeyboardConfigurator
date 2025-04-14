@@ -35,7 +35,7 @@ const dynamic_key_mutex = defineModel<ekc.IDynamicKeyMutex>("dynamic_key",{
   }
 });
 
-const dynamic_key_mutex_modes =
+const dynamic_key_mutex_modes = computed(()=>
   [
     {
       value: ekc.DynamicKeyMutexMode.DKMutexDistancePriority,
@@ -59,7 +59,8 @@ const dynamic_key_mutex_modes =
     }
   ].map((s) => {
     return s;
-  });
+  })
+);
 
 const dynamic_key_mutex_mode = computed<ekc.DynamicKeyMutexMode>({
   get: () => (dynamic_key_mutex.value.mode&0x0F),

@@ -40,7 +40,7 @@ const color = computed<string>({
   },
 });
 
-const modes =
+const modes = computed(()=>
   [
     {
       value: ekc.RGBMode.RgbModeFixed,
@@ -84,7 +84,8 @@ const modes =
     },
   ].map((s) => {
     return s;
-  });
+  })
+);
 
 
 function applyRainbowEffect() {

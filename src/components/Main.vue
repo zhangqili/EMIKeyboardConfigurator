@@ -30,6 +30,7 @@ interface Window {
 const { t } = useI18n();
 const store = useMainStore();
 const { 
+  lang,
   selected_device,
   advanced_key, 
   rgb_config, 
@@ -45,13 +46,19 @@ const {
   debug_raw_chart_option, 
   debug_value_chart_option,
   dynamic_keys,
-  keyboard_keys
+  keyboard_keys,
+  theme_name
 } = storeToRefs(store);
 
 const message = useMessage();
 const notification = useNotification();
 const tab_selection = ref<string | null>("PerformancePanel");
 const isConnected = ref<boolean>(false);
+
+const themeLabelMap = computed(() => ({
+  dark: t('light'),
+  light: t('dark')
+} satisfies Record<string, string>));
 
 const key_containers = computed(() => {
   var keys = keyboard_keys.value;
@@ -207,9 +214,6 @@ async function saveCommand() {
     console.debug(result);
 
   }
-}
-async function settingsCommand() {
-  //setI18nLanguage('zh');
 }
 
 async function flashCommand() {
@@ -485,7 +489,7 @@ async function exportConfig() {
   }
 }
 
-const advanced_options = [
+const advanced_options = computed(()=> [
   {
     label: t('toolbar_device_flash_configuration'),
     key: 'flash config'
@@ -498,9 +502,20 @@ const advanced_options = [
     label: t('toolbar_device_factory_reset'),
     key: 'factory reset'
   }
-];
+]);
 
-const menuOptions: MenuOption[] = [
+const language_options = computed(()=> [
+  {
+    label: 'English',
+    value: 'en'
+  },
+  {
+    label: '简体中文',
+    value: 'zh'
+  }
+]);
+
+const menuOptions = computed(()=>[
   {
     label: t('main_tabs_performance'),
     key: 'PerformancePanel',
@@ -525,21 +540,20 @@ const menuOptions: MenuOption[] = [
     label: t('main_tabs_about'),
     key: 'AboutPanel',
   },
-];
-
+]);
 
 function handleAdvancedMenu(key: string | number) {
   if (isConnected.value) {
     switch (key) {
-      case advanced_options[0].key: {
+      case advanced_options.value[0].key: {
         apis.flash_config();
         break;
       }
-      case advanced_options[1].key: {
+      case advanced_options.value[1].key: {
         apis.system_reset();
         break;
       }
-      case advanced_options[2].key: {
+      case advanced_options.value[2].key: {
         apis.factory_reset();
         break;
       }
@@ -547,8 +561,14 @@ function handleAdvancedMenu(key: string | number) {
         break;
       }
     }
-
   }
+}
+
+if (navigator.language === "zh-CN") {
+  handleLanguageMenu("zh");
+}
+function handleLanguageMenu(key: string) {
+  setI18nLanguage(key);
 }
 
 onMounted(async () => {
@@ -651,7 +671,16 @@ const currentPanel = computed(() => {
         default: return null;
       }
     });
-    
+
+
+function handleThemeUpdate() {
+  if (theme_name.value === 'dark') {
+    theme_name.value = 'light'
+  }
+  else {
+    theme_name.value = 'dark'
+  }
+}
 
 </script>
 
@@ -675,7 +704,13 @@ const currentPanel = computed(() => {
           </n-gi>
           <n-gi :span="1">
             <n-flex justify="end">
-              <n-button @click="settingsCommand">{{ t('toolbar_settings') }}</n-button>
+              <n-button
+                @click="handleThemeUpdate"
+              >
+                {{ themeLabelMap[theme_name as 'light'|'dark'] }}
+              </n-button>
+              <n-select @update:value="handleLanguageMenu" style="max-width: 100px;" v-model:value="lang"
+                :options="language_options"/>
             </n-flex>
           </n-gi>
         </n-grid>

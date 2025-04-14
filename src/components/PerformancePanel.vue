@@ -70,7 +70,7 @@ const release_speed = computed<number>({
   },
 });
 
-const modes =
+const modes = computed(()=>
   [
     {
       value: ekc.KeyMode.KeyDigitalMode,
@@ -90,7 +90,7 @@ const modes =
     }
   ].map((s) => {
     return s;
-  });
+  }));
 
 </script>
 
