@@ -48,15 +48,15 @@ interface AdvancedKey {
 
 const columns: DataTableColumns<ekc.IAdvancedKey> = [
     {
-        title: 'State',
+        title: t('debug_panel_state'),
         key: 'state',
     },
     {
-        title: 'Raw Value',
+        title: t('debug_panel_raw'),
         key: 'raw',
     },
     {
-        title: 'Normalized Value',
+        title: t('debug_panel_value'),
         key: 'value',
     },
 ]
@@ -155,18 +155,18 @@ const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
         <n-scrollbar>
         <n-flex vertical>
             <n-flex>
-                <div>Enable Debug</div>
+                <div>{{ t('debug_panel_enable_debug') }}</div>
                 <n-switch v-model:value="debug_switch" @update:value="handleChange"></n-switch>
             </n-flex>
             <n-flex>
-                <n-button @click="clearCommand">Clear</n-button>
+                <n-button @click="clearCommand">{{ t('clear') }}</n-button>
             </n-flex>
             <n-flex>
                 <n-tabs type="segment" animated>
-                    <n-tab-pane name="raw_chart" tab="Raw">
+                    <n-tab-pane name="raw_chart" :tab="t('debug_panel_raw')">
                         <v-chart ref="debug_raw_chart" :option="debug_raw_chart_option" class="chart" autoresize />
                     </n-tab-pane>
-                    <n-tab-pane name="value_chart" tab="Normalized Value">
+                    <n-tab-pane name="value_chart" :tab="t('debug_panel_value')">
                         <v-chart ref="debug_value_chart" :option="debug_value_chart_option" class="chart" autoresize />
                     </n-tab-pane>
                 </n-tabs>

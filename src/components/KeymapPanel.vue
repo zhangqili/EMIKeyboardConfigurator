@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { NSpace } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyboardTracker from './KeyboardTracker.vue';
+import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
@@ -49,7 +49,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
         </div>
         <n-divider></n-divider>
       </n-flex>
-      <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+      <KeyTracker v-model:binding="key_binding"></KeyTracker>
       <n-divider></n-divider>
       <KeySelector v-model:binding="key_binding"></KeySelector>
     </n-scrollbar>

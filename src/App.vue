@@ -5,6 +5,7 @@ import { useOsTheme, darkTheme, NConfigProvider } from 'naive-ui'
 import Application from './components/Application.vue';
 import Main from './components/Main.vue';
 import * as controller from "emi-keyboard-controller"
+import { setI18nLanguage } from "./locales/i18n";
 
 const greetMsg = ref("");
 const name = ref("");
@@ -13,6 +14,11 @@ const theme = computed(() => (useOsTheme().value === 'dark' ? darkTheme : null))
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   greetMsg.value = await invoke("greet", { name: name.value });
+}
+
+
+if (navigator.language === "zh-CN") {
+    setI18nLanguage("zh");
 }
 
 window.addEventListener("contextmenu", (e) => e.preventDefault(), false);

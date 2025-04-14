@@ -3,7 +3,9 @@ import { ref, triggerRef } from 'vue';
 import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName } from "../apis/utils"
 import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const message = useMessage();
 
 const binding = defineModel("binding", {default : 0});
@@ -99,10 +101,10 @@ const midi_note_value = ref(0);
 </script>
 <template>
     <n-tabs type="segment" animated>
-        <n-tab-pane name="Normal" title="Normal">
+        <n-tab-pane :name="t('key_selector_normal')" title="Normal">
             <n-list vertical>
                 <n-list-item>
-                    <n-thing title="Modifiers">
+                    <n-thing :title="t('key_selector_modifiers')">
                         <n-space vertical>
                             <n-button @click="() => { binding = binding & 0xFF; }">
                                 Clear</n-button>
@@ -116,7 +118,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Event">
+                    <n-thing :title="t('key_selector_event')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.NoEvent, Keycode.ErrorUndefined + 1)"
@@ -126,7 +128,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Alphabet Keys">
+                    <n-thing :title="t('key_selector_alphabet')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.A, Keycode.Z + 1)"
@@ -136,7 +138,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Numbertic Keys">
+                    <n-thing :title="t('key_selector_numbertic')">
                         <n-button-group>
                             <n-button v-for="(key, code) in Object.keys(Keycode)
                                 //.filter(key => isNaN(Number(key)))
@@ -148,7 +150,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Control Keys">
+                    <n-thing :title="t('key_selector_control')">
                         <n-button-group>
                             <n-button v-for="(key, code) in Object.keys(Keycode)
                                 //.filter(key => isNaN(Number(key)))
@@ -160,7 +162,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Symbols">
+                    <n-thing :title="t('key_selector_symbols')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.Spacebar, Keycode.Slash + 1)"
@@ -170,7 +172,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Function Keys">
+                    <n-thing :title="t('key_selector_function')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.CapsLock, Keycode.Pause + 1)"
@@ -180,7 +182,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Navigation Keys">
+                    <n-thing :title="t('key_selector_navigation')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.Insert, Keycode.UpArrow + 1)"
@@ -190,7 +192,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Keypad">
+                    <n-thing :title="t('key_selector_keypad')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.NumLock, Keycode.KeypadDot + 1)"
@@ -200,7 +202,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Additional Symbols and Keys">
+                    <n-thing :title="t('key_selector_additional_symbols_and_keys')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.NonUsBackslash, Keycode.KeypadEqual + 1)"
@@ -210,7 +212,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Extended Function Keys">
+                    <n-thing :title="t('key_selector_extended_function')">
                         <n-button-group>
                             <n-button v-for="(key, code) in Object.keys(Keycode)
                                 //.filter(key => isNaN(Number(key)))
@@ -222,7 +224,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Media and System Control Keys">
+                    <n-thing :title="t('key_selector_media_and_system_control')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.Execute, Keycode.VolumeDown + 1)"
@@ -232,7 +234,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Locking Keys">
+                    <n-thing :title="t('key_selector_locking')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.LockingCapsLock, Keycode.LockingScrollLock + 1)"
@@ -242,7 +244,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="International and Language-Specific Keys">
+                    <n-thing :title="t('key_selector_international')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.KeypadComma, Keycode.Lang9 + 1)"
@@ -252,7 +254,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Additional Commands and Editing">
+                    <n-thing :title="t('key_selector_additional_command_and_editing')">
                         <n-button v-for="(key, code) in Object.keys(Keycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(Keycode.AlternateErase, Keycode.ExSel + 1)"
@@ -263,10 +265,10 @@ const midi_note_value = ref(0);
                 </n-list-item>
             </n-list>
         </n-tab-pane>
-        <n-tab-pane name="Others" title="others">
+        <n-tab-pane :name="t('key_selector_others')" title="others">
             <n-list vertical>
                 <n-list-item>
-                    <n-thing title="Mouse">
+                    <n-thing :title="t('key_selector_mouse')">
                         <n-button v-for="(key, code) in Object.keys(MouseKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelDown + 1)"
@@ -276,7 +278,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Consumer">
+                    <n-thing :title="t('key_selector_consumer')">
                         <n-button v-for="(key, code) in Object.keys(ConsumerKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(0, 0x31)"
@@ -286,7 +288,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="System">
+                    <n-thing :title="t('key_selector_system')">
                         <n-button v-for="(key, code) in Object.keys(SystemRawKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(0, 5)"
@@ -296,7 +298,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Joystick">
+                    <n-thing :title="t('key_selector_joystick')">
                         <n-button :type="((binding & 0xFF) == Keycode.JoystickCollection) ? 'primary' : ''"
                             @click="handleKeycodeClick(Keycode.JoystickCollection)">
                             {{ keyCodeToKeyName[Keycode.JoystickCollection] }}</n-button>
@@ -311,7 +313,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="MIDI">
+                    <n-thing :title="t('key_selector_midi')">
                         <n-flex vertical>
                             <n-flex>
                                 <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
@@ -405,7 +407,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="MIDI Note">
+                    <n-thing :title="t('key_selector_midi_note')">
                         <n-button :type="((binding & 0xFF) == Keycode.MIDINote) ? 'primary' : ''"
                             @click="handleKeycodeClick(Keycode.MIDINote)">
                             {{ keyCodeToKeyName[Keycode.MIDINote] }}</n-button>
@@ -422,7 +424,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Layer">
+                    <n-thing :title="t('key_selector_layer')">
                         <n-button :type="((binding & 0xFF) == Keycode.LayerControl) ? 'primary' : ''"
                             @click="handleKeycodeClick(Keycode.LayerControl)">
                             {{ keyCodeToKeyName[Keycode.LayerControl] }}</n-button>
@@ -439,7 +441,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Keyboard">
+                    <n-thing :title="t('key_selector_keyboard')">
                         <n-button v-for="(key, code) in Object.keys(KeyboardKeycode)
                             //.filter(key => isNaN(Number(key)))
                             .slice(0, 10)"
@@ -449,7 +451,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="User">
+                    <n-thing  :title="t('key_selector_user')">
                         <n-button :type="((binding & 0xFF) == Keycode.KeyUser) ? 'primary' : ''"
                             @click="handleKeycodeClick(Keycode.KeyUser)">
                             {{ keyCodeToKeyName[Keycode.KeyUser] }}</n-button>
@@ -459,7 +461,7 @@ const midi_note_value = ref(0);
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing title="Transparent">
+                    <n-thing  :title="t('key_selector_transparent')">
                         <n-button :type="((binding & 0xFF) == Keycode.KeyTransparent) ? 'primary' : ''"
                             @click="handleFullKeycodeClick(Keycode.KeyTransparent)">
                             Transparent</n-button>

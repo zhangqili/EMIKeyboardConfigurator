@@ -9,29 +9,21 @@ const messages = {
   en: { ...en },
 };
 
-interface I18nOptions {
-  locale: string;
-}
-
-export function setupI18n(options: I18nOptions = { locale: 'en' }): I18n {
+export function setupI18n(): I18n {
   const i18n = createI18n({
     legacy: false, // Use the Composition API mode
-    locale: options.locale,
-    messages, // Add messages directly here
+    locale: "en",
+    fallbackLocale: "zh",
+    messages: messages // Add messages directly here
   });
   //setI18nLanguage(i18n, options.locale);
   return i18n as I18n;
 }
 
-export function setI18nLanguage(i18n: I18n, locale: string): void {
-  if ((i18n.mode as string) === 'legacy') {
-    i18n.global.locale = locale;
-  } else {
-    //i18n.global.locale.value = locale;
-  }
-
-  // Setting language for headers, example for axios
-  // axios.defaults.headers.common['Accept-Language'] = locale
+export function setI18nLanguage(locale: string): void {
+  (i18n.global.locale as any).value = locale;
 
   document.querySelector('html')?.setAttribute('lang', locale);
 }
+
+export const i18n = setupI18n()

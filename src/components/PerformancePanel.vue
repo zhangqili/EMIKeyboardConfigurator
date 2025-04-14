@@ -74,19 +74,19 @@ const modes =
   [
     {
       value: ekc.KeyMode.KeyDigitalMode,
-      label: 'Digital'
+      label: t('performance_panel_digital')
     },
     {
       value: ekc.KeyMode.KeyAnalogNormalMode,
-      label: 'Analog Normal'
+      label: t('performance_panel_analog_normal')
     },
     {
       value: ekc.KeyMode.KeyAnalogRapidMode,
-      label: 'Analog Rapid'
+      label: t('performance_panel_analog_rapid')
     },
     {
       value: ekc.KeyMode.KeyAnalogSpeedMode,
-      label: 'Analog Speed'
+      label: t('performance_panel_analog_speed')
     }
   ].map((s) => {
     return s;
@@ -97,43 +97,43 @@ const modes =
 <template>
   <n-card style="height: 100%;">
     <n-space vertical>
-      <n-radio-group v-model:value="mode" name="radiobuttongroup1">
+      <n-radio-group v-model:value="mode">
         <n-radio-button v-for="mode in modes" :key="mode.value" :value="mode.value" :label="mode.label" />
       </n-radio-group>
       <n-form inline label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" label="Activation Distance">
-          <n-input-number v-model:value="activation_value" placeholder="Activation Distance" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" :label="t('performance_panel_activation_value')">
+          <n-input-number v-model:value="activation_value" :placeholder="t('performance_panel_activation_value')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" label="Deactivation Distance">
-          <n-input-number v-model:value="deactivation_value" placeholder="Deactivation Distance" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" :label="t('performance_panel_deactivation_value')">
+          <n-input-number v-model:value="deactivation_value" :placeholder="t('performance_panel_deactivation_value')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" label="Trigger Distance">
-          <n-input-number v-model:value="trigger_distance" placeholder="Trigger Distance" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" :label="t('performance_panel_trigger_distance')">
+          <n-input-number v-model:value="trigger_distance" :placeholder="t('performance_panel_trigger_distance')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" label="Release Distance">
-          <n-input-number v-model:value="release_distance" placeholder="Release Distance" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" :label="t('performance_panel_release_distance')">
+          <n-input-number v-model:value="release_distance" :placeholder="t('performance_panel_release_distance')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Trigger Speed">
-          <n-input-number v-model:value="trigger_speed" placeholder="Trigger Speed" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_trigger_speed')">
+          <n-input-number v-model:value="trigger_speed" :placeholder="t('performance_panel_trigger_speed')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Release Speed">
-          <n-input-number v-model:value="release_speed" placeholder="Release Speed" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_release_speed')">
+          <n-input-number v-model:value="release_speed" :placeholder="t('performance_panel_release_speed')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Upper Deadzone">
-          <n-input-number v-model:value="upper_deadzone" placeholder="Upper Deadzone" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_upper_deadzone')">
+          <n-input-number v-model:value="upper_deadzone" :placeholder="t('performance_panel_upper_deadzone')" :min="0" :max="100" />
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" label="Lower Deadzone">
-          <n-input-number v-model:value="lower_deadzone" placeholder="Lower Deadzone" :min="0" :max="100" />
+        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_lower_deadzone')">
+          <n-input-number v-model:value="lower_deadzone" :placeholder="t('performance_panel_lower_deadzone')" :min="0" :max="100" />
         </n-form-item>
       </n-form>
       <n-collapse v-if="mode !== ekc.KeyMode.KeyDigitalMode">
-        <n-collapse-item title="Advanced options">
+        <n-collapse-item :title="t('performance_panel_advanced_options')">
           <n-form inline label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-            <n-form-item label="Upper bound">
-              <n-input-number placeholder="Upper bound"/>
+            <n-form-item :label="t('performance_panel_upper_bound')">
+              <n-input-number :placeholder="t('performance_panel_upper_bound')"/>
             </n-form-item>
-            <n-form-item label="Lower bound">
-              <n-input-number placeholder="Lower bound"/>
+            <n-form-item :label="t('performance_panel_lower_bound')">
+              <n-input-number :placeholder="t('performance_panel_lower_bound')"/>
             </n-form-item>
           </n-form>
         </n-collapse-item>

@@ -3,7 +3,7 @@ import { computed, h, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyboardTracker from './KeyboardTracker.vue';
+import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
@@ -39,23 +39,23 @@ const dynamic_key_mutex_modes =
   [
     {
       value: ekc.DynamicKeyMutexMode.DKMutexDistancePriority,
-      label: 'Distance'
+      label: t('dynamic_key_mutex_panel_distance')
     },
     {
       value: ekc.DynamicKeyMutexMode.DKMutexLastPriority,
-      label: 'Last trigger'
+      label: t('dynamic_key_mutex_panel_last_trigger')
     },
     {
       value: ekc.DynamicKeyMutexMode.DKMutexKey1Priority,
-      label: 'Key1'
+      label: t('dynamic_key_mutex_panel_key1')
     },
     {
       value: ekc.DynamicKeyMutexMode.DKMutexKey2Priority,
-      label: 'Key2'
+      label: t('dynamic_key_mutex_panel_key2')
     },
     {
       value: ekc.DynamicKeyMutexMode.DKMutexNeutral,
-      label: 'Neutarl'
+      label: t('dynamic_key_mutex_panel_neutral')
     }
   ].map((s) => {
     return s;
@@ -108,21 +108,21 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 </script>
 <template>
 <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-  <n-form-item label="Key">
+  <n-form-item :label="t('key')">
     <div class="keyboard no-select" style="height: 54px;width: 108px;">
         <Key v-for="(item,index) in dynamic_key_mutex.target_keys_location" :width="1" :height="1" :x=index
       :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></Key>
     </div>
   </n-form-item>
-  <n-form-item label="Priority mode">
+  <n-form-item :label="t('dynamic_key_mutex_panel_priority_mode')">
     <n-radio-group v-model:value="dynamic_key_mutex_mode" name="radiobuttongroup1">
       <n-radio-button v-for="mode in dynamic_key_mutex_modes" :key="mode.value" :value="mode.value" :label="mode.label" />
     </n-radio-group> 
   </n-form-item>
-  <n-form-item label="Always trigger when fully pressed">
+  <n-form-item :label="t('dynamic_key_mutex_panel_always')">
     <n-switch v-model:value="dynamic_key_mutex_switch"/>
   </n-form-item>
-  <n-form-item label="Key bindings">
+  <n-form-item :label="t('dynamic_key_mutex_panel_key_bindings')">
     <div class="keyboard no-select" style="height: 54px;">
       <Key v-for="(item,index) in dynamic_key_mutex.bindings" :width="1" :height="1" :x=index
       :labels="keyCodeToStringLabels(item)"

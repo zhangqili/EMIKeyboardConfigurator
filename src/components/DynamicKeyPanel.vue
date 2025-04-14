@@ -3,7 +3,7 @@ import { computed, h, onMounted, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyboardTracker from './KeyboardTracker.vue';
+import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import DynamicKeyStrokePanel from './DynamicKeyStrokePanel.vue';
 import DynamicKeyModTapPanel from './DynamicKeyModTapPanel.vue';
@@ -30,22 +30,22 @@ const dynamic_key_types =
     {
       value: ekc.DynamicKeyType.DynamicKeyStroke,
       key: ekc.DynamicKeyType.DynamicKeyStroke,
-      label: 'Dynamic Key Stroke'
+      label: t('dynamic_key_panel_dks')
     },
     {
       value: ekc.DynamicKeyType.DynamicKeyModTap,
       key: ekc.DynamicKeyType.DynamicKeyModTap,
-      label: 'Mod Tap'
+      label: t('dynamic_key_panel_mt')
     },
     {
       value: ekc.DynamicKeyType.DynamicKeyToggleKey,
       key: ekc.DynamicKeyType.DynamicKeyToggleKey,
-      label: 'Toggle Key'
+      label: t('dynamic_key_panel_tk')
     },
     {
       value: ekc.DynamicKeyType.DynamicKeyMutex,
       key: ekc.DynamicKeyType.DynamicKeyMutex,
-      label: 'Mutex Key'
+      label: t('dynamic_key_panel_mutex')
     }
   ].map((s) => {
     return s;
@@ -87,15 +87,15 @@ function createColumns({
 }): DataTableColumns<DynamicKeyRow> {
   return [
     {
-      title: 'Index',
+      title: t('dynamic_key_panel_index'),
       key: 'index'
     },
     {
-      title: 'Type',
+      title: t('dynamic_key_panel_type'),
       key: 'type'
     },
     {
-      title: 'Bindings',
+      title: t('dynamic_key_panel_bindings'),
       key: 'bindings',
       render(row) {
         const keys = row.bindings.map((binding, index) => {
@@ -119,7 +119,7 @@ function createColumns({
       }
     },
     {
-      title: 'Action',
+      title: t('dynamic_key_panel_actions'),
       key: 'actions',
       render(row) {
         return [h(
@@ -127,14 +127,14 @@ function createColumns({
           {
             onClick: () => editDynamicKey(row.index)
           },
-          { default: () => 'Edit' },
+          { default: () => t('edit') },
         ),
         h(
           NButton,
           {
             onClick: () => deleteDynamicKey(row.index)
           },
-          { default: () => 'Delete' },
+          { default: () => t('delete') },
         )]
       }
     }
@@ -254,13 +254,13 @@ const dynamic_key_mutex= computed({
 <template>
   <div style="flex: 1; display: flex; height: 100%;">
     <div style="flex: 1; display: flex; height: 100%;" v-if="dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone">
-      <n-card style="height: 100%; flex:400px;" title="Create a new dynamic key">
+      <n-card style="height: 100%; flex:400px;" :title="t('dynamic_key_panel_main_title')">
         <n-menu
           :options="dynamic_key_types" @update:value="handleDynamicTypeSelection">
         </n-menu>
       </n-card>
       <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;"
-      title="Existing dynamic key">
+      :title="t('dynamic_key_panel_sub_title')">
         <n-scrollbar>
         <n-data-table
             :columns="columns" :data="data">
@@ -269,14 +269,14 @@ const dynamic_key_mutex= computed({
       </n-card>
     </div>
       <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyStroke"
-        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Dynamic Key Stroke">
+        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_dks')">
           <div style="flex: 1; display: flex; height: 100%;">
             <n-scrollbar style="flex: 1; overflow-y: auto;">
             <DynamicKeyStrokePanel v-model:dynamic_key="dynamic_key_stroke"></DynamicKeyStrokePanel>
             </n-scrollbar>
             <n-scrollbar style="flex: 1; overflow-y: auto;">
             <div>
-              <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+              <KeyTracker v-model:binding="key_binding"></KeyTracker>
               <n-divider></n-divider>
               <KeySelector v-model:binding="key_binding"></KeySelector>
             </div>
@@ -284,15 +284,15 @@ const dynamic_key_mutex= computed({
           </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-              Cancel
+              {{ t('cancel') }}
           </n-button>
           <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-              Confirm
+              {{ t('confirm') }}
           </n-button>
         </template>
       </n-card>
       <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyModTap"
-        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Mod Tap">
+        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_mt')">
 
         <div style="flex: 1; display: flex; height: 100%;">
           <n-scrollbar style="flex: 1; overflow-y: auto;">
@@ -300,7 +300,7 @@ const dynamic_key_mutex= computed({
           </n-scrollbar>
           <n-scrollbar style="flex: 1; overflow-y: auto;">
             <div>
-              <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+              <KeyTracker v-model:binding="key_binding"></KeyTracker>
               <n-divider></n-divider>
               <KeySelector v-model:binding="key_binding"></KeySelector>
             </div>
@@ -308,15 +308,15 @@ const dynamic_key_mutex= computed({
         </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-              Cancel
+              {{ t('cancel') }}
           </n-button>
           <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-              Confirm
+              {{ t('confirm') }}
           </n-button>
         </template>
       </n-card>
       <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyToggleKey"
-        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Toggle Key">
+        style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_tk')">
 
         <div style="flex: 1; display: flex; height: 100%;">
           <n-scrollbar style="flex: 1; overflow-y: auto;">
@@ -324,7 +324,7 @@ const dynamic_key_mutex= computed({
           </n-scrollbar>
           <n-scrollbar style="flex: 1; overflow-y: auto;">
           <div style="flex: 1; overflow-y: auto;">
-            <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+            <KeyTracker v-model:binding="key_binding"></KeyTracker>
             <n-divider></n-divider>
             <KeySelector v-model:binding="key_binding"></KeySelector>
           </div>
@@ -332,22 +332,22 @@ const dynamic_key_mutex= computed({
         </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-              Cancel
+              {{ t('cancel') }}
           </n-button>
           <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-              Confirm
+              {{ t('confirm') }}
           </n-button>
         </template>
       </n-card>
       <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyMutex"
-      style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" title="Mutex Key">
+      style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_mutex')">
       <div style="flex: 1; display: flex; height: 100%;">
         <n-scrollbar style="flex: 1; overflow-y: auto;">
           <DynamicKeyMutexPanel v-model:dynamic_key="dynamic_key_mutex"></DynamicKeyMutexPanel>
         </n-scrollbar>
         <n-scrollbar style="flex: 1; overflow-y: auto;">
           <div>
-            <KeyboardTracker v-model:binding="key_binding"></KeyboardTracker>
+            <KeyTracker v-model:binding="key_binding"></KeyTracker>
             <n-divider></n-divider>
             <KeySelector v-model:binding="key_binding"></KeySelector>
           </div>
@@ -356,10 +356,10 @@ const dynamic_key_mutex= computed({
         </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
-              Cancel
+              {{ t('cancel') }}
           </n-button>
           <n-button type="primary" style="margin-left: 12px;" @click="confirmDynamicKey">
-              Confirm
+              {{ t('confirm') }}
           </n-button>
         </template>
       </n-card>
