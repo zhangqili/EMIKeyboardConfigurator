@@ -8,6 +8,9 @@ export const useMainStore = defineStore('main',
     // 为了完整类型推理，推荐使用箭头函数
     () => {
         // 所有这些属性都将自动推断出它们的类型
+        const lang = ref<string>('en');
+        const theme_name = ref<string>('dark');
+
         const keyboard_keys = ref<KeyConfig[]>([]);
 
         const selected_device = ref<string | undefined>(undefined);
@@ -94,6 +97,9 @@ export const useMainStore = defineStore('main',
         //keymap: [][] as number[][],
         //hasChanged: true,
         return {
+            lang,
+            theme_name,
+
             keyboard_keys,
 
             selected_device,

@@ -3,7 +3,7 @@ import { computed, h, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyboardTracker from './KeyboardTracker.vue';
+import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
@@ -49,13 +49,13 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 </script>
 <template>
 <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-    <n-form-item label="Key">
+    <n-form-item :label="t('key')">
       <div class="keyboard no-select" style="height: 54px;">
         <Key v-for="(item,index) in dynamic_key_tk.target_keys_location" :width="1" :height="1" :x=index
       :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></Key>
       </div>
     </n-form-item>
-    <n-form-item label="Key binding">
+    <n-form-item :label="t('dynamic_key_tk_panel_key_bindings')">
       <div class="keyboard no-select" style="height: 54px;">
         <Key :width="1" :height="1" :x=0
       :labels="keyCodeToStringLabels(dynamic_key_tk.bindings[0])"

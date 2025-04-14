@@ -20,6 +20,7 @@ import DebugPanel from "./DebugPanel.vue";
 import KeyboardRender from "./KeyboardRender.vue";
 import AboutPanel from "./AboutPanel.vue";
 import cloneDeep from "lodash/cloneDeep";
+import { setI18nLanguage } from "../locales/i18n";
 
 interface Window {
   showOpenFilePicker?: any;
@@ -29,6 +30,7 @@ interface Window {
 const { t } = useI18n();
 const store = useMainStore();
 const { 
+  lang,
   selected_device,
   advanced_key, 
   rgb_config, 
@@ -44,13 +46,19 @@ const {
   debug_raw_chart_option, 
   debug_value_chart_option,
   dynamic_keys,
-  keyboard_keys
+  keyboard_keys,
+  theme_name
 } = storeToRefs(store);
 
 const message = useMessage();
 const notification = useNotification();
 const tab_selection = ref<string | null>("PerformancePanel");
 const isConnected = ref<boolean>(false);
+
+const themeLabelMap = computed(() => ({
+  dark: t('light'),
+  light: t('dark')
+} satisfies Record<string, string>));
 
 const key_containers = computed(() => {
   var keys = keyboard_keys.value;
@@ -184,10 +192,10 @@ async function connectCommand() {
       var result = await apis.connect_device();
       isConnected.value = result;
       if (isConnected.value) {
-        message.success("Found device");
+        message.success(t('main_found_device'));
       }
       else{
-        message.error("Device not found");
+        message.error(t('main_device_not_found'));
       }
       //await apis.receive_data_in_background();
     }
@@ -436,12 +444,12 @@ async function importConfig() {
     }
     else
     {
-      message.error("Device mismatch");
+      message.error(t('main_device_mistatch'));
       return;
     }
-    message.success("Config file imported.");
+    message.success(t('main_import_success'));
   } catch (error) {
-    message.error("Config file import failed.");
+    message.error(t('main_import_failed'));
     console.error(error);
   }
 }
@@ -481,22 +489,33 @@ async function exportConfig() {
   }
 }
 
-const advanced_options = [
+const advanced_options = computed(()=> [
   {
-    label: 'Flash configuration',
+    label: t('toolbar_device_flash_configuration'),
     key: 'flash config'
   },
   {
-    label: 'System reset',
+    label: t('toolbar_device_reset'),
     key: 'system reset'
   },
   {
-    label: 'Factory reset',
+    label: t('toolbar_device_factory_reset'),
     key: 'factory reset'
   }
-];
+]);
 
-const menuOptions: MenuOption[] = [
+const language_options = computed(()=> [
+  {
+    label: 'English',
+    value: 'en'
+  },
+  {
+    label: '简体中文',
+    value: 'zh'
+  }
+]);
+
+const menuOptions = computed(()=>[
   {
     label: t('main_tabs_performance'),
     key: 'PerformancePanel',
@@ -521,21 +540,20 @@ const menuOptions: MenuOption[] = [
     label: t('main_tabs_about'),
     key: 'AboutPanel',
   },
-];
-
+]);
 
 function handleAdvancedMenu(key: string | number) {
   if (isConnected.value) {
     switch (key) {
-      case advanced_options[0].key: {
+      case advanced_options.value[0].key: {
         apis.flash_config();
         break;
       }
-      case advanced_options[1].key: {
+      case advanced_options.value[1].key: {
         apis.system_reset();
         break;
       }
-      case advanced_options[2].key: {
+      case advanced_options.value[2].key: {
         apis.factory_reset();
         break;
       }
@@ -543,8 +561,14 @@ function handleAdvancedMenu(key: string | number) {
         break;
       }
     }
-
   }
+}
+
+if (navigator.language === "zh-CN") {
+  handleLanguageMenu("zh");
+}
+function handleLanguageMenu(key: string) {
+  setI18nLanguage(key);
 }
 
 onMounted(async () => {
@@ -553,8 +577,8 @@ onMounted(async () => {
   {
     notification.warning(
       {
-        title: 'Linux system detected',
-        content: 'You may modifiy udev rules to access your device.',
+        title: t('main_linux_detect_title'),
+        content: t('main_linux_detect_content'),
         duration: 5000,
         keepAliveOnHover: true,
         action: () =>
@@ -576,7 +600,7 @@ onMounted(async () => {
               type: 'primary',
             },
             {
-              default: () => "Don't show again"
+              default: () => t('dont_show_again')
             }
           ),
         ]
@@ -587,8 +611,8 @@ onMounted(async () => {
   {
     notification.warning(
       {
-        title: "Your browser doesn't support WebHID",
-        content: 'Please use a browser with Chromium >= 89 to access your device.',
+        title: t('main_webhid_detect_title'),
+        content: t('main_webhid_detect_content'),
         duration: 5000,
         keepAliveOnHover: true,
         action: () =>
@@ -610,7 +634,7 @@ onMounted(async () => {
               type: 'primary',
             },
             {
-              default: () => "Don't show again"
+              default: () => t('dont_show_again')
             }
           ),
         ]
@@ -648,6 +672,16 @@ const currentPanel = computed(() => {
       }
     });
 
+
+function handleThemeUpdate() {
+  if (theme_name.value === 'dark') {
+    theme_name.value = 'light'
+  }
+  else {
+    theme_name.value = 'dark'
+  }
+}
+
 </script>
 
 <template>
@@ -658,8 +692,8 @@ const currentPanel = computed(() => {
           <n-gi :span="4">
             <n-flex>
               <n-select @update:value="handleUpdateDeviceValue" style="max-width: 200px;" :disabled="isConnected" v-model:value="selected_device"
-                v-model:options="devices" filterable placeholder="Select device" />
-              <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? "Disconnect" :
+                v-model:options="devices" filterable :placeholder="t('toolbar_select_device')" />
+              <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ? t('toolbar_disconnect') :
                 t('toolbar_connect') }}</n-button>
               <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
               <n-dropdown :disabled="!isConnected" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
@@ -670,7 +704,13 @@ const currentPanel = computed(() => {
           </n-gi>
           <n-gi :span="1">
             <n-flex justify="end">
-              <n-button>{{ t('toolbar_settings') }}</n-button>
+              <n-button
+                @click="handleThemeUpdate"
+              >
+                {{ themeLabelMap[theme_name as 'light'|'dark'] }}
+              </n-button>
+              <n-select @update:value="handleLanguageMenu" style="max-width: 100px;" v-model:value="lang"
+                :options="language_options"/>
             </n-flex>
           </n-gi>
         </n-grid>
@@ -678,24 +718,24 @@ const currentPanel = computed(() => {
       <div class="container">
         <n-layout-sider :width="200" style="flex-shrink: 0;">
           <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
-            <n-select style="font-size: 14px;" size="large" placeholder="Config file" @update:value="handleUpdateFileValue" 
+            <n-select style="font-size: 14px;" size="large" :placeholder="t('main_tabs_config_file')" @update:value="handleUpdateFileValue" 
             v-model:value="selected_config_file_index" v-model:options="files"></n-select>
           </div>
           <n-space vertical>
             <n-grid :cols="3" style=" margin-top: 8px; margin-bottom: -8px;" justify="space-between">
               <n-gi>
                 <div style="margin-left: 8px;margin-right: 4px;">
-                  <n-button size="tiny" block @click="loadDefaultConfig">Default</n-button>
+                  <n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button>
                 </div>
               </n-gi>
               <n-gi>
                 <div style="margin-left: 4px;margin-right: 4px;">
-                  <n-button size="tiny" block @click="importConfig">Import</n-button>
+                  <n-button size="tiny" block @click="importConfig">{{ t('import') }}</n-button>
                 </div>
               </n-gi>
               <n-gi>
                 <div style="margin-left: 4px;margin-right: 8px;">
-                  <n-button size="tiny" block @click="exportConfig">Export</n-button>
+                  <n-button size="tiny" block @click="exportConfig">{{ t('export') }}</n-button>
                 </div>
               </n-gi>
             </n-grid>
@@ -718,7 +758,7 @@ const currentPanel = computed(() => {
             </div>
             <Transition>
               <div style="position: relative;"  v-if="tab_selection == 'PerformancePanel'||tab_selection == 'KeymapPanel'||tab_selection == 'RGBPanel'">
-                <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">Apply to all</n-button>
+                <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">{{ t('apply_to_all') }}</n-button>
               </div>
             </Transition>
             <n-divider style="margin: 0px;"/>

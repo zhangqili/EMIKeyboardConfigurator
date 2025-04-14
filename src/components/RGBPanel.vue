@@ -40,51 +40,52 @@ const color = computed<string>({
   },
 });
 
-const modes =
+const modes = computed(()=>
   [
     {
       value: ekc.RGBMode.RgbModeFixed,
-      label: 'Fixed'
+      label: t('rgb_mode_fixed')
     },
     {
       value: ekc.RGBMode.RgbModeStatic,
-      label: 'Static'
+      label: t('rgb_mode_static')
     },
     {
       value: ekc.RGBMode.RgbModeCycle,
-      label: 'Cycle'
+      label: t('rgb_mode_cycle')
     },
     {
       value: ekc.RGBMode.RgbModeLinear,
-      label: 'Linear'
+      label: t('rgb_mode_linear')
     },
     {
       value: ekc.RGBMode.RgbModeTrigger,
-      label: 'Trigger'
+      label: t('rgb_mode_trigger')
     },
     {
       value: ekc.RGBMode.RgbModeString,
-      label: 'String'
+      label: t('rgb_mode_string')
     },
     {
       value: ekc.RGBMode.RgbModeFadingString,
-      label: 'Fading String'
+      label: t('rgb_mode_fading_string')
     },
     {
       value: ekc.RGBMode.RgbModeDiamondRipple,
-      label: 'Diamond Ripple'
+      label: t('rgb_mode_diamond_ripple')
     },
     {
       value: ekc.RGBMode.RgbModeFadingDiamondRipple,
-      label: 'Fading Diamond Ripple'
+      label: t('rgb_mode_fading_diamond_ripple')
     },
     {
       value: ekc.RGBMode.RgbModeJelly,
-      label: 'Jelly'
+      label: t('rgb_mode_jelly')
     },
   ].map((s) => {
     return s;
-  });
+  })
+);
 
 
 function applyRainbowEffect() {
@@ -112,28 +113,28 @@ function applyRainbowEffect() {
   <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
     <n-space vertical>
       <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-        <n-form-item label="Mode">
+        <n-form-item :label="t('rgb_panel_mode')">
           <n-select :options="modes" v-model:value="mode">
           </n-select>
         </n-form-item>
-        <n-form-item label="Color">
+        <n-form-item :label="t('rgb_panel_color')">
           <n-color-picker v-model:value="color" :show-preview="true" :show-alpha="false"/>
         </n-form-item>
-        <n-form-item label="Speed">
-          <n-input-number v-model:value="speed" placeholder="Speed"/>
+        <n-form-item :label="t('rgb_panel_speed')">
+          <n-input-number v-model:value="speed" :placeholder="t('rgb_panel_speed')"/>
         </n-form-item>
       </n-form>
       <n-collapse>
-        <n-collapse-item title="Rainbow Preset" class="no-select">
+        <n-collapse-item :title="t('rgb_panel_rainbow_preset')" class="no-select">
           <n-form inline label-placement="top" label-width="auto" require-mark-placement="right-hanging">
-            <n-form-item label="Direction">
-              <n-input-number placeholder="Direction" v-model:value="direction"/>
+            <n-form-item :label="t('rgb_panel_rainbow_direction')">
+              <n-input-number :placeholder="t('rgb_panel_rainbow_direction')" v-model:value="direction"/>
             </n-form-item>
-            <n-form-item label="Density">
-              <n-input-number placeholder="Density" v-model:value="density"/>
+            <n-form-item :label="t('rgb_panel_rainbow_density')">
+              <n-input-number :placeholder="t('rgb_panel_rainbow_density')" v-model:value="density"/>
             </n-form-item>
           </n-form>
-          <n-button @click="applyRainbowEffect">Apply</n-button>
+          <n-button @click="applyRainbowEffect">{{ t('apply') }}</n-button>
         </n-collapse-item>
       </n-collapse>
     </n-space>

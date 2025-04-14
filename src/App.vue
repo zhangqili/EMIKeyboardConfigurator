@@ -1,19 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeMount } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { useOsTheme, darkTheme, NConfigProvider } from 'naive-ui'
 import Application from './components/Application.vue';
 import Main from './components/Main.vue';
 import * as controller from "emi-keyboard-controller"
+import { setI18nLanguage } from "./locales/i18n";
+import { useMainStore } from "./store/main";
+import { storeToRefs } from "pinia";
+const store = useMainStore();
+const { 
+  theme_name
+} = storeToRefs(store);
 
 const greetMsg = ref("");
 const name = ref("");
-const theme = computed(() => (useOsTheme().value === 'dark' ? darkTheme : null));
+
 
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   greetMsg.value = await invoke("greet", { name: name.value });
 }
+
+theme_name.value = useOsTheme().value === 'dark' ? 'dark' : 'light';
+const theme = computed(() => (theme_name.value === 'dark' ? darkTheme : null));
 
 window.addEventListener("contextmenu", (e) => e.preventDefault(), false);
 

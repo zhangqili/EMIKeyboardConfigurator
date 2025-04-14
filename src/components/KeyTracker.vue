@@ -4,7 +4,9 @@ import {keyboardEventToHidCodeMap} from "../apis/utils"
 import { onBeforeUnmount } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const store = useMainStore();
 const {key_binding, current_layer} = storeToRefs(store);
 
@@ -74,14 +76,14 @@ onBeforeUnmount(() => {
   <div @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <n-flex vertical>
       <div>
-        <n-button @click="clear">Clear</n-button>
+        <n-button @click="clear">{{ t("clear") }}</n-button>
         <n-button strong secondary v-for="(key, index) in modifierKeys">
           {{ key }}
         </n-button>
         <n-button strong secondary>{{ regularKey || 'NoEvent' }}</n-button>
       </div>
       <n-card style="height: 100px;">
-        Press any key here
+        {{ t('key_tracker_desc') }}
       </n-card>
     </n-flex>
   </div>
