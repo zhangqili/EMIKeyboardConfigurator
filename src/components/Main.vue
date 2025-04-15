@@ -573,9 +573,9 @@ function handleLanguageMenu(key: string) {
 
 onMounted(async () => {
   //initializeKeyboard();
-  if(navigator.userAgent.toLowerCase().includes("linux"))
+  if(navigator.userAgent.toLowerCase().includes("linux") && localStorage.getItem('dontShowLinuxDetect') != 'true')
   {
-    notification.warning(
+    const linux_detect_notification = notification.warning(
       {
         title: t('main_linux_detect_title'),
         content: t('main_linux_detect_content'),
@@ -598,6 +598,10 @@ onMounted(async () => {
             {
               text: true,
               type: 'primary',
+              onClick: () => {
+                localStorage.setItem('dontShowLinuxDetect', 'true');
+                linux_detect_notification.destroy();
+              }
             },
             {
               default: () => t('dont_show_again')
@@ -607,9 +611,9 @@ onMounted(async () => {
       }
     );
   }
-  if (!('hid' in navigator))
+  if (!('hid' in navigator) && localStorage.getItem('dontShowWebHIDDetect') != 'true')
   {
-    notification.warning(
+    const webhid_detect_notification = notification.warning(
       {
         title: t('main_webhid_detect_title'),
         content: t('main_webhid_detect_content'),
@@ -632,6 +636,10 @@ onMounted(async () => {
             {
               text: true,
               type: 'primary',
+              onClick: () => {
+                localStorage.setItem('dontShowWebHIDDetect', 'true');
+                webhid_detect_notification.destroy();
+              }
             },
             {
               default: () => t('dont_show_again')
