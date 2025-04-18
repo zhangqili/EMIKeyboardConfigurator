@@ -10,11 +10,11 @@ use std::{
     thread, time::Duration,
 };
 use tauri::{AppHandle, Emitter, State};
-use trinity_keypad_controller::TrinityKeypadController;
+use trinity_keypad_controller::TrinityPadController;
 use zellia_80_controller::Zellia80Controller;
 
 static DEVICES: [&'static str; 4] = [
-    "Trinity Keypad",
+    "Trinity Pad",
     "Oholeo Keyboard",
     "Zellia80 HE",
     "ANSI 104 Sample",
@@ -32,8 +32,8 @@ fn set_device(
 ) {
     if DEVICES.contains(&device.as_str()) {}
     match device.as_str() {
-        "Trinity Keypad" => {
-            *device_handle.lock().unwrap() = Some(Box::new(TrinityKeypadController::default()));
+        "Trinity Pad" => {
+            *device_handle.lock().unwrap() = Some(Box::new(TrinityPadController::default()));
         }
         "Oholeo Keyboard" => {
             *device_handle.lock().unwrap() = Some(Box::new(OholeoKeyboardController::default()));

@@ -13,7 +13,7 @@ pub const VID: u16 = 0xFFFF;
 pub const PID: u16 = 0xFFFF;
 
 #[derive(Serialize, Deserialize)]
-pub struct TrinityKeypadController {
+pub struct TrinityPadController {
     #[serde(skip)]
     pub device: Option<hidapi::HidDevice>,
     pub advanced_keys: [AdvancedKey; 4],
@@ -22,9 +22,9 @@ pub struct TrinityKeypadController {
     pub keymap: [[u16; 13]; 3],
 }
 
-impl Clone for TrinityKeypadController {
+impl Clone for TrinityPadController {
     fn clone(&self) -> Self {
-        TrinityKeypadController {
+        TrinityPadController {
             //device: Some(hidapi::HidApi::new().unwrap().open_path(self.device.as_ref().unwrap().get_device_info().unwrap().path()).unwrap()),
             device: None,
             advanced_keys: self.advanced_keys.clone(),
@@ -35,7 +35,7 @@ impl Clone for TrinityKeypadController {
     }
 }
 
-impl Default for TrinityKeypadController {
+impl Default for TrinityPadController {
     fn default() -> Self {
         Self {
             device: None, // 没有具体设备句柄时设置为 None
@@ -90,7 +90,7 @@ impl Default for TrinityKeypadController {
     }
 }
 
-impl KeyboardController for TrinityKeypadController {
+impl KeyboardController for TrinityPadController {
     fn detect(&self) -> Vec<CString> {
         let mut paths: Vec<CString> = Vec::new();
         let api = hidapi::HidApi::new().unwrap();
@@ -264,7 +264,7 @@ impl KeyboardController for TrinityKeypadController {
     }
 }
 
-impl TrinityKeypadController {
+impl TrinityPadController {
     pub fn send_advanced_keys(&self) {
         let mut send_buf = [0u8; 64];
         send_buf[0] = 0x01;

@@ -3,7 +3,7 @@ import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode
 
 const layout = `[[{"a": 7},"Z","X","C","V"]]`;
 
-export class TrinityKeypadController  extends LibampKeyboardController {
+export class TrinityPadController  extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 4;
     config_file_number:number = 4;
 

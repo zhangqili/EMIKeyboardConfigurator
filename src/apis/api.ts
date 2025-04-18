@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import * as ekc from "emi-keyboard-controller"
 
 const DEVICES = [
-    "Trinity Keypad",
+    "Trinity Pad",
     "Oholeo Keyboard",
     "Zellia80 HE",
     "ANSI 104 Sample",
@@ -17,8 +17,8 @@ export async function get_devices() {
 
 export async function set_device(device: string) {
     switch (device) {
-        case "Trinity Keypad":{
-            CONTROLLER = new ekc.TrinityKeypadController();
+        case "Trinity Pad":{
+            CONTROLLER = new ekc.TrinityPadController();
             break;
         }
         case "Oholeo Keyboard":{

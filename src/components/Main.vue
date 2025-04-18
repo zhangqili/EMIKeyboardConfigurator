@@ -565,8 +565,10 @@ function handleAdvancedMenu(key: string | number) {
 }
 
 if (navigator.language === "zh-CN") {
+  lang.value = "zh";
   handleLanguageMenu("zh");
 }
+
 function handleLanguageMenu(key: string) {
   setI18nLanguage(key);
 }
