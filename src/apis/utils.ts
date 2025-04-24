@@ -367,6 +367,12 @@ export const MouseKeycodeToKeyName: { [key in MouseKeycode]: string } = {
   [MouseKeycode.MouseBack]: 'Mouse Back',
   [MouseKeycode.MouseWheelUp]: 'Mouse Wheel Up',
   [MouseKeycode.MouseWheelDown]: 'Mouse Wheel Down',
+  [MouseKeycode.MouseWheelLeft]: 'Mouse Wheel Left',
+  [MouseKeycode.MouseWheelRight]: 'Mouse Wheel Right',
+  [MouseKeycode.MouseMoveUp]: 'Mouse Move Up',
+  [MouseKeycode.MouseMoveDown]: 'Mouse Move Down',
+  [MouseKeycode.MouseMoveLeft]: 'Mouse Move Left',
+  [MouseKeycode.MouseMoveRight]: 'Mouse Move Right',
 };
 
 export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = {

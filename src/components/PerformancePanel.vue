@@ -143,14 +143,14 @@ const modes = computed(()=>
             </template>
           </n-input-number>
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_upper_deadzone')">
+        <n-form-item v-if="mode !== ekc.KeyMode.KeyDigitalMode" :label="t('performance_panel_upper_deadzone')">
           <n-input-number v-model:value="upper_deadzone" :placeholder="t('performance_panel_upper_deadzone')" :min="0" :max="100" >
             <template #suffix>
               %
             </template>
           </n-input-number>
         </n-form-item>
-        <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode || mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_lower_deadzone')">
+        <n-form-item v-if="mode !== ekc.KeyMode.KeyDigitalMode" :label="t('performance_panel_lower_deadzone')">
           <n-input-number v-model:value="lower_deadzone" :placeholder="t('performance_panel_lower_deadzone')" :min="0" :max="100" >
             <template #suffix>
               %

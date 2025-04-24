@@ -393,6 +393,12 @@ export enum MouseKeycode {
     MouseBack = 4,
     MouseWheelUp = 5,
     MouseWheelDown = 6,
+    MouseWheelLeft = 7,
+    MouseWheelRight = 8,
+    MouseMoveUp = 0x10,
+    MouseMoveDown = 0x11,
+    MouseMoveLeft = 0x12,
+    MouseMoveRight = 0x13,
 }
 export enum KeyboardKeycode {
     KeyboardReboot = 0,
