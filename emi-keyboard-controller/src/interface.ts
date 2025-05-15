@@ -684,6 +684,7 @@ export interface IRGBConfig {
 export interface IRGBBaseConfig {
     mode: RGBBaseMode;
     rgb: Srgb;
+    secondary_rgb: Srgb;
     speed: number;
     direction: number;
     density: number;
@@ -708,6 +709,7 @@ export class RGBConfig implements IRGBConfig {
 export class RGBBaseConfig implements IRGBBaseConfig {
     mode: RGBBaseMode;
     rgb: Srgb;
+    secondary_rgb: Srgb;
     speed: number;
     direction: number;
     density: number;
@@ -718,6 +720,11 @@ export class RGBBaseConfig implements IRGBBaseConfig {
           red: 163,
           green: 55,
           blue: 252
+        };
+        this.secondary_rgb = {
+          red: 0,
+          green: 0,
+          blue: 0
         };
         this.speed = 0.02;
         this.direction = 0;

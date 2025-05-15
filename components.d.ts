@@ -49,7 +49,6 @@ declare module 'vue' {
     NNotificationProvider: typeof import('naive-ui')['NNotificationProvider']
     NRadioButton: typeof import('naive-ui')['NRadioButton']
     NRadioGroup: typeof import('naive-ui')['NRadioGroup']
-    NScroll: typeof import('naive-ui')['NScroll']
     NScrollbar: typeof import('naive-ui')['NScrollbar']
     NSelect: typeof import('naive-ui')['NSelect']
     NSpace: typeof import('naive-ui')['NSpace']

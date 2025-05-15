@@ -40,6 +40,16 @@ const base_color = computed<string>({
   },
 });
 
+const base_sub_color = computed<string>({
+  get: () => rgbToHex(rgb_base_config.value.secondary_rgb),
+  set: (value: string) => {
+    var c = tinycolor(value).toRgb();
+    rgb_base_config.value.secondary_rgb.red = c.r;
+    rgb_base_config.value.secondary_rgb.green = c.g;
+    rgb_base_config.value.secondary_rgb.blue = c.b;
+  },
+});
+
 const base_direction = computed<number>({
   get: () => rgb_base_config.value.direction,
   set: (value: number) => {
@@ -190,6 +200,9 @@ function applyRainbowEffect() {
               </n-form-item>
               <n-form-item :label="t('rgb_panel_color')">
                 <n-color-picker v-model:value="base_color" :show-preview="true" :show-alpha="false"/>
+              </n-form-item>
+              <n-form-item :label="t('rgb_panel_secondary_color')">
+                <n-color-picker v-model:value="base_sub_color" :show-preview="true" :show-alpha="false"/>
               </n-form-item>
               <n-form-item :label="t('rgb_panel_speed')">
                 <n-input-number v-model:value="base_speed" :placeholder="t('rgb_panel_speed')"/>

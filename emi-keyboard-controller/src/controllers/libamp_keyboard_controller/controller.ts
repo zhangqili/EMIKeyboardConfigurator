@@ -92,10 +92,13 @@ export class LibampKeyboardController extends KeyboardController {
             this.rgb_base_config.rgb.red = buf[3];
             this.rgb_base_config.rgb.green = buf[4];
             this.rgb_base_config.rgb.blue = buf[5];
-            this.rgb_base_config.speed = dataView.getFloat32(6, true);
-            this.rgb_base_config.direction = dataView.getUint16(10, true);
-            this.rgb_base_config.density = buf[12];
-            this.rgb_base_config.brightness = buf[13];
+            this.rgb_base_config.secondary_rgb.red = buf[6];
+            this.rgb_base_config.secondary_rgb.green = buf[7];
+            this.rgb_base_config.secondary_rgb.blue = buf[8];
+            this.rgb_base_config.speed = dataView.getFloat32(9, true);
+            this.rgb_base_config.direction = dataView.getUint16(13, true);
+            this.rgb_base_config.density = buf[15];
+            this.rgb_base_config.brightness = buf[16];
             break;
         case 2: // LED
             const dataLength = buf[2];
@@ -257,10 +260,13 @@ export class LibampKeyboardController extends KeyboardController {
             send_buf[3] = this.rgb_base_config.rgb.red;
             send_buf[4] = this.rgb_base_config.rgb.green;
             send_buf[5] = this.rgb_base_config.rgb.blue;
-            dataView.setFloat32(6,this.rgb_base_config.speed,true);
-            dataView.setUint16(10,this.rgb_base_config.direction % 65536,true);
-            send_buf[12] = this.rgb_base_config.density % 256;
-            send_buf[13] = this.rgb_base_config.brightness % 256;
+            send_buf[6] = this.rgb_base_config.secondary_rgb.red;
+            send_buf[7] = this.rgb_base_config.secondary_rgb.green;
+            send_buf[8] = this.rgb_base_config.secondary_rgb.blue;
+            dataView.setFloat32(9,this.rgb_base_config.speed,true);
+            dataView.setUint16(13,this.rgb_base_config.direction % 65536,true);
+            send_buf[15] = this.rgb_base_config.density % 256;
+            send_buf[16] = this.rgb_base_config.brightness % 256;
             let res = this.write(send_buf);
             console.log("send rgb base config");
             console.log(send_buf);

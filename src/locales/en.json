@@ -83,6 +83,7 @@
     "rgb_panel_sub_title" : "Key RGB Effects",
     "rgb_panel_mode" : "Mode",
     "rgb_panel_color" : "Color",
+    "rgb_panel_secondary_color" : "Secondary Color",
     "rgb_panel_speed" : "Speed",
     "rgb_panel_density" : "Density",
     "rgb_panel_direction" : "Direction",

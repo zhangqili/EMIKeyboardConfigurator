@@ -83,6 +83,7 @@
     "rgb_panel_sub_title" : "按键灯效",
     "rgb_panel_mode" : "模式",
     "rgb_panel_color" : "颜色",
+    "rgb_panel_secondary_color" : "次要颜色",
     "rgb_panel_speed" : "速度",
     "rgb_panel_density" : "密度",
     "rgb_panel_direction" : "方向",
