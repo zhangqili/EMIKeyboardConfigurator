@@ -79,9 +79,19 @@
     "performance_panel_upper_bound" : "Upper bound",
     "performance_panel_lower_bound" : "Lower bound",
 
+    "rgb_panel_main_title" : "Base Layer",
+    "rgb_panel_sub_title" : "Key RGB Effects",
     "rgb_panel_mode" : "Mode",
     "rgb_panel_color" : "Color",
     "rgb_panel_speed" : "Speed",
+    "rgb_panel_density" : "Density",
+    "rgb_panel_direction" : "Direction",
+    "rgb_panel_brightness" : "Brightness",
+
+    "rgb_base_mode_off" : "Off",
+    "rgb_base_mode_blank" : "Blank",
+    "rgb_base_mode_rainbow" : "Rainbow",
+    "rgb_base_mode_wave" : "Wave",
 
     "rgb_mode_fixed" : "Fixed",
     "rgb_mode_static" : "Static",

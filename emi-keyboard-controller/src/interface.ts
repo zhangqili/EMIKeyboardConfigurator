@@ -14,6 +14,13 @@ export enum CalibrationMode {
     KeyAutoCalibrationUndefined = 3,
 }
 
+export enum RGBBaseMode {
+    RgbBaseModeOff = 0,
+    RgbBaseModeBlank = 1,
+    RgbBaseModeRainbow = 2,
+    RgbBaseModeWave = 3,
+}
+
 export enum RGBMode {
     RgbModeFixed = 0,
     RgbModeStatic = 1,
@@ -672,6 +679,15 @@ export interface IRGBConfig {
     speed: number;
 }
 
+export interface IRGBBaseConfig {
+    mode: RGBBaseMode;
+    rgb: Srgb;
+    speed: number;
+    direction: number;
+    density: number;
+    brightness: number;
+}
+
 export class RGBConfig implements IRGBConfig {
     mode: RGBMode;
     rgb: Srgb;
@@ -687,6 +703,26 @@ export class RGBConfig implements IRGBConfig {
     }
 }
 
+export class RGBBaseConfig implements IRGBBaseConfig {
+    mode: RGBBaseMode;
+    rgb: Srgb;
+    speed: number;
+    direction: number;
+    density: number;
+    brightness: number;
+    constructor(){
+        this.mode = RGBBaseMode.RgbBaseModeBlank;
+        this.rgb = {
+          red: 163,
+          green: 55,
+          blue: 252
+        };
+        this.speed = 0.02;
+        this.direction = 0;
+        this.density = 0;
+        this.brightness = 255;
+    }
+}
 
 export interface IKeyboardController{
     detect(): Promise<HIDDevice[]>;
@@ -699,8 +735,8 @@ export interface IKeyboardController{
     get_connection_state() : boolean;
     get_advanced_keys() : IAdvancedKey[];
     set_advanced_keys(keys : IAdvancedKey[]) : void;
-    get_rgb_switch() : boolean;
-    set_rgb_switch(s : boolean) : void;
+    get_rgb_base_config() : IRGBBaseConfig;
+    set_rgb_base_config(config : IRGBBaseConfig) : void;
     get_rgb_configs() : IRGBConfig[];
     set_rgb_configs(configs : IRGBConfig[]) : void;
     get_keymap() : number[][];
@@ -725,7 +761,7 @@ export interface IKeyboardController{
 export abstract class KeyboardController implements IKeyboardController, EventTarget{
     device: HIDDevice | undefined;
     advanced_keys!: AdvancedKey[];
-    rgb_switch!: boolean;
+    rgb_base_config!: IRGBBaseConfig;
     rgb_configs!: IRGBConfig[];
     keymap!: number[][];
     dynamic_keys!: IDynamicKey[];
@@ -809,11 +845,11 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     set_advanced_keys(keys: IAdvancedKey[]): void {
         this.advanced_keys = keys;
     }
-    get_rgb_switch(): boolean {
-        return this.rgb_switch;
+    get_rgb_base_config(): IRGBBaseConfig {
+        return this.rgb_base_config;
     }
-    set_rgb_switch(s: boolean): void {
-        this.rgb_switch = s;
+    set_rgb_base_config(config: IRGBBaseConfig): void {
+        this.rgb_base_config = config;
     }
     get_rgb_configs(): IRGBConfig[] {
         return this.rgb_configs;
@@ -837,7 +873,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     reset_to_default() : void
     {
         this.advanced_keys = new Array<IAdvancedKey>();
-        this.rgb_switch = false;
+        this.rgb_base_config = new RGBBaseConfig();
         this.rgb_configs = new Array<IRGBConfig>();
         this.keymap = new Array<Array<number>>();
         this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;

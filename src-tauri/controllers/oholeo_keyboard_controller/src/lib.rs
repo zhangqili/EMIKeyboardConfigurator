@@ -152,11 +152,11 @@ impl KeyboardController for OholeoKeyboardController {
         self.advanced_keys.copy_from_slice(&keys);
     }
 
-    fn get_rgb_switch(&self) -> bool {
+    fn get_rgb_base_config(&self) -> bool {
         return self.rgb_switch;
     }
 
-    fn set_rgb_switch(&mut self, switch: bool) {
+    fn set_rgb_base_config(&mut self, switch: bool) {
         self.rgb_switch = switch;
     }
 

@@ -76,17 +76,17 @@ fn set_advanced_keys(
 }
 
 #[tauri::command]
-fn get_rgb_switch(device_handle: State<Arc<Mutex<Option<Box<dyn KeyboardController>>>>>) -> bool {
+fn get_rgb_base_config(device_handle: State<Arc<Mutex<Option<Box<dyn KeyboardController>>>>>) -> bool {
     return device_handle
         .lock()
         .unwrap()
         .as_mut()
         .unwrap()
-        .get_rgb_switch();
+        .get_rgb_base_config();
 }
 
 #[tauri::command]
-fn set_rgb_switch(
+fn set_rgb_base_config(
     device_handle: State<Arc<Mutex<Option<Box<dyn KeyboardController>>>>>,
     switch: bool,
 ) {
@@ -95,7 +95,7 @@ fn set_rgb_switch(
         .unwrap()
         .as_mut()
         .unwrap()
-        .set_rgb_switch(switch);
+        .set_rgb_base_config(switch);
 }
 
 #[tauri::command]
@@ -303,8 +303,8 @@ pub fn run() {
             set_device,
             get_advanced_keys,
             set_advanced_keys,
-            get_rgb_switch,
-            set_rgb_switch,
+            get_rgb_base_config,
+            set_rgb_base_config,
             get_rgb_configs,
             set_rgb_configs,
             get_keymap,

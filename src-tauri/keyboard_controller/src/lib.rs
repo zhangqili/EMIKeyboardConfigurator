@@ -17,8 +17,8 @@ pub trait KeyboardController : Send{
 
     fn get_advanced_keys(&self) -> Vec<AdvancedKey>;
     fn set_advanced_keys(&mut self, keys : Vec<AdvancedKey>);
-    fn get_rgb_switch(&self) -> bool;
-    fn set_rgb_switch(&mut self, switch : bool);
+    fn get_rgb_base_config(&self) -> bool;
+    fn set_rgb_base_config(&mut self, switch : bool);
     fn get_rgb_configs(&self) -> Vec<RGBConfig>;
     fn set_rgb_configs(&mut self, configs : Vec<RGBConfig>);
     fn get_keymap(&self) -> Vec<Vec<u16>>;

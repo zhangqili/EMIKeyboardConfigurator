@@ -88,7 +88,14 @@ export class LibampKeyboardController extends KeyboardController {
             //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].lower_bound = fill_in_float(&buf[2 + 4 * 9]);
             break;
         case 1: // Global LED
-            this.rgb_switch = buf[2] != 0;
+            this.rgb_base_config.mode = buf[2];
+            this.rgb_base_config.rgb.red = buf[3];
+            this.rgb_base_config.rgb.green = buf[4];
+            this.rgb_base_config.rgb.blue = buf[5];
+            this.rgb_base_config.speed = dataView.getFloat32(6, true);
+            this.rgb_base_config.direction = dataView.getUint16(10, true);
+            this.rgb_base_config.density = buf[12];
+            this.rgb_base_config.brightness = buf[13];
             break;
         case 2: // LED
             const dataLength = buf[2];
@@ -244,12 +251,23 @@ export class LibampKeyboardController extends KeyboardController {
         let send_buf = new Uint8Array(63);
         send_buf[0] = 0xFF;
         send_buf[1] = 0x01;
-        send_buf[2] = this.rgb_switch ? 1 : 0;
         {
+            let dataView = new DataView(send_buf.buffer);
+            send_buf[2] = this.rgb_base_config.mode;
+            send_buf[3] = this.rgb_base_config.rgb.red;
+            send_buf[4] = this.rgb_base_config.rgb.green;
+            send_buf[5] = this.rgb_base_config.rgb.blue;
+            dataView.setFloat32(6,this.rgb_base_config.speed,true);
+            dataView.setUint16(10,this.rgb_base_config.direction % 65536,true);
+            send_buf[12] = this.rgb_base_config.density % 256;
+            send_buf[13] = this.rgb_base_config.brightness % 256;
             let res = this.write(send_buf);
+            console.log("send rgb base config");
             console.log(send_buf);
             console.debug("Wrote RGB Switch: {:?} byte(s)", res);
         }
+        send_buf = new Uint8Array(63);
+        send_buf[0] = 0xFF;
         send_buf[1] = 0x02;
         const rgb_page_num = Math.ceil(this.rgb_configs.length / 6);
         for (var rgb_page_index = 0; rgb_page_index < rgb_page_num; rgb_page_index+=1){

@@ -79,9 +79,19 @@
     "performance_panel_upper_bound" : "归一化函数上界",
     "performance_panel_lower_bound" : "归一化函数下界",
 
+    "rgb_panel_main_title" : "基础层",
+    "rgb_panel_sub_title" : "按键灯效",
     "rgb_panel_mode" : "模式",
     "rgb_panel_color" : "颜色",
     "rgb_panel_speed" : "速度",
+    "rgb_panel_density" : "密度",
+    "rgb_panel_direction" : "方向",
+    "rgb_panel_brightness" : "亮度",
+
+    "rgb_base_mode_off" : "关闭",
+    "rgb_base_mode_blank" : "空白",
+    "rgb_base_mode_rainbow" : "彩虹",
+    "rgb_base_mode_wave" : "波浪",
 
     "rgb_mode_fixed" : "固定",
     "rgb_mode_static" : "静态",

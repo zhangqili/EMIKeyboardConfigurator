@@ -37,6 +37,7 @@ const {
   dynamic_key,
   dynamic_key_index,
   advanced_keys, 
+  rgb_base_config,
   rgb_configs, 
   keymap, 
   key_binding, 
@@ -205,6 +206,7 @@ async function connectCommand() {
 async function saveCommand() {
   if (isConnected.value) {
     apis.set_advanced_keys(advanced_keys.value);
+    apis.set_rgb_base_config(rgb_base_config.value);
     if (keymap.value != undefined) {
       apis.set_keymap(keymap.value);
     }
@@ -227,6 +229,7 @@ async function flashCommand() {
 async function getController() {
   advanced_keys.value = await apis.get_advanced_keys();
   keymap.value = await apis.get_keymap();
+  rgb_base_config.value = await apis.get_rgb_base_config();
   rgb_configs.value = await apis.get_rgb_configs();
   dynamic_keys.value = await apis.get_dynamic_keys();
   const cnofig_file_num = await apis.get_config_file_num();
@@ -396,7 +399,7 @@ function applyToSelectedKey(id: number) {
 interface IConfig {
   device : string;
   advanced_keys : ekc.IAdvancedKey[];
-  rgb_switch : boolean;
+  rgb_base_config : ekc.IRGBBaseConfig;
   keymap : number[][];
   rgb_configs : ekc.IRGBConfig[];
   dynamic_keys : ekc.IDynamicKey[];
@@ -434,6 +437,7 @@ async function importConfig() {
           item = configData.keymap[index];
         });
       }
+      rgb_base_config.value = configData.rgb_base_config;
       rgb_configs.value.forEach((item,index)=>{
         rgb_configs.value[index] = configData.rgb_configs[index];
         });
@@ -460,7 +464,7 @@ async function exportConfig() {
       device : selected_device.value,
       advanced_keys : advanced_keys.value,
       keymap : keymap.value,
-      rgb_switch : true,
+      rgb_base_config : rgb_base_config.value,
       rgb_configs : rgb_configs.value,
       dynamic_keys : dynamic_keys.value,
     }, null, 2);

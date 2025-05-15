@@ -1,4 +1,4 @@
-import { AdvancedKey, DynamicKey, DynamicKeyType, IAdvancedKey, IDynamicKey, IRGBConfig, RGBConfig } from 'emi-keyboard-controller'
+import { AdvancedKey, DynamicKey, DynamicKeyType, IAdvancedKey, IDynamicKey, IRGBBaseConfig, IRGBConfig, RGBBaseConfig, RGBConfig } from 'emi-keyboard-controller'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { DebugDataItem, KeyConfig } from '../apis/utils';
@@ -20,6 +20,7 @@ export const useMainStore = defineStore('main',
         const dynamic_key_index = ref<number>(-1);;
 
         const advanced_keys = ref<IAdvancedKey[]>([]);
+        const rgb_base_config = ref<IRGBBaseConfig>(new RGBBaseConfig());
         const rgb_configs = ref<IRGBConfig[]>([]);
         const keymap = ref<number[][]>([]);
         const dynamic_keys = ref<IDynamicKey[]>([]);
@@ -109,6 +110,7 @@ export const useMainStore = defineStore('main',
             dynamic_key_index,
 
             advanced_keys,
+            rgb_base_config,
             rgb_configs,
             keymap,
             dynamic_keys,

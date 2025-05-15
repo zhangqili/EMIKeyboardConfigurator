@@ -48,12 +48,12 @@ export async function set_advanced_keys(keys: ekc.IAdvancedKey[]) {
     return CONTROLLER.set_advanced_keys(keys);
 }
 
-export async function get_rgb_switch() {
-    return CONTROLLER.get_rgb_switch() as boolean;
+export async function get_rgb_base_config() {
+    return CONTROLLER.get_rgb_base_config() as ekc.IRGBBaseConfig;
 }
 
-export async function set_rgb_switch(value: boolean) {
-    return CONTROLLER.set_rgb_switch(value);
+export async function set_rgb_base_config(value: ekc.IRGBBaseConfig) {
+    return CONTROLLER.set_rgb_base_config(value);
 }
 
 export async function get_rgb_configs() {

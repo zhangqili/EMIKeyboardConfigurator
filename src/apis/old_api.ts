@@ -24,12 +24,12 @@ export async function set_advanced_keys(keys: IAdvancedKey[]) {
     return (await invoke("set_advanced_keys", { keys }));
 }
 
-export async function get_rgb_switch() {
-    return (await invoke('get_rgb_switch')) as boolean;
+export async function get_rgb_base_config() {
+    return (await invoke('get_rgb_base_config')) as boolean;
 }
 
-export async function set_rgb_switch(value: boolean) {
-    return (await invoke("set_rgb_switch", { value }));
+export async function set_rgb_base_config(value: boolean) {
+    return (await invoke("set_rgb_base_config", { value }));
 }
 
 export async function get_rgb_configs() {
