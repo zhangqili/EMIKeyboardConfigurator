@@ -444,7 +444,7 @@ const midi_note_value = ref(0);
                     <n-thing :title="t('key_selector_keyboard')">
                         <n-button v-for="(key, code) in Object.keys(KeyboardKeycode)
                             //.filter(key => isNaN(Number(key)))
-                            .slice(0, 11)"
+                            .slice(0, 13)"
                             :type="((binding & 0xFF) == Keycode.KeyboardOperation && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.KeyboardOperation)">
                             {{ KeyboardOperationToKeyName[key as unknown as KeyboardKeycode] }}</n-button>

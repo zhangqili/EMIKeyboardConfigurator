@@ -383,6 +383,8 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardToggleDebug]: 'Debug',
   [KeyboardKeycode.KeyboardResetToDefault]: 'Reset to Default',
   [KeyboardKeycode.KeyboardToggleNKRO]: 'Toggle NKRO',
+  [KeyboardKeycode.KeyboardRgbBrightnessUp]: 'Brightness Up',
+  [KeyboardKeycode.KeyboardRgbBrightnessDown]: 'Brightness Down',
   [KeyboardKeycode.KeyboardConfig0]: 'Config 0',
   [KeyboardKeycode.KeyboardConfig1]: 'Config 1',
   [KeyboardKeycode.KeyboardConfig2]: 'Config 2',

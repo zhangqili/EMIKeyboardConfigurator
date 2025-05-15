@@ -415,6 +415,8 @@ export enum KeyboardKeycode {
     KeyboardToggleDebug = 4,
     KeyboardResetToDefault = 5,
     KeyboardToggleNKRO = 6,
+    KeyboardRgbBrightnessUp = 7,
+    KeyboardRgbBrightnessDown = 8,
     KeyboardConfig0 = 0x10,
     KeyboardConfig1 = 0x11,
     KeyboardConfig2 = 0x12,
