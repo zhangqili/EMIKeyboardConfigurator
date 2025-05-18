@@ -104,6 +104,7 @@
     "rgb_mode_diamond_ripple" : "方形波纹",
     "rgb_mode_fading_diamond_ripple" : "渐出方形波纹",
     "rgb_mode_jelly" : "果冻",
+    "rgb_mode_bubble" : "泡泡",
 
     "rgb_panel_rainbow_preset" : "彩虹特效预设",
     "rgb_panel_rainbow_direction" : "方向",

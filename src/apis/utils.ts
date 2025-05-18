@@ -153,6 +153,7 @@ export const rgbModeDisplayMap: Record<RGBMode, string> = {
   [RGBMode.RgbModeDiamondRipple]: "Diamond\nRipple",
   [RGBMode.RgbModeFadingDiamondRipple]: "Fading\nDiamond\nRipple",
   [RGBMode.RgbModeJelly]: "Jelly",
+  [RGBMode.RgbModeBubble]: "Bubble"
 };
 
 export const keyCodeToKeyName: { [key in Keycode]: string } = {

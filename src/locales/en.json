@@ -104,6 +104,7 @@
     "rgb_mode_diamond_ripple" : "Diamond ripple",
     "rgb_mode_fading_diamond_ripple" : "Fading diamond ripple",
     "rgb_mode_jelly" : "Jelly",
+    "rgb_mode_bubble" : "Bubble",
 
     "rgb_panel_rainbow_preset" : "Rainbow Preset",
     "rgb_panel_rainbow_direction" : "Direction",

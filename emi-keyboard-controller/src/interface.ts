@@ -32,6 +32,7 @@ export enum RGBMode {
     RgbModeDiamondRipple = 7,
     RgbModeFadingDiamondRipple = 8,
     RgbModeJelly = 9,
+    RgbModeBubble = 10,
 }
 
 export enum DynamicKeyType{

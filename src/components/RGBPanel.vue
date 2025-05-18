@@ -160,6 +160,10 @@ const modes = computed(()=>
       value: ekc.RGBMode.RgbModeJelly,
       label: t('rgb_mode_jelly')
     },
+    {
+      value: ekc.RGBMode.RgbModeBubble,
+      label: t('rgb_mode_bubble')
+    },
   ].map((s) => {
     return s;
   })
