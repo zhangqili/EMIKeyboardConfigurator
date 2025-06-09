@@ -131,53 +131,55 @@ export class LibampKeyboardController extends KeyboardController {
         case 4:   
             const dynamic_key_index = buf[2];
             var dynamic_key : IDynamicKey;
-            const dynamic_key_type = dataView.getUint32(3,true);
+            const dynamic_key_type = dataView.getUint32(4,true);
             switch (dynamic_key_type) {
                 case DynamicKeyType.DynamicKeyStroke:
                     var dynamic_key_stroke = new DynamicKeyStroke4x4();
-                    dynamic_key_stroke.type = dataView.getUint32(3,true);
-                    dynamic_key_stroke.bindings[0] = dataView.getUint16(3+4+0,true);
-                    dynamic_key_stroke.bindings[1] = dataView.getUint16(3+4+2,true);
-                    dynamic_key_stroke.bindings[2] = dataView.getUint16(3+4+4,true);
-                    dynamic_key_stroke.bindings[3] = dataView.getUint16(3+4+6,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(3+12+0,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(3+12+2,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(3+12+4,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(3+12+6,true);
-                    dynamic_key_stroke.press_begin_distance = dataView.getFloat32(3+20,true);
-                    dynamic_key_stroke.press_fully_distance = dataView.getFloat32(3+24,true);
-                    dynamic_key_stroke.release_begin_distance = dataView.getFloat32(3+28,true);
-                    dynamic_key_stroke.release_fully_distance = dataView.getFloat32(3+32,true);
+                    dynamic_key_stroke.type = dataView.getUint32(4,true);
+                    dynamic_key_stroke.bindings[0] = dataView.getUint16(4+4+0,true);
+                    dynamic_key_stroke.bindings[1] = dataView.getUint16(4+4+2,true);
+                    dynamic_key_stroke.bindings[2] = dataView.getUint16(4+4+4,true);
+                    dynamic_key_stroke.bindings[3] = dataView.getUint16(4+4+6,true);
+                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+0,true);
+                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+2,true);
+                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+4,true);
+                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+6,true);
+                    dynamic_key_stroke.press_begin_distance = dataView.getFloat32(4+20,true);
+                    dynamic_key_stroke.press_fully_distance = dataView.getFloat32(4+24,true);
+                    dynamic_key_stroke.release_begin_distance = dataView.getFloat32(4+28,true);
+                    dynamic_key_stroke.release_fully_distance = dataView.getFloat32(4+32,true);
                     dynamic_key = dynamic_key_stroke;
                     break;
                 case DynamicKeyType.DynamicKeyModTap:
                     var dynamic_key_mt = new DynamicKeyModTap();
-                    dynamic_key_mt.type = dataView.getUint32(3,true);
-                    dynamic_key_mt.bindings[0] = dataView.getUint16(3+4+0,true);
-                    dynamic_key_mt.bindings[1] = dataView.getUint16(3+4+2,true);
+                    dynamic_key_mt.type = dataView.getUint32(4,true);
+                    dynamic_key_mt.bindings[0] = dataView.getUint16(4+4+0,true);
+                    dynamic_key_mt.bindings[1] = dataView.getUint16(4+4+2,true);
                     dynamic_key_mt.duration = dataView.getUint32(3+8,true);
                     dynamic_key = dynamic_key_mt;
                     break;
                 case DynamicKeyType.DynamicKeyToggleKey:
                     var dynamic_key_tk = new DynamicKeyToggleKey();
-                    dynamic_key_tk.type = dataView.getUint32(3,true);
-                    dynamic_key_tk.bindings[0] = dataView.getUint16(3+4+0,true);
+                    dynamic_key_tk.type = dataView.getUint32(4,true);
+                    dynamic_key_tk.bindings[0] = dataView.getUint16(4+4+0,true);
                     dynamic_key = dynamic_key_tk;
                     break;
                 case DynamicKeyType.DynamicKeyMutex:
                     var dynamic_key_m = new DynamicKeyMutex();
-                    dynamic_key_m.type  = dataView.getUint32(3,true);
-                    dynamic_key_m.bindings[0]  = dataView.getUint16(3+4+0,true);
-                    dynamic_key_m.bindings[1]  = dataView.getUint16(3+4+2,true);
-                    dynamic_key_m.key_id[0] = dataView.getUint16(3+8+0,true);
-                    dynamic_key_m.key_id[1] = dataView.getUint16(3+8+2,true);
-                    dynamic_key_m.mode  = dataView.getUint8(3+12);
+                    dynamic_key_m.type  = dataView.getUint32(4,true);
+                    dynamic_key_m.bindings[0]  = dataView.getUint16(4+4+0,true);
+                    dynamic_key_m.bindings[1]  = dataView.getUint16(4+4+2,true);
+                    dynamic_key_m.key_id[0] = dataView.getUint16(4+8+0,true);
+                    dynamic_key_m.key_id[1] = dataView.getUint16(4+8+2,true);
+                    dynamic_key_m.mode  = dataView.getUint8(4+12);
                     dynamic_key = dynamic_key_m;
+                    break;
                 default:
                     dynamic_key = new DynamicKey();
                     break;
             }
             this.dynamic_keys[dynamic_key_index] = dynamic_key;
+            break;
         case 0x80: 
             this.config_index = buf[1];
             this.dispatchEvent(new Event('updateData'));
