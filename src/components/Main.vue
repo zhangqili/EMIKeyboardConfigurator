@@ -6,7 +6,6 @@ import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton } from
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
 import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey } from "../apis/utils";
-import { listen } from "@tauri-apps/api/event";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
 import { DebugDataItem } from '../apis/utils';

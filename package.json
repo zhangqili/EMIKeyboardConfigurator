@@ -6,13 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "cd emi-keyboard-controller && pnpm install && pnpm run build && cd .. && vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@ijprest/kle-serial": "^0.15.1",
-    "@tauri-apps/api": "^2.1.1",
-    "@tauri-apps/plugin-shell": "^2.0.1",
     "@types/lodash": "^4.17.16",
     "echarts": "^5.5.1",
     "emi-keyboard-controller": "link:emi-keyboard-controller",
@@ -26,7 +23,6 @@
     "vue-i18n": "^10.0.5"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.1.0",
     "@types/tinycolor2": "^1.4.6",
     "@vitejs/plugin-vue": "^5.2.1",
     "naive-ui": "^2.40.2",

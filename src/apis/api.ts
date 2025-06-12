@@ -1,5 +1,3 @@
-import { IAdvancedKey, IRGBConfig } from "./old_interface.ts"
-import { invoke } from '@tauri-apps/api/core';
 import * as ekc from "emi-keyboard-controller"
 
 const DEVICES = [

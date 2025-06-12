@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, defineEmits } from "vue";
 import Key from "./Key.vue";
-import { event } from "@tauri-apps/api";
 import * as kle from "@ijprest/kle-serial";
 
 const emit = defineEmits<{
