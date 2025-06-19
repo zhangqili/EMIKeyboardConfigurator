@@ -58,6 +58,7 @@ export class LibampKeyboardController extends KeyboardController {
                     this.advanced_keys[key_index].raw = dataView.getFloat32(2 + 3 + 11*i,true);
                     this.advanced_keys[key_index].value = dataView.getFloat32(2 + 7 + 11*i,true);
                 }
+                this.dispatchEvent(new Event('updateData'));
                 break;
             }
             case 0xFF : {

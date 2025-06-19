@@ -41,6 +41,7 @@ const {
   keymap, 
   key_binding, 
   current_layer, 
+  tab_selection,
   config_files,
   selected_config_file_index,
   debug_raw_chart_option, 
@@ -52,104 +53,12 @@ const {
 
 const message = useMessage();
 const notification = useNotification();
-const tab_selection = ref<string | null>("PerformancePanel");
 const isConnected = ref<boolean>(false);
 
 const themeLabelMap = computed(() => ({
   dark: t('light'),
   light: t('dark')
 } satisfies Record<string, string>));
-
-const key_containers = computed(() => {
-  var keys = keyboard_keys.value;
-  //console.debug(tab_selection.value);
-  switch (tab_selection.value) {
-    case "PerformancePanel": {
-      keys.forEach((item, index) => {
-        const advanced_key = advanced_keys.value[index];
-        if (advanced_key != undefined) {
-          item.labels = item.labels.map(() => "");
-          item.labels[0] = keyModeDisplayMap[advanced_key.mode];
-          switch (advanced_key.mode) {
-            case ekc.KeyMode.KeyAnalogNormalMode: {
-              item.labels[3] = `↓${Math.round(advanced_key.activation_value * 1000) / 10}\t↑${Math.round(advanced_key.deactivation_value * 1000) / 10}`;
-              break;
-            }
-            case ekc.KeyMode.KeyAnalogRapidMode: {
-              item.labels[3] = `↓${Math.round(advanced_key.trigger_distance * 1000) / 10}\t↑${Math.round(advanced_key.release_distance * 1000) / 10}`;
-              item.labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
-              break;
-            }
-            case ekc.KeyMode.KeyAnalogSpeedMode: {
-              item.labels[3] = `↓${Math.round(advanced_key.trigger_speed * 1000) / 10}\t↑${Math.round(advanced_key.release_speed * 1000) / 10}`;
-              item.labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
-              break;
-            }
-            default: {
-              break;
-            }
-          }
-        }
-      })
-      break;
-    }
-    case "KeymapPanel":
-    case "DynamicKeyPanel": {
-      keys.forEach((item, index) => {
-        item.labels = item.labels.map(() => "");
-        if (keymap.value != undefined) {
-          if((keymap.value[current_layer.value][index] & 0xFF) == ekc.Keycode.DynamicKey)
-          {
-            const strings = keyCodeToString(keymap.value[current_layer.value][index]);
-            const dk_index = ((keymap.value[current_layer.value][index] >> 8) & 0xFF)
-            //item.labels[0] = strings.subString;
-            item.labels[6] = DynamicKeyToKeyName[dynamic_keys.value[dk_index].type as ekc.DynamicKeyType];
-            item.labels[9] = strings.mainString;
-          }
-          else
-          {
-            var strings = keyCodeToString(keymap.value[current_layer.value][index]);
-            item.labels[0] = strings.subString;
-            item.labels[6] = strings.mainString;
-          }
-        }
-      });
-      break;
-    }
-    case "RGBPanel": {
-      keys.forEach((item, index) => {
-        item.labels = item.labels.map(() => "");
-        if(rgb_configs.value[index])
-        {
-          item.labels[0] = rgbModeDisplayMap[rgb_configs.value[index].mode];
-          item.labels[6] = `${Math.round(rgb_configs.value[index].speed * 1000)}\t`;
-          item.labels[9] = rgbToHex(rgb_configs.value[index].rgb);
-        }
-      })
-      break;
-    }
-    case "DebugPanel": {
-      keys.forEach((item, index) => {
-        item.labels = item.labels.map(() => "");
-        item.labels[0] = advanced_keys.value[index].raw.toFixed(2);
-        item.labels[3] = advanced_keys.value[index].value.toFixed(3);
-        item.labels[6] = advanced_keys.value[index].state.toString();
-      })
-      break;
-    }
-    default: {
-      keys.forEach((item) => {
-        item.labels = item.labels.map(() => "");
-      })
-      break;
-    }
-  }
-  keys.forEach((item,index) => {
-    if(rgb_configs.value[index])
-      item.color = rgbToHex(rgb_configs.value[index].rgb);
-  })
-  return keys;
-});
 
 const keyboard_layout = ref({
   json: undefined,
@@ -759,7 +668,7 @@ function handleThemeUpdate() {
         </n-layout-sider>
         <div style="flex: 1; display: flex; flex-direction: column;">
           <div class="keyboard_render">
-            <KeyboardRender v-model:keys="key_containers" @select="applyToSelectedKey" />
+            <KeyboardRender v-model:keys="keyboard_keys" @select="applyToSelectedKey" />
             <div style="display: flex; justify-content: center; min-height: 24px;" >
               <Transition>
                 <n-radio-group v-model:value="current_layer" size="small" v-if="tab_selection == 'KeymapPanel'||tab_selection == 'DynamicKeyPanel'">

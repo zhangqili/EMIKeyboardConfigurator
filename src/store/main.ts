@@ -27,7 +27,8 @@ export const useMainStore = defineStore('main',
 
         const key_binding = ref<number>(0);
         const current_layer = ref<number>(0);
-
+        
+        const tab_selection = ref<string | null>("PerformancePanel");
         const config_files = ref<string[]>([]);
         const selected_config_file_index = ref<number | undefined>(undefined);
         const debug_switch = ref(false);
@@ -115,6 +116,7 @@ export const useMainStore = defineStore('main',
             keymap,
             dynamic_keys,
 
+            tab_selection,
             config_files,
             selected_config_file_index,
 

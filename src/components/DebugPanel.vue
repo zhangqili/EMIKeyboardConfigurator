@@ -1,6 +1,6 @@
 ;''
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, provide } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, ref, provide, watch } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -111,23 +111,54 @@ function handleListeners() {
     });
 }
 
-var intervalId = 0;
 function handleChange(value: boolean) {
     if (value) {
         apis.set_advanced_keys(advanced_keys.value);
         apis.start_debug();
-        intervalId = setInterval(function () {
-            handleListeners();
-        }, 5);
     }
     else {
-        clearInterval(intervalId);
         apis.stop_debug();
     }
 }
 
+
+// 使用 watch 监听 advanced_keys 的变化
+watch(advanced_keys, (newKeys) => {
+
+    debug_raw_chart_option.value.series.forEach((item) => {
+        const data = (item.data as DebugDataItem[]);
+        if (data.length > 500) {
+            data.shift();
+        }
+        const keyIndex = item.id as number;
+        if (newKeys[keyIndex]) {
+            data.push({
+                name: Date.now().toString(),
+                value: [Date.now(), newKeys[keyIndex].raw]
+            });
+        }
+    });
+
+    debug_value_chart_option.value.series.forEach((item) => {
+        const data = (item.data as DebugDataItem[]);
+        if (data.length > 500) {
+            data.shift();
+        }
+        const keyIndex = item.id as number;
+        if (newKeys[keyIndex]) {
+            data.push({
+                name: Date.now().toString(),
+                value: [Date.now(), newKeys[keyIndex].value]
+            });
+        }
+    });
+}, { deep: true }); // 使用 deep watch 来侦听数组内部对象的变化
+
+
 onUnmounted(()=>{
-    clearInterval(intervalId);
+    if (debug_switch.value) {
+        apis.stop_debug();
+    }
 })
 
 function clearCommand() {
