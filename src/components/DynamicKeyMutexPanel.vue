@@ -10,7 +10,7 @@ import { useMainStore } from '../store/main';
 import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "../apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
-import Key from "./Key.vue";
+import PlainKey from "./PlainKey.vue";
 
 const { t } = useI18n();
 
@@ -111,8 +111,8 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
   <n-form-item :label="t('key')">
     <div class="keyboard no-select" style="height: 54px;width: 108px;">
-        <Key v-for="(item,index) in dynamic_key_mutex.target_keys_location" :width="1" :height="1" :x=index
-      :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></Key>
+        <PlainKey v-for="(item,index) in dynamic_key_mutex.target_keys_location" :width="1" :height="1" :x=index
+      :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></PlainKey>
     </div>
   </n-form-item>
   <n-form-item :label="t('dynamic_key_mutex_panel_priority_mode')">
@@ -125,10 +125,10 @@ function handleMouseEnter(event : MouseEvent, index: number) {
   </n-form-item>
   <n-form-item :label="t('dynamic_key_mutex_panel_key_bindings')">
     <div class="keyboard no-select" style="height: 54px;">
-      <Key v-for="(item,index) in dynamic_key_mutex.bindings" :width="1" :height="1" :x=index
+      <PlainKey v-for="(item,index) in dynamic_key_mutex.bindings" :width="1" :height="1" :x=index
       :labels="keyCodeToStringLabels(item)"
       @mousedown="(event : MouseEvent) => handleMouseDown(event, index)"
-      @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)"></Key>
+      @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)"></PlainKey>
     </div>
   </n-form-item>
 </n-form>

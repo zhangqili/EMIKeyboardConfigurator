@@ -14,7 +14,7 @@ import { useMainStore } from '../store/main';
 import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, mapDynamicKey } from "../apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
-import Key from "./Key.vue";
+import PlainKey from "./PlainKey.vue";
 import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
@@ -100,7 +100,7 @@ function createColumns({
       render(row) {
         const keys = row.bindings.map((binding, index) => {
           return h(
-            Key,
+            PlainKey,
             {
               width:1,
               height:1,

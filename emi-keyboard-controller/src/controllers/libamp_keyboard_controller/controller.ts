@@ -141,14 +141,14 @@ export class LibampKeyboardController extends KeyboardController {
                     dynamic_key_stroke.bindings[1] = dataView.getUint16(4+4+2,true);
                     dynamic_key_stroke.bindings[2] = dataView.getUint16(4+4+4,true);
                     dynamic_key_stroke.bindings[3] = dataView.getUint16(4+4+6,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+0,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+2,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+4,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint16(4+12+6,true);
-                    dynamic_key_stroke.press_begin_distance = dataView.getFloat32(4+20,true);
-                    dynamic_key_stroke.press_fully_distance = dataView.getFloat32(4+24,true);
-                    dynamic_key_stroke.release_begin_distance = dataView.getFloat32(4+28,true);
-                    dynamic_key_stroke.release_fully_distance = dataView.getFloat32(4+32,true);
+                    dynamic_key_stroke.key_control[0] = dataView.getUint8(4+12+0);
+                    dynamic_key_stroke.key_control[1] = dataView.getUint8(4+12+1);
+                    dynamic_key_stroke.key_control[2] = dataView.getUint8(4+12+2);
+                    dynamic_key_stroke.key_control[3] = dataView.getUint8(4+12+3);
+                    dynamic_key_stroke.press_begin_distance = dataView.getFloat32(4+16,true);
+                    dynamic_key_stroke.press_fully_distance = dataView.getFloat32(4+20,true);
+                    dynamic_key_stroke.release_begin_distance = dataView.getFloat32(4+24,true);
+                    dynamic_key_stroke.release_fully_distance = dataView.getFloat32(4+28,true);
                     dynamic_key = dynamic_key_stroke;
                     break;
                 case DynamicKeyType.DynamicKeyModTap:
@@ -352,14 +352,14 @@ export class LibampKeyboardController extends KeyboardController {
                     dataView.setUint16(4+4+2,dynamic_key_stroke.bindings[1],true);
                     dataView.setUint16(4+4+4,dynamic_key_stroke.bindings[2],true);
                     dataView.setUint16(4+4+6,dynamic_key_stroke.bindings[3],true);
-                    dataView.setUint16(4+12+0,dynamic_key_stroke.key_control[0],true);
-                    dataView.setUint16(4+12+2,dynamic_key_stroke.key_control[1],true);
-                    dataView.setUint16(4+12+4,dynamic_key_stroke.key_control[2],true);
-                    dataView.setUint16(4+12+6,dynamic_key_stroke.key_control[3],true);
-                    dataView.setFloat32(4+20,dynamic_key_stroke.press_begin_distance,true);
-                    dataView.setFloat32(4+24,dynamic_key_stroke.press_fully_distance,true);
-                    dataView.setFloat32(4+28,dynamic_key_stroke.release_begin_distance,true);
-                    dataView.setFloat32(4+32,dynamic_key_stroke.release_fully_distance,true);
+                    dataView.setUint8(4+12+0,dynamic_key_stroke.key_control[0]);
+                    dataView.setUint8(4+12+1,dynamic_key_stroke.key_control[1]);
+                    dataView.setUint8(4+12+2,dynamic_key_stroke.key_control[2]);
+                    dataView.setUint8(4+12+3,dynamic_key_stroke.key_control[3]);
+                    dataView.setFloat32(4+16,dynamic_key_stroke.press_begin_distance,true);
+                    dataView.setFloat32(4+20,dynamic_key_stroke.press_fully_distance,true);
+                    dataView.setFloat32(4+24,dynamic_key_stroke.release_begin_distance,true);
+                    dataView.setFloat32(4+28,dynamic_key_stroke.release_fully_distance,true);
                     break;
                 case DynamicKeyType.DynamicKeyModTap:
                     const dynamic_key_mt = item as DynamicKeyModTap;
