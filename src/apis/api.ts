@@ -138,6 +138,10 @@ export async function stop_debug(){
     return CONTROLLER.stop_debug();
 }
 
+export async function request_debug(){
+    return CONTROLLER.request_debug();
+}
+
 export async function get_config_file_num(){
     return CONTROLLER.get_config_file_num();
 }

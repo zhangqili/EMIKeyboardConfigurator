@@ -1,3 +1,38 @@
+
+export type DeviceInfo = {
+  vendorId: number;
+  productId: number;
+  productName: string;
+  protocol?: number;
+};
+
+export type Device = DeviceInfo & {
+  path: string;
+  productName: string;
+  interface: number;
+};
+
+export type EMIDevice = Device & {
+  _device: HIDDevice;
+};
+
+// Refers to a device that may or may not have an associated definition but does have a valid protocol version
+export type AuthorizedDevice = DeviceInfo & {
+  path: string;
+  vendorProductId: number;
+  protocol: number;
+};
+
+export type ConnectedDevice = DeviceInfo & {
+  path: string;
+  vendorProductId: number;
+  protocol: number;
+};
+
+export const getEMIPathIdentifier = () =>
+  (self.crypto && self.crypto.randomUUID && self.crypto.randomUUID()) ||
+  `emi-path:${Math.random()}`;
+
 // Enum for KeyMode
 export enum KeyMode {
     KeyDigitalMode = 0,
@@ -95,6 +130,7 @@ export interface IDynamicKeyMutex extends IDynamicKey {
 // Interface for AdvancedKey
 export interface IAdvancedKey {
     state: boolean;
+    report_state: boolean;
     value: number;
     raw: number;
     maximum: number;
@@ -115,6 +151,7 @@ export interface IAdvancedKey {
 }
 export class AdvancedKey implements IAdvancedKey {
     state: boolean;
+    report_state: boolean;
     value: number;
     raw: number;
     maximum: number;
@@ -136,6 +173,7 @@ export class AdvancedKey implements IAdvancedKey {
     constructor() {
         this.value = 0;
         this.state = false;
+        this.report_state = false;
         this.raw = 0;
         this.maximum = 0;
         this.minimum = 0;
@@ -413,11 +451,9 @@ export enum KeyboardKeycode {
     KeyboardFactoryReset = 1,
     KeyboardSave = 2,
     KeyboardBootloader = 3,
-    KeyboardToggleDebug = 4,
-    KeyboardResetToDefault = 5,
-    KeyboardToggleNKRO = 6,
-    KeyboardRgbBrightnessUp = 7,
-    KeyboardRgbBrightnessDown = 8,
+    KeyboardResetToDefault = 4,
+    KeyboardRgbBrightnessUp = 5,
+    KeyboardRgbBrightnessDown = 6,
     KeyboardConfig0 = 0x10,
     KeyboardConfig1 = 0x11,
     KeyboardConfig2 = 0x12,
@@ -762,6 +798,7 @@ export interface IKeyboardController{
     request_config() : void;
     start_debug() : void;
     stop_debug() : void;
+    request_debug() : void;
     get_layout_json() : string;
     get_config_file_num() : number;
     get_config_file_index(): number;
@@ -776,10 +813,12 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     keymap!: number[][];
     dynamic_keys!: IDynamicKey[];
     config_index!: number;
+    path : string;
     private listeners: { [key: string]: EventListener[] } = {};
 
     constructor() {
         this.device = undefined;
+        this.path = getEMIPathIdentifier();
         this.reset_to_default();
     }
 
@@ -918,6 +957,10 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
 
     }
     stop_debug() : void
+    {
+
+    }
+    request_debug() : void
     {
 
     }

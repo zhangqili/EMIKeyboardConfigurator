@@ -11,6 +11,7 @@ export class ANSI104SampleController extends KeyboardController {
         this.device = undefined;
         this.advanced_keys = Array(this.ADVANCED_KEY_NUM).fill(null).map(() => ({
             state: false,
+            report_state: false,
             value: 0.0,
             raw: 0.0,
             mode: KeyMode.KeyAnalogRapidMode,

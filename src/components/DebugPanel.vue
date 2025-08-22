@@ -39,6 +39,7 @@ provide(THEME_KEY, 'dark');
 const { t } = useI18n();
 const store = useMainStore();
 const { advanced_keys, debug_raw_chart_option,debug_value_chart_option,debug_switch } = storeToRefs(store);
+let timer = 0;
 
 interface AdvancedKey {
     no: number
@@ -113,11 +114,15 @@ function handleListeners() {
 
 function handleChange(value: boolean) {
     if (value) {
-        apis.set_advanced_keys(advanced_keys.value);
-        apis.start_debug();
+        timer = setInterval(() => {
+          apis.request_debug();
+        }, 333);
     }
     else {
-        apis.stop_debug();
+        if (timer > 0) {
+            clearInterval(timer);
+            timer = 0;
+        }
     }
 }
 
@@ -138,7 +143,7 @@ watch(advanced_keys, (newKeys) => {
             });
         }
     });
-
+    
     debug_value_chart_option.value.series.forEach((item) => {
         const data = (item.data as DebugDataItem[]);
         if (data.length > 500) {
@@ -155,9 +160,10 @@ watch(advanced_keys, (newKeys) => {
 }, { deep: true }); // 使用 deep watch 来侦听数组内部对象的变化
 
 
-onUnmounted(()=>{
-    if (debug_switch.value) {
-        apis.stop_debug();
+onBeforeUnmount(()=>{
+    if (timer > 0) {
+        clearInterval(timer);
+        timer = 0;
     }
 })
 
