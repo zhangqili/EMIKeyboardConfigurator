@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
@@ -388,6 +388,15 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardConfig1]: 'Config 1',
   [KeyboardKeycode.KeyboardConfig2]: 'Config 2',
   [KeyboardKeycode.KeyboardConfig3]: 'Config 3',
+  [KeyboardKeycode.KeyboardConfigBase]: 'Config Base',
+};
+
+export const KeyboardConfigToKeyName: { [key in KeyboardConfig]: string } = {
+  [KeyboardConfig.KeyboardConfigDebug]: 'Debug',
+  [KeyboardConfig.KeyboardConfigNkro]: 'NKRO',
+  [KeyboardConfig.KeyboardConfigWinlock]: 'Winlock',
+  [KeyboardConfig.KeyboardConfigContinousPoll]: 'Continous poll',
+  [KeyboardConfig.KeyboardConfigNum]: 'Num',
 };
 
 export const LayerControlToKeyName: { [key in LayerControlKeycode]: string } = {
@@ -690,7 +699,26 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
         mainString = "Layer" + ((modifier) & 0x0F).toString();
         break;
       case Keycode.KeyboardOperation:
-        mainString = KeyboardOperationToKeyName[modifier as KeyboardKeycode];
+        if ((modifier & 0x3F) < KeyboardKeycode.KeyboardConfigBase) {
+          mainString = KeyboardOperationToKeyName[modifier as KeyboardKeycode];
+        }
+        else
+        {
+          switch ((modifier >> 6) & 0x03) {
+            case 0:
+              subString = "Turn off";
+              break;
+            case 1:
+              subString = "Turn on";
+              break;
+            case 2:
+              subString = "Toggle";
+              break;
+            default:
+              break;
+          }
+          mainString = KeyboardConfigToKeyName[((modifier & 0x3f) - (KeyboardKeycode.KeyboardConfigBase)) as KeyboardConfig];
+        }
         break;
       case Keycode.KeyUser:
         mainString = "User " + modifier.toString();

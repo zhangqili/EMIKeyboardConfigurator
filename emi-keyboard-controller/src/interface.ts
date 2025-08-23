@@ -458,6 +458,14 @@ export enum KeyboardKeycode {
     KeyboardConfig1 = 0x11,
     KeyboardConfig2 = 0x12,
     KeyboardConfig3 = 0x13,
+    KeyboardConfigBase = 0x20,
+}
+export enum KeyboardConfig {
+    KeyboardConfigDebug = 0,
+    KeyboardConfigNkro = 1,
+    KeyboardConfigWinlock = 2,
+    KeyboardConfigContinousPoll = 3,
+    KeyboardConfigNum = 4,
 }
 export enum LayerControlKeycode {
     LayerMomentary = 0,

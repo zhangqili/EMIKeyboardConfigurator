@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, triggerRef } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName } from "../apis/utils"
-import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode } from "emi-keyboard-controller"
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName } from "../apis/utils"
+import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
+import { values } from 'lodash';
 
 const { t } = useI18n();
 const message = useMessage();
@@ -70,10 +71,41 @@ function handleMIDINoteNumber(n: number | null) {
     binding.value =  temp_value << 8 | Keycode.MIDINote;
 }
 
+function handleKeyboardConfigControl(value: string, option: SelectOption) {
+    console.log(value);
+    binding.value = (Number(value) << 14) | (Number(keyboard_config_value.value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation;
+}
+
+function handleKeyboardConfig(value: string, option: SelectOption) {
+    binding.value = (keyboard_config_control_value.value << 14) | (Number(value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation;
+}
+
 const layer_options = Object.keys(LayerControlKeycode).slice(0,4).map((key) => {
     return {
         value: key,
         label: LayerControlToKeyName[key as unknown as LayerControlKeycode]
+    };
+});
+
+const keyboard_config_control_options = [
+    {
+        value : 0,
+        label : "Turn off"
+    },
+    {
+        value : 1,
+        label : "Turn on"
+    },
+    {
+        value : 2,
+        label : "Toggle"
+    },
+]
+
+const keyboard_config_options = Object.keys(KeyboardConfig).slice(0,4).map((key) => {
+    return {
+        value: key,
+        label: KeyboardConfigToKeyName[key as unknown as KeyboardConfig]
     };
 });
 
@@ -97,6 +129,8 @@ const joystick_value = ref(0);
 const joystick_collection_value = ref((JoystickKeycode.JoystickButton as number).toString());
 const midi_value = ref(0);
 const midi_note_value = ref(0);
+const keyboard_config_control_value = ref(2);
+const keyboard_config_value = ref((KeyboardConfig.KeyboardConfigDebug as number).toString());
 
 </script>
 <template>
@@ -444,10 +478,27 @@ const midi_note_value = ref(0);
                     <n-thing :title="t('key_selector_keyboard')">
                         <n-button v-for="(key, code) in Object.keys(KeyboardKeycode)
                             //.filter(key => isNaN(Number(key)))
-                            .slice(0, 13)"
-                            :type="((binding & 0xFF) == Keycode.KeyboardOperation && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                            .slice(0, 11)"
+                            :type="((binding & 0xFF) == Keycode.KeyboardOperation && (((binding >> 8) & 0x3F) < 0x20) &&((binding >> 8) & 0x3F) == (key as unknown as number)) ? 'primary' : ''"
                             @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.KeyboardOperation)">
                             {{ KeyboardOperationToKeyName[key as unknown as KeyboardKeycode] }}</n-button>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing :title="t('key_selector_keyboard_config')">
+                        <n-button :type="(((binding & 0xFF) == Keycode.KeyboardOperation) && (((binding >> 8) & 0x3F) >= KeyboardKeycode.KeyboardConfigBase)) ? 'primary' : ''"
+                            @click="{handleFullKeycodeClick((keyboard_config_control_value << 14) | (Number(keyboard_config_value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation); console.log(keyboard_config_control_value, keyboard_config_value)}">
+                            {{ "Keyboard Config" }}</n-button>
+                        <n-flex>
+                            <n-grid :cols="4">
+                                <n-gi :span="1">
+                                    <n-select :options="keyboard_config_control_options" @update:value="handleKeyboardConfigControl" v-model:value="keyboard_config_control_value" ></n-select>
+                                </n-gi>
+                                <n-gi :span="3">
+                                    <n-select :options="keyboard_config_options" @update:value="handleKeyboardConfig" v-model:value="keyboard_config_value" max="15" min="0"></n-select>
+                                </n-gi>
+                            </n-grid>
+                        </n-flex>
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
