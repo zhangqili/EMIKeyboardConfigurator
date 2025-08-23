@@ -168,8 +168,8 @@ async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
   await apis.set_device(option.label as string);
   var layout_json: string = await apis.get_layout_json();
   //console.debug(layout_json);
-  renderKeyboardFromJson(layout_json);
   getController();
+  renderKeyboardFromJson(layout_json);
   apis.addEventListener('updateData',(event: Event) => {updateData();});
 }
 
@@ -341,8 +341,10 @@ async function importConfig() {
         advanced_keys.value[index] = configData.advanced_keys[index];
       });
       if (keymap.value != undefined) {
-        keymap.value.forEach((item,index)=>{
-          item = configData.keymap[index];
+        keymap.value = keymap.value.map((item, index) => {
+            return item.map((item1, index1) => {
+                return configData.keymap[index][index1];
+            });
         });
       }
       rgb_base_config.value = configData.rgb_base_config;
