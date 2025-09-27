@@ -474,7 +474,7 @@ export class LibampKeyboardController extends KeyboardController {
       }
       else (buf[0] == PacketCode.PacketCodeSet)
       {
-            const index = buf[3];
+            const index = buf[2];
             const item = this.dynamic_keys[index];
             console.debug(item);
             switch (item.type) {
@@ -544,7 +544,7 @@ export class LibampKeyboardController extends KeyboardController {
                 this.advanced_keys[key_index].value = dataView.getFloat32(3 + 12 * i + 8, true);
             }
             if (key_index == 0) {
-                console.log(key_index, this.advanced_keys[key_index].raw);
+                //console.log(key_index, this.advanced_keys[key_index].raw);
             }
         }
       }
@@ -604,7 +604,7 @@ export class LibampKeyboardController extends KeyboardController {
                 if (key_index < this.advanced_keys.length ){
                     dataView.setUint16(3 + 0 + 12 * j,key_index,true);
                 }
-                console.log(key_index);
+                //console.log(key_index);
             }
             //console.debug(send_buf);
             let res = this.hidCommand(send_buf);
@@ -656,7 +656,7 @@ export class LibampKeyboardController extends KeyboardController {
         {
             this.packet_process(send_buf)
             let res = this.hidCommand(send_buf);
-            console.log("send rgb base config");
+            //console.log("send rgb base config");
             //console.log(send_buf);
             console.debug("Wrote RGB Switch: {:?} byte(s)", res);
         }
@@ -687,7 +687,7 @@ export class LibampKeyboardController extends KeyboardController {
         send_buf[1] = PacketData.PacketDataRgbBaseConfig;
         {
             let res = this.hidCommand(send_buf);
-            console.log("send rgb base config");
+            //console.log("send rgb base config");
             //console.log(send_buf);
             console.debug("Wrote RGB Switch: {:?} byte(s)", res);
         }
@@ -868,7 +868,7 @@ export class LibampKeyboardController extends KeyboardController {
       );
       //throw new Error('Receiving incorrect response for command');
     }
-    console.log(buffer[0], buffer[1]);
+    //console.log(buffer[0], buffer[1]);
     if (buffer[0]==PacketCode.PacketCodeGet) {
       this.packet_process(buffer);
       this.dispatchEvent(new Event('updateData'));

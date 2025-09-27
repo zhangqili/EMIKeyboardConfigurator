@@ -72,7 +72,7 @@ function handleMIDINoteNumber(n: number | null) {
 }
 
 function handleKeyboardConfigControl(value: string, option: SelectOption) {
-    console.log(value);
+    //console.log(value);
     binding.value = (Number(value) << 14) | (Number(keyboard_config_value.value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation;
 }
 
