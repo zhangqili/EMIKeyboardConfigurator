@@ -4,6 +4,7 @@ const DEVICES = [
     "Trinity Pad",
     "Oholeo Keyboard",
     "Zellia80 HE",
+    "Zellia60 HE",
     "Destrez Asural Left",
     "Destrez Asural Right",
     "ANSI 104 Sample",
@@ -23,6 +24,10 @@ export async function set_device(device: string) {
         }
         case "Oholeo Keyboard":{
             CONTROLLER = new ekc.OholeoKeyboardController();
+            break;
+        }
+        case "Zellia60 HE":{
+            CONTROLLER = new ekc.Zellia60Controller();
             break;
         }
         case "Zellia80 HE":{
