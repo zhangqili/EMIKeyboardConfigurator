@@ -210,7 +210,6 @@ function applyToSelectedKey(id: number) {
                 keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
                 dynamic_key.value = dynamic_key_mutex;
-                dynamic_key_mutex.key_id[0] = id;
                 
               }
               else if (dynamic_key_mutex.target_keys_location.length == 1)
@@ -220,7 +219,6 @@ function applyToSelectedKey(id: number) {
                 dynamic_key_mutex.target_keys_location[1] = {layer: current_layer.value, id: id};
                 keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
-                dynamic_key_mutex.key_id[1] = id;
                 dynamic_key.value = dynamic_key_mutex;
               }
               else
@@ -231,7 +229,6 @@ function applyToSelectedKey(id: number) {
                   const binding = keymap.value[current_layer.value][id];
                   dynamic_key.value.target_keys_location[1] = {layer: current_layer.value, id: id};
                   keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
-                  dynamic_key_mutex.key_id[1] = id;
                   dynamic_key.value.set_primary_binding(binding);
                 }
                 else
@@ -241,7 +238,6 @@ function applyToSelectedKey(id: number) {
                   const binding = keymap.value[current_layer.value][id];
                   dynamic_key.value.target_keys_location[0] = {layer: current_layer.value, id: id};
                   keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
-                  dynamic_key_mutex.key_id[0] = id;
                   dynamic_key.value.set_primary_binding(binding);
 
                 }

@@ -204,6 +204,7 @@ export class LibampKeyboardController extends KeyboardController {
                     dynamic_key_stroke.press_fully_distance = dataView.getFloat32(4+20,true);
                     dynamic_key_stroke.release_begin_distance = dataView.getFloat32(4+24,true);
                     dynamic_key_stroke.release_fully_distance = dataView.getFloat32(4+28,true);
+                    //dynamic_key_stroke.target_keys_location[0] = dataView.getUint16(4+32,true);
                     dynamic_key = dynamic_key_stroke;
                     break;
                 case DynamicKeyType.DynamicKeyModTap:
@@ -211,13 +212,15 @@ export class LibampKeyboardController extends KeyboardController {
                     dynamic_key_mt.type = dataView.getUint32(4,true);
                     dynamic_key_mt.bindings[0] = dataView.getUint16(4+4+0,true);
                     dynamic_key_mt.bindings[1] = dataView.getUint16(4+4+2,true);
-                    dynamic_key_mt.duration = dataView.getUint32(3+8,true);
+                    dynamic_key_mt.duration = dataView.getUint32(4+8,true);
+                    //dynamic_key_mt.key_id[0] = dataView.getUint16(4+12,true);
                     dynamic_key = dynamic_key_mt;
                     break;
                 case DynamicKeyType.DynamicKeyToggleKey:
                     var dynamic_key_tk = new DynamicKeyToggleKey();
                     dynamic_key_tk.type = dataView.getUint32(4,true);
                     dynamic_key_tk.bindings[0] = dataView.getUint16(4+4+0,true);
+                    //dynamic_key_tk.key_id[0] = dataView.getUint16(4+6+0,true);
                     dynamic_key = dynamic_key_tk;
                     break;
                 case DynamicKeyType.DynamicKeyMutex:
@@ -225,8 +228,8 @@ export class LibampKeyboardController extends KeyboardController {
                     dynamic_key_m.type  = dataView.getUint32(4,true);
                     dynamic_key_m.bindings[0]  = dataView.getUint16(4+4+0,true);
                     dynamic_key_m.bindings[1]  = dataView.getUint16(4+4+2,true);
-                    dynamic_key_m.key_id[0] = dataView.getUint16(4+8+0,true);
-                    dynamic_key_m.key_id[1] = dataView.getUint16(4+8+2,true);
+                    //dynamic_key_m.key_id[0] = dataView.getUint16(4+8+0,true);
+                    //dynamic_key_m.key_id[1] = dataView.getUint16(4+8+2,true);
                     dynamic_key_m.mode  = dataView.getUint8(4+12);
                     dynamic_key = dynamic_key_m;
                     break;
@@ -447,7 +450,7 @@ export class LibampKeyboardController extends KeyboardController {
                     dynamic_key_mt.type = dataView.getUint32(4,true);
                     dynamic_key_mt.bindings[0] = dataView.getUint16(4+4+0,true);
                     dynamic_key_mt.bindings[1] = dataView.getUint16(4+4+2,true);
-                    dynamic_key_mt.duration = dataView.getUint32(3+8,true);
+                    dynamic_key_mt.duration = dataView.getUint32(4+8,true);
                     dynamic_key = dynamic_key_mt;
                     break;
                 case DynamicKeyType.DynamicKeyToggleKey:
@@ -461,8 +464,8 @@ export class LibampKeyboardController extends KeyboardController {
                     dynamic_key_m.type  = dataView.getUint32(4,true);
                     dynamic_key_m.bindings[0]  = dataView.getUint16(4+4+0,true);
                     dynamic_key_m.bindings[1]  = dataView.getUint16(4+4+2,true);
-                    dynamic_key_m.key_id[0] = dataView.getUint16(4+8+0,true);
-                    dynamic_key_m.key_id[1] = dataView.getUint16(4+8+2,true);
+                    //dynamic_key_m.key_id[0] = dataView.getUint16(4+8+0,true);
+                    //dynamic_key_m.key_id[1] = dataView.getUint16(4+8+2,true);
                     dynamic_key_m.mode  = dataView.getUint8(4+12);
                     dynamic_key = dynamic_key_m;
                     break;
@@ -493,6 +496,8 @@ export class LibampKeyboardController extends KeyboardController {
                     dataView.setFloat32(4+20,dynamic_key_stroke.press_fully_distance,true);
                     dataView.setFloat32(4+24,dynamic_key_stroke.release_begin_distance,true);
                     dataView.setFloat32(4+28,dynamic_key_stroke.release_fully_distance,true);
+                    dataView.setUint16(4+32,dynamic_key_stroke.target_keys_location[0].id,true);
+                    console.log(dynamic_key_stroke);
                     break;
                 case DynamicKeyType.DynamicKeyModTap:
                     const dynamic_key_mt = item as DynamicKeyModTap;
@@ -500,19 +505,21 @@ export class LibampKeyboardController extends KeyboardController {
                     dataView.setUint16(4+4+0,dynamic_key_mt.bindings[0],true);
                     dataView.setUint16(4+4+2,dynamic_key_mt.bindings[1],true);
                     dataView.setUint32(4+8,dynamic_key_mt.duration,true);
+                    dataView.setUint16(4+12,dynamic_key_mt.target_keys_location[0].id,true);
                     break;
                 case DynamicKeyType.DynamicKeyToggleKey:
                     const dynamic_key_tk = item as DynamicKeyToggleKey;
                     dataView.setUint32(4,dynamic_key_tk.type,true);
                     dataView.setUint16(4+4+0,dynamic_key_tk.bindings[0],true);
+                    dataView.setUint16(4+6+0,dynamic_key_tk.target_keys_location[0].id,true);
                     break;
                 case DynamicKeyType.DynamicKeyMutex:
                     const dynamic_key_m = item as DynamicKeyMutex;
                     dataView.setUint32(4,dynamic_key_m.type,true);
                     dataView.setUint16(4+4+0,dynamic_key_m.bindings[0],true);
                     dataView.setUint16(4+4+2,dynamic_key_m.bindings[1],true);
-                    dataView.setUint16(4+8+0,dynamic_key_m.key_id[0],true);
-                    dataView.setUint16(4+8+2,dynamic_key_m.key_id[1],true);
+                    dataView.setUint16(4+8+0,dynamic_key_m.target_keys_location[0].id,true);
+                    dataView.setUint16(4+8+2,dynamic_key_m.target_keys_location[1].id,true);
                     dataView.setUint8(4+12,dynamic_key_m.mode);
                 default:
                     break;

@@ -123,7 +123,6 @@ export interface IDynamicKeyToggleKey extends IDynamicKey {
 }
 
 export interface IDynamicKeyMutex extends IDynamicKey {
-    key_id : number[];
     mode : (DynamicKeyMutexMode | number);
 }
 
@@ -279,7 +278,6 @@ export class DynamicKeyToggleKey implements IDynamicKeyToggleKey {
 }
 
 export class DynamicKeyMutex implements IDynamicKeyMutex {
-    key_id: number[];
     bindings: number[];
     mode: number;
     type: number;
@@ -290,7 +288,6 @@ export class DynamicKeyMutex implements IDynamicKeyMutex {
         this.type = DynamicKeyType.DynamicKeyMutex;
         this.target_keys_location = [];
         this.bindings = [0,0];
-        this.key_id = [0,0];
         this.mode = DynamicKeyMutexMode.DKMutexDistancePriority;
         this.is_key2_primary = false;
     }
