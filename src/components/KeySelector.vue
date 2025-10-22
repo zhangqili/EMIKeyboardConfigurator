@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, triggerRef } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName } from "../apis/utils"
-import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig } from "emi-keyboard-controller"
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName } from "../apis/utils"
+import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { values } from 'lodash';
@@ -71,6 +71,10 @@ function handleMIDINoteNumber(n: number | null) {
     binding.value =  temp_value << 8 | Keycode.MIDINote;
 }
 
+function handleMacroIndex(n: number | null) {
+    binding.value = (binding.value & 0xf0ff) | (macro_index.value & 0x0f) << 8 | Keycode.MacroCollection;
+}
+
 function handleKeyboardConfigControl(value: string, option: SelectOption) {
     //console.log(value);
     binding.value = (Number(value) << 14) | (Number(keyboard_config_value.value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation;
@@ -129,6 +133,7 @@ const joystick_value = ref(0);
 const joystick_collection_value = ref((JoystickKeycode.JoystickButton as number).toString());
 const midi_value = ref(0);
 const midi_note_value = ref(0);
+const macro_index = ref(0);
 const keyboard_config_control_value = ref(2);
 const keyboard_config_value = ref((KeyboardConfig.KeyboardConfigDebug as number).toString());
 
@@ -452,6 +457,23 @@ const keyboard_config_value = ref((KeyboardConfig.KeyboardConfigDebug as number)
                                 </n-gi>
                                 <n-gi :span="3">
                                     <n-input-number @update:value="handleMIDINoteNumber" v-model:value="midi_value" max="10" min="0"></n-input-number>
+                                </n-gi>
+                            </n-grid>
+                        </n-flex>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing :title="t('key_selector_macro')">
+                        <n-button v-for="(key, code) in Object.keys(MacroKeycode)
+                        //.filter(key => isNaN(Number(key)))
+                        .slice(MacroKeycode.MacroRecordingStart, MacroKeycode.MacroPlayingPause + 1)"
+                        :type="((binding & 0xFF) == Keycode.MacroCollection && ((binding >> 12) & 0xF) == (key as unknown as number)) ? 'primary' : ''"
+                        @click="handleFullKeycodeClick(((key as unknown as number) << 12) | (macro_index & 0x0f) << 8 | Keycode.MacroCollection)">
+                        {{ MacroKeycodeToKeyName[key as unknown as MacroKeycode] }}</n-button>
+                        <n-flex>
+                            <n-grid :cols="4">
+                                <n-gi :span="4">
+                                    <n-input-number @update:value="handleMacroIndex" v-model:value="macro_index" max="3" min="0"></n-input-number>
                                 </n-gi>
                             </n-grid>
                         </n-flex>

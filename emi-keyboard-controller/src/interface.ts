@@ -410,6 +410,7 @@ export enum Keycode {
     JoystickCollection = 0xaa,
     MIDICollection = 0xab,
     MIDINote = 0xac,
+    MacroCollection = 0xad,
     KeyUser = 0xFD,
     KeyboardOperation = 0xFE,
     KeyTransparent = 0xFF,
@@ -707,6 +708,20 @@ export enum MIDIKeycode {
     PitchBendUp = 0x8F,
 }
   
+export enum MacroKeycode {
+
+    MacroEnd                             = 0x0,
+    MacroRecordingStart                 = 0x1,
+    MacroRecordingStop                  = 0x2,
+    MacroRecordingToggle                = 0x3,
+    MacroPlayingStartOnce              = 0x4,
+    MacroPlayingStartCircularly        = 0x5,
+    MacroPlayingStartOnceNoGap       = 0x6,
+    MacroPlayingStartCircularlyNoGap = 0x7,
+    MacroPlayingStop                    = 0x8,
+    MacroPlayingPause                   = 0x9,
+    MacroBegin                           = 0xf,
+}
 
 
 // Generic color interfaces

@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
@@ -343,6 +343,7 @@ export const keyCodeToKeyName: { [key in Keycode]: string } = {
   [Keycode.JoystickCollection]: "Joystick",
   [Keycode.MIDICollection]: 'MIDI',
   [Keycode.MIDINote]: 'MIDI Note',
+  [Keycode.MacroCollection]: 'Macro',
   [Keycode.KeyUser]: 'User',
   [Keycode.KeyboardOperation]: 'Keyboard',
   [Keycode.KeyTransparent]: '∇',
@@ -641,6 +642,20 @@ export const MIDIKeyToKeyName: { [key in MIDIKeycode]: string } = {
   [MIDIKeycode.PitchBendUp]: "Pitch Bend Up",
 };
 
+export const MacroKeycodeToKeyName: { [key in MacroKeycode]: string } = {
+  [MacroKeycode.MacroEnd]: "End",
+  [MacroKeycode.MacroRecordingStart]: "Start Recording",
+  [MacroKeycode.MacroRecordingStop]: "Stop Recording",
+  [MacroKeycode.MacroRecordingToggle]: "Toggle Recording",
+  [MacroKeycode.MacroPlayingStartOnce]: "Start Playing Once",
+  [MacroKeycode.MacroPlayingStartCircularly]: "Start Playing Circularly",
+  [MacroKeycode.MacroPlayingStartOnceNoGap]: "Start Playing Once No Gap",
+  [MacroKeycode.MacroPlayingStartCircularlyNoGap]: "Start Playing Circularly No Gap",
+  [MacroKeycode.MacroPlayingStop]: "Stop Playing",
+  [MacroKeycode.MacroPlayingPause]: "Pause Playing",
+  [MacroKeycode.MacroBegin]: ""
+};
+
 export const MIDINoteName: string[] =
 [
   "C",
@@ -744,6 +759,10 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
       case Keycode.MIDINote:
         subString = "MIDI Note";
         mainString = MIDINoteName[modifier%12]+((modifier-modifier%12)/12).toString();
+        break;
+      case Keycode.MacroCollection:
+        subString = "Macro";
+        mainString = MacroKeycodeToKeyName[((modifier>>4)&0x0F) as MacroKeycode]+(modifier&0x0F).toString();
         break;
     }
   }

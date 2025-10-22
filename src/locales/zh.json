@@ -57,6 +57,7 @@
     "key_selector_joystick" : "游戏摇杆",
     "key_selector_midi" : "MIDI",
     "key_selector_midi_note" : "MIDI音符",
+    "key_selector_macro" : "宏",
     "key_selector_layer" : "层控制",
     "key_selector_keyboard" : "键盘控制",
     "key_selector_keyboard_config" : "键盘配置",

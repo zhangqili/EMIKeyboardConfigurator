@@ -57,6 +57,7 @@
     "key_selector_joystick" : "Joystick",
     "key_selector_midi" : "MIDI",
     "key_selector_midi_note" : "MIDI Notes",
+    "key_selector_macro" : "Macro",
     "key_selector_layer" : "Layer",
     "key_selector_keyboard" : "Keyboard",
     "key_selector_keyboard_config" : "Keyboard Configuration",
