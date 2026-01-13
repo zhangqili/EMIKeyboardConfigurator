@@ -36,7 +36,7 @@ const labels = computed(() => {
   //console.debug(tab_selection.value);
   switch (tab_selection.value) {
     case "PerformancePanel": {
-      const advanced_key = advanced_keys.value[props.index];
+      const advanced_key = advanced_keys.value[props.id];
       if (advanced_key != undefined) {
         labels = labels.map(() => "");
         labels[0] = keyModeDisplayMap[advanced_key.mode];
@@ -66,17 +66,17 @@ const labels = computed(() => {
     case "DynamicKeyPanel": {
       labels = labels.map(() => "");
       if (keymap.value != undefined) {
-        if((keymap.value[current_layer.value][props.index] & 0xFF) == ekc.Keycode.DynamicKey)
+        if((keymap.value[current_layer.value][props.id] & 0xFF) == ekc.Keycode.DynamicKey)
         {
-          const strings = keyCodeToString(keymap.value[current_layer.value][props.index]);
-          const dk_index = ((keymap.value[current_layer.value][props.index] >> 8) & 0xFF)
+          const strings = keyCodeToString(keymap.value[current_layer.value][props.id]);
+          const dk_id = ((keymap.value[current_layer.value][props.id] >> 8) & 0xFF)
           //labels[0] = strings.subString;
-          labels[6] = DynamicKeyToKeyName[dynamic_keys.value[dk_index].type as ekc.DynamicKeyType];
+          labels[6] = DynamicKeyToKeyName[dynamic_keys.value[dk_id].type as ekc.DynamicKeyType];
           labels[9] = strings.mainString;
         }
         else
         {
-          var strings = keyCodeToString(keymap.value[current_layer.value][props.index]);
+          var strings = keyCodeToString(keymap.value[current_layer.value][props.id]);
           labels[0] = strings.subString;
           labels[6] = strings.mainString;
         }
@@ -85,19 +85,19 @@ const labels = computed(() => {
     }
     case "RGBPanel": {
       labels = labels.map(() => "");
-      if(rgb_configs.value[props.index])
+      if(rgb_configs.value[props.id])
       {
-        labels[0] = rgbModeDisplayMap[rgb_configs.value[props.index].mode];
-        labels[6] = `${Math.round(rgb_configs.value[props.index].speed * 1000)}\t`;
-        labels[9] = rgbToHex(rgb_configs.value[props.index].rgb);
+        labels[0] = rgbModeDisplayMap[rgb_configs.value[props.id].mode];
+        labels[6] = `${Math.round(rgb_configs.value[props.id].speed * 1000)}\t`;
+        labels[9] = rgbToHex(rgb_configs.value[props.id].rgb);
       }
       break;
     }
     case "DebugPanel": {
       labels = labels.map(() => "");
-      labels[0] = advanced_keys.value[props.index].raw.toFixed(2);
-      labels[3] = advanced_keys.value[props.index].value.toFixed(3);
-      labels[6] = advanced_keys.value[props.index].state.toString();
+      labels[0] = advanced_keys.value[props.id].raw.toFixed(2);
+      labels[3] = advanced_keys.value[props.id].value.toFixed(3);
+      labels[6] = advanced_keys.value[props.id].state.toString();
       break;
     }
     default: {
@@ -124,7 +124,8 @@ const props = defineProps([
   "labels",
   "color",
   "selected",
-  "index"
+  "index",
+  "id",
 ]);
 
 const usize = ref(54);

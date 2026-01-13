@@ -3,6 +3,7 @@ import * as ekc from "emi-keyboard-controller"
 const DEVICES = [
     "Trinity Pad",
     "Oholeo Keyboard",
+    "Oholeo Keyboard v1.1",
     "Zellia80 HE",
     "Zellia60 HE",
     "Destrez Asural Left",
@@ -24,6 +25,10 @@ export async function set_device(device: string) {
         }
         case "Oholeo Keyboard":{
             CONTROLLER = new ekc.OholeoKeyboardController();
+            break;
+        }
+        case "Oholeo Keyboard v1.1":{
+            CONTROLLER = new ekc.OholeoKeyboardV1_1Controller();
             break;
         }
         case "Zellia60 HE":{
@@ -160,4 +165,8 @@ export async function addEventListener(type: string, listener: EventListener){
 }
 export async function removeEventListener(type: string, listener: EventListener){
     return CONTROLLER.removeEventListener(type, listener);
+}
+
+export async function get_layout_labels(){
+    return CONTROLLER.get_layout_labels();
 }

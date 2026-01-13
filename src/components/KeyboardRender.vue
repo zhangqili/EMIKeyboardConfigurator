@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, reactive, ref, defineEmits } from "vue";
+import { computed, reactive, ref, defineEmits, watch } from "vue";
 import Key from "./Key.vue";
 import * as kle from "@ijprest/kle-serial";
 import { KeyConfig } from "../apis/utils";
+import LayoutSubSelector from "./LayoutSubSelector.vue";
 
 const emit = defineEmits<{
-  (e: 'select', id: number, key : KeyConfig): void
+  (e: 'select', id: number): void
 }>()
 const usize = ref(54);
-const props = defineProps(["keys"]);
+const props = defineProps(["keys","layout_labels"]);
 
 // 计算 min-height 的值，基于 keys 中 key.y 的最大值
 const minHeight = computed(() => {
@@ -37,9 +38,26 @@ function handleMouseEnter(event : MouseEvent, index: number) {
   }
 }
 
+const visibleKeys = computed(() => {
+  return props.keys.filter((key: KeyConfig) => {
+    if (key.layoutGroup != undefined) {
+      return selectedIndices.value[key.layoutGroup.groupId] == key.layoutGroup.id;
+    }
+    else {
+      return true;
+    }
+  });
+});
+
 function keyButtonClick(index: number) {
-  emit('select', index, props.keys[index]);
+  emit('select', index);
 }
+
+const selectedIndices = ref<number[]>([]);
+
+watch(() => props.layout_labels, (newLabels) => {
+  selectedIndices.value = new Array(newLabels.length).fill(0);
+}, { immediate: true });
 
 </script>
 
@@ -47,11 +65,16 @@ function keyButtonClick(index: number) {
   <div style="display: grid; place-items: center;">
     <div class="keyboard no-select" :style="{ minHeight: minHeight, minWidth: minWidth, transition: 'all 0.5s ease'}">
       <TransitionGroup name="list">
-        <Key v-for="(key, index) in props.keys" @mousedown="(event : MouseEvent) => handleMouseDown(event, index)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)" :key="index" :x="key.x" :y="key.y"
+        <Key v-for="(key, index) in visibleKeys" @mousedown="(event : MouseEvent) => handleMouseDown(event, key.id)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, key.id)" :key="key.id" :x="key.x" :y="key.y"
         :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
-        :rotation-angle="key.rotation_angle" :labels="key.labels" :color="key.color" :index="index"/>
+        :rotation-angle="key.rotation_angle" :labels="key.labels" :id="key.id" :color="key.color" :index="index"/>
       </TransitionGroup>
     </div>
+    <n-card v-if="props.layout_labels[0].length != 0" style="position: absolute; top: 10px; right: 10px; max-width: 300px;">
+      <n-flex vertical>
+        <LayoutSubSelector v-for="(value,index) in props.layout_labels" v-model:selected-index="selectedIndices[index as number]" :labels="value"></LayoutSubSelector>
+      </n-flex>
+    </n-card>
   </div>
 </template>
 

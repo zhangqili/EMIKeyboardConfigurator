@@ -21,6 +21,7 @@ declare module 'vue' {
     KeySelector: typeof import('./src/components/KeySelector.vue')['default']
     KeyTracker: typeof import('./src/components/KeyTracker.vue')['default']
     KleConverter: typeof import('./src/components/KleConverter.vue')['default']
+    LayoutSubSelector: typeof import('./src/components/LayoutSubSelector.vue')['default']
     Main: typeof import('./src/components/Main.vue')['default']
     NA: typeof import('naive-ui')['NA']
     NButton: typeof import('naive-ui')['NButton']

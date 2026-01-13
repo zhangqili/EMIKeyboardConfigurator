@@ -1,6 +1,7 @@
 export * from "./interface"
 export * from "./controllers/trinity_pad_controller/controller"
 export * from "./controllers/oholeo_keyboard_controller/controller"
+export * from "./controllers/oholeo_keyboard_v1_1_controller/controller"
 export * from "./controllers/zellia_80_controller/controller"
 export * from "./controllers/zellia_60_controller/controller"
 export * from "./controllers/ansi_104_sample_controller/controller"

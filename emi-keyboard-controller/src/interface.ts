@@ -823,6 +823,7 @@ export interface IKeyboardController{
     get_config_file_num() : number;
     get_config_file_index(): number;
     set_config_file_index(index: number) : void;
+    get_layout_labels(): string[][];
 }
 
 export abstract class KeyboardController implements IKeyboardController, EventTarget{
@@ -841,7 +842,6 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
     }
-
     // 添加事件监听
     addEventListener(type: string, listener: EventListener): void {
       if (!this.listeners[type]) {
@@ -998,6 +998,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     set_config_file_index(index: number) : void {
         this.config_index = index;
+    }
+    get_layout_labels(): string[][] {
+        return [[]];
     }
 }
 

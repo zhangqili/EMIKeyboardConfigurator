@@ -5,7 +5,7 @@ import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey } from "../apis/utils";
+import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup } from "../apis/utils";
 import {useMainStore} from "../store/main"
 import { storeToRefs } from "pinia";
 import { DebugDataItem } from '../apis/utils';
@@ -79,6 +79,14 @@ function renderKeyboardFromJson(json_str: string) {
   }
 }
 
+function parseLayoutGroup(str : string) : LayoutGroup | undefined {
+  if (str == "" || str == undefined) {
+    return undefined;
+  }
+  const [groupStr, optStr] = str.split(',');
+  return {groupId : parseInt(groupStr), id : parseInt(optStr)};
+}
+
 function updateKeyboard(value: kle.Keyboard) {
   value.keys.forEach((key: kle.Key) => {
     for (const prop in key) {
@@ -91,7 +99,8 @@ function updateKeyboard(value: kle.Keyboard) {
   keyboard_keys.value = value.keys.map((k, i) => {
     return {
         ...k,
-        id: (Number.isNaN(parseInt(k.labels[0])) ? i : parseInt(k.labels[0]))
+        id: (Number.isNaN(parseInt(k.labels[0])) ? i : parseInt(k.labels[0])),
+        layoutGroup: parseLayoutGroup(k.labels[8])
     };
 });
 }
@@ -146,6 +155,7 @@ async function getController() {
   rgb_configs.value = await apis.get_rgb_configs();
   dynamic_keys.value = await apis.get_dynamic_keys();
   const cnofig_file_num = await apis.get_config_file_num();
+  layout_labels.value = await apis.get_layout_labels();
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
     files.value.push({
@@ -188,9 +198,9 @@ function applyToAllKeys() {
     });
 }
 
-function applyToSelectedKey(index: number, key: KeyConfig) {
+function applyToSelectedKey(index: number) {
   //message.info(id.toString());
-  let id = key.id;
+  let id = index;
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
     case "PerformancePanel": {
@@ -608,6 +618,8 @@ function handleThemeUpdate() {
   }
 }
 
+let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
+
 </script>
 
 <template>
@@ -672,7 +684,7 @@ function handleThemeUpdate() {
         </n-layout-sider>
         <div style="flex: 1; display: flex; flex-direction: column;">
           <div class="keyboard_render">
-            <KeyboardRender v-model:keys="keyboard_keys" @select="applyToSelectedKey" />
+            <KeyboardRender v-model:keys="keyboard_keys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
             <div style="display: flex; justify-content: center; min-height: 24px;" >
               <Transition>
                 <n-radio-group v-model:value="current_layer" size="small" v-if="tab_selection == 'KeymapPanel'||tab_selection == 'DynamicKeyPanel'">
