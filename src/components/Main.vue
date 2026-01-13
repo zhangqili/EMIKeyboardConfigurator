@@ -194,7 +194,7 @@ async function handleUpdateFileValue(_value: string, option: SelectOption) {
 
 function applyToAllKeys() {
   advanced_keys.value.forEach((item, index) => {
-    applyToSelectedKey(index, keyboard_keys.value[index]);
+    applyToSelectedKey(index);
     });
 }
 

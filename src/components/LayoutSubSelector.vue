@@ -12,15 +12,26 @@ const emit = defineEmits<{
 
 function handleClick(index : number)
 {  
-    const next = props.selectedIndex === index ? 0 : index;
+    let next = 0;
+    if (props.labels.length > 1) {
+        
+        next = index;
+    }
+    else
+    {
+        next = props.selectedIndex === index ? 0 : index;
+    }
     emit("update:selectedIndex", next);
 }
 
 </script>
 
 <template>
-    <n-button-group>
-        <n-button v-for="(value,index) in props.labels" :type="selectedIndex === (index as number +1) ? 'primary' : ''" @click="handleClick(index as number + 1)">{{ value }}</n-button>
+    <n-button-group v-if="props.labels.length > 1">
+        <n-button v-for="(value,index) in props.labels" :type="selectedIndex === (index as number) ? 'primary' : ''" @click="handleClick(index as number)">{{ value }}</n-button>
+    </n-button-group>
+    <n-button-group v-if="props.labels.length == 1">
+        <n-button v-for="(value,index) in props.labels" :type="selectedIndex === (index as number + 1) ? 'primary' : ''" @click="handleClick(index as number + 1)">{{ value }}</n-button>
     </n-button-group>
 </template>
 
