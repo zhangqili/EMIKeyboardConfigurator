@@ -816,4 +816,5 @@ export function mapBackDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey
 
 export class KeyConfig extends kle.Key {
   declare color: string;
+  declare id: number;
 }

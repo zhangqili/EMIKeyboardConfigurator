@@ -2,9 +2,10 @@
 import { computed, reactive, ref, defineEmits } from "vue";
 import Key from "./Key.vue";
 import * as kle from "@ijprest/kle-serial";
+import { KeyConfig } from "../apis/utils";
 
 const emit = defineEmits<{
-  (e: 'select', id: number): void
+  (e: 'select', id: number, key : KeyConfig): void
 }>()
 const usize = ref(54);
 const props = defineProps(["keys"]);
@@ -37,7 +38,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 }
 
 function keyButtonClick(index: number) {
-  emit('select', index);
+  emit('select', index, props.keys[index]);
 }
 
 </script>

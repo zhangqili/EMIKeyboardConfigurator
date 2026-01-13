@@ -88,7 +88,12 @@ function updateKeyboard(value: kle.Keyboard) {
     }
   });
   keyboard_layout.value.text = JSON.stringify(value, null, 2);
-  keyboard_keys.value = value.keys;
+  keyboard_keys.value = value.keys.map((k, i) => {
+    return {
+        ...k,
+        id: (Number.isNaN(parseInt(k.labels[0])) ? i : parseInt(k.labels[0]))
+    };
+});
 }
 
 async function connectCommand() {
@@ -179,12 +184,13 @@ async function handleUpdateFileValue(_value: string, option: SelectOption) {
 
 function applyToAllKeys() {
   advanced_keys.value.forEach((item, index) => {
-    applyToSelectedKey(index);
+    applyToSelectedKey(index, keyboard_keys.value[index]);
     });
 }
 
-function applyToSelectedKey(id: number) {
+function applyToSelectedKey(index: number, key: KeyConfig) {
   //message.info(id.toString());
+  let id = key.id;
   var keys = keyboard_keys.value;
   switch (tab_selection.value) {
     case "PerformancePanel": {

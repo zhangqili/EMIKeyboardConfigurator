@@ -1,7 +1,7 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
 import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode, KeyboardController, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, DynamicKey, IDynamicKey, RGBBaseConfig } from './../../interface';
 
-const layout = `[[{"a": 7},"Z","X","C","V"]]`;
+const layout = `[["0","1","2","3"]]`;
 
 export class TrinityPadController  extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 4;

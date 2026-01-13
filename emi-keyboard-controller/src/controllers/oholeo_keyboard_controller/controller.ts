@@ -1,7 +1,7 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
 import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig } from './../../interface';
 
-const layout = `[["Esc","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7","*\\n8","(\\n9",")\\n0","_\\n-","+\\n=",{"w":2},"Backspace"],[{"w":1.5},"Tab","Q","W","E","R","T","Y","U","I","O","P","{\\n[","}\\n]",{"w":1.5},"|\\n\\\\"],[{"w":1.75},"Caps Lock","A","S","D","F","G","H","J","K","L",":\\n;","\\"\\n'",{"w":2.25},"Enter"],[{"w":2},"Shift","Z","X","C","V","B","N","M","<\\n,",">\\n.","?\\n/","Shift","↑","Del"],[{"w":1.25},"Ctrl",{"w":1.25},"Win",{"w":1.25},"Alt",{"a":7,"w":6.25},"",{"a":4},"Alt","Fn","←","↓","→"]]`;
+const layout = `[["0","1","2","3","4","5","6","7","8","9","10","11","12",{"w":2},"13"],[{"w":1.5},"14","15","16","17","18","19","20","21","22","23","24","25","26",{"w":1.5},"27"],[{"w":1.75},"28","29","30","31","32","33","34","35","36","37","38","39",{"w":2.25},"40"],[{"w":2},"41","42","43","44","45","46","47","48","49","50","51","52","53","54"],[{"w":1.25},"55",{"w":1.25},"56",{"w":1.25},"57",{"w":6.25},"58","59","60","61","62","63"]]`;
 
 export class OholeoKeyboardController extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 64;
