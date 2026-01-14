@@ -27,10 +27,10 @@ function handleClick(index : number)
 </script>
 
 <template>
-    <n-button-group v-if="props.labels.length > 1">
+    <n-button-group vertical v-if="props.labels.length > 1">
         <n-button v-for="(value,index) in props.labels" :type="selectedIndex === (index as number) ? 'primary' : ''" @click="handleClick(index as number)">{{ value }}</n-button>
     </n-button-group>
-    <n-button-group v-if="props.labels.length == 1">
+    <n-button-group vertical v-if="props.labels.length == 1">
         <n-button v-for="(value,index) in props.labels" :type="selectedIndex === (index as number + 1) ? 'primary' : ''" @click="handleClick(index as number + 1)">{{ value }}</n-button>
     </n-button-group>
 </template>

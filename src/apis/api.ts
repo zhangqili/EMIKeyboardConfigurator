@@ -6,6 +6,7 @@ const DEVICES = [
     "Oholeo Keyboard v1.1",
     "Zellia80 HE",
     "Zellia60 HE",
+    "Zellia Starlight",
     "Destrez Asural Left",
     "Destrez Asural Right",
     "ANSI 104 Sample",
@@ -37,6 +38,10 @@ export async function set_device(device: string) {
         }
         case "Zellia80 HE":{
             CONTROLLER = new ekc.Zellia80Controller();
+            break;
+        }
+        case "Zellia Starlight":{
+            CONTROLLER = new ekc.ZelliaStarlightController();
             break;
         }
         case "Destrez Asural Left":{
