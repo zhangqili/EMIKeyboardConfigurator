@@ -3,7 +3,7 @@ import * as ekc from "emi-keyboard-controller"
 const DEVICES = [
     "Trinity Pad",
     "Oholeo Keyboard",
-    "Oholeo Keyboard v1.1",
+    "Oholeo Keyboard v2",
     "Zellia80 HE",
     "Zellia60 HE",
     "Zellia Starlight",
@@ -28,8 +28,8 @@ export async function set_device(device: string) {
             CONTROLLER = new ekc.OholeoKeyboardController();
             break;
         }
-        case "Oholeo Keyboard v1.1":{
-            CONTROLLER = new ekc.OholeoKeyboardV1_1Controller();
+        case "Oholeo Keyboard v2":{
+            CONTROLLER = new ekc.OholeoKeyboardV2Controller();
             break;
         }
         case "Zellia60 HE":{
