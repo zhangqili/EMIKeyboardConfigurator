@@ -15,7 +15,7 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
 
     async detect(): Promise<HIDDevice[]> {
         return await navigator.hid.requestDevice({
-            filters: [{ vendorId: 0xFEED, productId: 22319, usagePage: 0xFF60}]  // 使用示例，过滤器可以根据需求进行调整
+            filters: [{ vendorId: 0x0d00, productId: 0x0721, usagePage: 0xFF60}]  // 使用示例，过滤器可以根据需求进行调整
         });;
     }
 
