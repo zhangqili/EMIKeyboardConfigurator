@@ -1,22 +1,4 @@
-import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode} from "./../../interface";
-
-const globalBuffer: {
-  [path: string]: {currTime: number; message: Uint8Array}[];
-} = {};
-const eventWaitBuffer: {
-  [path: string]: ((a: Uint8Array) => void)[];
-} = {};
-
-type CommandQueueArgs = Uint8Array | (() => Promise<void>);
-type CommandQueueEntry = {
-  res: (val?: any) => void;
-  rej: (error?: any) => void;
-  args: CommandQueueArgs;
-};
-type CommandQueue = Array<CommandQueueEntry>;
-const globalCommandQueue: {
-  [kbAddr: string]: {isFlushing: boolean; commandQueue: CommandQueue};
-} = {};
+import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig} from "./../../interface";
 
 enum PacketCode {
   PacketCodeAction = 0x00,
@@ -35,24 +17,88 @@ enum PacketData {
   PacketDataConfig = 0x06,
   PacketDataDebug = 0x07,
 };
+interface PendingRequest {
+    resolve: (data: Uint8Array) => void;
+    reject: (reason: any) => void;
+    expectedCode: PacketCode | number;
+    timer: number;
+}
 
 export class LibampKeyboardController extends KeyboardController {
     device: HIDDevice | undefined;
-    openPromise: Promise<void> = Promise.resolve();
     private handleInputReport: (event: HIDInputReportEvent) => void;
     config_file_number:number = 4;
+    private pendingRequest: PendingRequest | null = null;
+    private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
 
     constructor() {
         super();
-        this.device = undefined;
-        this.handleInputReport = (event: HIDInputReportEvent) => {
-            const { data } = event;
-            this.prase_buffer(new Uint8Array(data.buffer));
+        this.device = undefined;this.handleInputReport = (event: HIDInputReportEvent) => {
+            const data = new Uint8Array(event.data.buffer);
+            const packetCode = data[0];
+            const packetType = data[1];
+
+            // 1. 检查是否有正在等待的请求，并且收到的包类型匹配
+            // 注意：这里我们假设回包是 PacketCodeSet 或 PacketCodeGet，且 packetType 匹配
+            if (this.pendingRequest && 
+                packetCode === this.pendingRequest.expectedCode) {
+                
+                window.clearTimeout(this.pendingRequest.timer);
+                this.pendingRequest.resolve(data);
+                this.pendingRequest = null;
+                return;
+            }
+
+            // 2. 如果不是我们在等待的包（或者是主动上报的 Debug/User 包），则走原有流程
+            this.dispatchEvent(new Event('updateData'));
+            this.packet_process(data);
         };
 
     }
+    private async sendAndWait(buf: Uint8Array, timeout: number = 200): Promise<Uint8Array> {
+        // 1. 简单的互斥锁
+        if (this.pendingRequest) {
+            // 如果上一个请求还没结束，直接报错，防止状态错乱
+            throw new Error("Device is busy processing another request");
+        }
+
+        // 2. [核心修正] 直接从 Buffer 中提取期望的 Code 和 Type
+        // 因为固件是 Echo 机制，发的什么 Code/Type，回的就是什么 Code/Type
+        const expectedCode = buf[0];
+
+        return new Promise((resolve, reject) => {
+            // 3. 设置超时
+            const timer = window.setTimeout(() => {
+                // 双重检查，确保超时的是当前这个请求
+                if (this.pendingRequest && 
+                    this.pendingRequest.expectedCode === expectedCode) {
+                    
+                    this.pendingRequest = null;
+                    reject(new Error(`Timeout waiting for packet: Code ${expectedCode}`));
+                }
+            }, timeout);
+
+            // 4. 注册等待请求
+            this.pendingRequest = {
+                resolve,
+                reject,
+                expectedCode, // 自动填入
+                timer
+            };
+
+            try {
+                // 5. 发送数据
+                this.write(buf);
+            } catch (error) {
+                window.clearTimeout(timer);
+                this.pendingRequest = null;
+                reject(error);
+            }
+        });
+    }
+
     write(buf: Uint8Array): number {
-        this.device?.sendReport(0, buf);
+        this.device?.sendReport(0, buf as BufferSource);
         return (buf.byteLength + 1);
     }
     read(buf: Uint8Array): number {
@@ -69,183 +115,13 @@ export class LibampKeyboardController extends KeyboardController {
         }
         if (result) {
             this.request_config();
-            globalBuffer[this.path] = globalBuffer[this.path] || [];
-            eventWaitBuffer[this.path] = eventWaitBuffer[this.path] || [];
-            this.device.addEventListener('inputreport', (e) => {
-              if (eventWaitBuffer[this.path].length !== 0) {
-                // It should be impossible to have a handler in the buffer
-                // that has a ts that happened after the current message
-                // came in
-                (eventWaitBuffer[this.path].shift() as any)(
-                  new Uint8Array(e.data.buffer),
-                );
-              } else {
-                globalBuffer[this.path].push({
-                  currTime: Date.now(),
-                  message: new Uint8Array(e.data.buffer),
-                });
-              }
-            });
+            this.device.addEventListener("inputreport", this.handleInputReport);
         }
         return result;
     }
-    setupListeners() {
-    }
     disconnect(): void {
         this.device?.close();
-        //this.device?.removeEventListener("inputreport",this.handleInputReport);
-    }
-    prase_buffer(buf: Uint8Array): void {
-        switch (buf[0]) {
-            case 1 : {
-                break;
-            }
-            case 0xFE : {
-
-                let dataLength = buf[1];
-                for (var i = 0;i<dataLength;i++) {
-                    let dataView = new DataView(buf.buffer);  
-                    let key_index = dataView.getUint16(2 + 11 * i, true);
-                    if (key_index >= this.advanced_keys.length) {
-                        continue;
-                    }
-                    this.advanced_keys[key_index].state = buf[2 + 2 + 11 * i] > 0;
-                    this.advanced_keys[key_index].raw = dataView.getFloat32(2 + 3 + 11*i,true);
-                    this.advanced_keys[key_index].value = dataView.getFloat32(2 + 7 + 11*i,true);
-                }
-                this.dispatchEvent(new Event('updateData'));
-                break;
-            }
-            case 0xFF : {
-                this.unload_cargo(buf);
-                break
-            }
-            default: {
-                break
-            }
-        }
-    }
-    unload_cargo(buf: Uint8Array) {
-        let dataView = new DataView(buf.buffer);  
-        switch (buf[1])
-        {
-        case 0: // Advanced Key
-            const key_index = dataView.getUint16(2, true);
-            this.advanced_keys[key_index].mode = buf[4];
-            this.advanced_keys[key_index].activation_value = dataView.getFloat32(8 + 4 * 0, true);
-            this.advanced_keys[key_index].deactivation_value = dataView.getFloat32(8 + 4 * 1, true);
-            this.advanced_keys[key_index].trigger_distance = dataView.getFloat32(8 + 4 * 2, true);
-            this.advanced_keys[key_index].release_distance = dataView.getFloat32(8 + 4 * 3, true);
-            this.advanced_keys[key_index].trigger_speed = dataView.getFloat32(8 + 4 * 4, true);
-            this.advanced_keys[key_index].release_speed = dataView.getFloat32(8 + 4 * 5, true);
-            this.advanced_keys[key_index].upper_deadzone = dataView.getFloat32(8 + 4 * 6, true);
-            this.advanced_keys[key_index].lower_deadzone = dataView.getFloat32(8 + 4 * 7, true);
-            //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].upper_bound = fill_in_float(&buf[2 + 4 * 8]);
-            //g_keyboard_advanced_keys[command_advanced_key_mapping[buf[1]]].lower_bound = fill_in_float(&buf[2 + 4 * 9]);
-            break;
-        case 1: // Global LED
-            this.rgb_base_config.mode = buf[2];
-            this.rgb_base_config.rgb.red = buf[3];
-            this.rgb_base_config.rgb.green = buf[4];
-            this.rgb_base_config.rgb.blue = buf[5];
-            this.rgb_base_config.secondary_rgb.red = buf[6];
-            this.rgb_base_config.secondary_rgb.green = buf[7];
-            this.rgb_base_config.secondary_rgb.blue = buf[8];
-            this.rgb_base_config.speed = dataView.getFloat32(9, true);
-            this.rgb_base_config.direction = dataView.getUint16(13, true);
-            this.rgb_base_config.density = buf[15];
-            this.rgb_base_config.brightness = buf[16];
-            break;
-        case 2: // LED
-            const dataLength = buf[2];
-            for (var i = 0; i < dataLength; i++)
-            {
-                const key_index = buf[3+10*i];
-                if (key_index<this.rgb_configs.length)
-                {
-                    this.rgb_configs[key_index].mode  = buf[3 + 10 * i + 2];
-                    this.rgb_configs[key_index].rgb.red = buf[3 + 10 * i + 3];
-                    this.rgb_configs[key_index].rgb.green = buf[3 + 10 * i + 4];
-                    this.rgb_configs[key_index].rgb.blue = buf[3 + 10 * i + 5];
-                    this.rgb_configs[key_index].speed = dataView.getFloat32(3 + 10 * i + 6, true);
-                    
-                    //rgb_to_hsv(&g_rgb_configs[g_rgb_mapping[buf[1]+i]].hsv, &g_rgb_configs[g_rgb_mapping[buf[1]+i]].rgb);
-                }
-            }
-            break;
-        case 3: // Keymap
-            const layer_index = buf[2];
-            const layer_page_start = dataView.getUint16(3, true);
-            const layer_page_length = buf[5];
-            if (layer_index < this.keymap.length && layer_page_start + layer_page_length <= this.keymap[layer_index].length) 
-            {
-                for (let i = 0; i < layer_page_length; i++) {
-                    this.keymap[layer_index][layer_page_start + i] = dataView.getUint16(6 + i*2, true);
-                }
-            }
-            break;
-        case 4:   
-            const dynamic_key_index = buf[2];
-            var dynamic_key : IDynamicKey;
-            const dynamic_key_type = dataView.getUint32(4,true);
-            switch (dynamic_key_type) {
-                case DynamicKeyType.DynamicKeyStroke:
-                    var dynamic_key_stroke = new DynamicKeyStroke4x4();
-                    dynamic_key_stroke.type = dataView.getUint32(4,true);
-                    dynamic_key_stroke.bindings[0] = dataView.getUint16(4+4+0,true);
-                    dynamic_key_stroke.bindings[1] = dataView.getUint16(4+4+2,true);
-                    dynamic_key_stroke.bindings[2] = dataView.getUint16(4+4+4,true);
-                    dynamic_key_stroke.bindings[3] = dataView.getUint16(4+4+6,true);
-                    dynamic_key_stroke.key_control[0] = dataView.getUint8(4+12+0);
-                    dynamic_key_stroke.key_control[1] = dataView.getUint8(4+12+1);
-                    dynamic_key_stroke.key_control[2] = dataView.getUint8(4+12+2);
-                    dynamic_key_stroke.key_control[3] = dataView.getUint8(4+12+3);
-                    dynamic_key_stroke.press_begin_distance = dataView.getFloat32(4+16,true);
-                    dynamic_key_stroke.press_fully_distance = dataView.getFloat32(4+20,true);
-                    dynamic_key_stroke.release_begin_distance = dataView.getFloat32(4+24,true);
-                    dynamic_key_stroke.release_fully_distance = dataView.getFloat32(4+28,true);
-                    //dynamic_key_stroke.target_keys_location[0] = dataView.getUint16(4+32,true);
-                    dynamic_key = dynamic_key_stroke;
-                    break;
-                case DynamicKeyType.DynamicKeyModTap:
-                    var dynamic_key_mt = new DynamicKeyModTap();
-                    dynamic_key_mt.type = dataView.getUint32(4,true);
-                    dynamic_key_mt.bindings[0] = dataView.getUint16(4+4+0,true);
-                    dynamic_key_mt.bindings[1] = dataView.getUint16(4+4+2,true);
-                    dynamic_key_mt.duration = dataView.getUint32(4+8,true);
-                    //dynamic_key_mt.key_id[0] = dataView.getUint16(4+12,true);
-                    dynamic_key = dynamic_key_mt;
-                    break;
-                case DynamicKeyType.DynamicKeyToggleKey:
-                    var dynamic_key_tk = new DynamicKeyToggleKey();
-                    dynamic_key_tk.type = dataView.getUint32(4,true);
-                    dynamic_key_tk.bindings[0] = dataView.getUint16(4+4+0,true);
-                    //dynamic_key_tk.key_id[0] = dataView.getUint16(4+6+0,true);
-                    dynamic_key = dynamic_key_tk;
-                    break;
-                case DynamicKeyType.DynamicKeyMutex:
-                    var dynamic_key_m = new DynamicKeyMutex();
-                    dynamic_key_m.type  = dataView.getUint32(4,true);
-                    dynamic_key_m.bindings[0]  = dataView.getUint16(4+4+0,true);
-                    dynamic_key_m.bindings[1]  = dataView.getUint16(4+4+2,true);
-                    //dynamic_key_m.key_id[0] = dataView.getUint16(4+8+0,true);
-                    //dynamic_key_m.key_id[1] = dataView.getUint16(4+8+2,true);
-                    dynamic_key_m.mode  = dataView.getUint8(4+12);
-                    dynamic_key = dynamic_key_m;
-                    break;
-                default:
-                    dynamic_key = new DynamicKey();
-                    break;
-            }
-            this.dynamic_keys[dynamic_key_index] = dynamic_key;
-            break;
-        case 0x80: 
-            this.config_index = buf[1];
-            this.dispatchEvent(new Event('updateData'));
-            break;
-        default:
-            break;
-        }
+        this.device?.removeEventListener("inputreport",this.handleInputReport);
     }
 
     packet_process(buf: Uint8Array)
@@ -366,7 +242,7 @@ export class LibampKeyboardController extends KeyboardController {
                 }
             }
       }
-      else (buf[0] == PacketCode.PacketCodeSet)
+      else if (buf[0] == PacketCode.PacketCodeSet)
       {
             const dataLength = buf[2];
             for (var i = 0; i < dataLength; i++)
@@ -497,7 +373,6 @@ export class LibampKeyboardController extends KeyboardController {
                     dataView.setFloat32(4+24,dynamic_key_stroke.release_begin_distance,true);
                     dataView.setFloat32(4+28,dynamic_key_stroke.release_fully_distance,true);
                     dataView.setUint16(4+32,dynamic_key_stroke.target_keys_location[0].id,true);
-                    console.log(dynamic_key_stroke);
                     break;
                 case DynamicKeyType.DynamicKeyModTap:
                     const dynamic_key_mt = item as DynamicKeyModTap;
@@ -564,38 +439,53 @@ export class LibampKeyboardController extends KeyboardController {
     fetch_config(): void {
         throw new Error('Method not implemented.');
     }
-    save_config(): void {
-        this.send_advanced_keys();
-        this.send_rgb_configs();
-        this.send_keymap();
-        this.send_dynamic_keys();
+
+    async save_config() {
+        console.log("Starting save config...");
+        await this.send_advanced_keys();
+        await this.send_rgb_configs();
+        await this.send_keymap();
+        await this.send_dynamic_keys();
     }
     flash_config(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;
         send_buf[1] = KeyboardKeycode.KeyboardSave;
-        let res = this.hidCommand(send_buf);
+        let res = this.write(send_buf);
         console.debug("Wrote Save Command: {:?} byte(s)", res);
     }
     system_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;
         send_buf[1] = KeyboardKeycode.KeyboardReboot;
-        let res = this.hidCommand(send_buf);
+        let res = this.write(send_buf);
         console.debug("Wrote System Reset Command: {:?} byte(s)", res);
     }
     factory_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;
         send_buf[1] = KeyboardKeycode.KeyboardFactoryReset;
-        let res = this.hidCommand(send_buf);
+        let res = this.write(send_buf);
         console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
-    request_config(): void {
-      this.read_advanced_keys();
-      this.read_rgb_configs();
-      this.read_keymap();
-      this.read_dynamic_keys();
+    enter_bootloader(): void {
+        let send_buf = new Uint8Array(63);
+        send_buf[0] = PacketCode.PacketCodeAction;
+        send_buf[1] = KeyboardKeycode.KeyboardBootloader;
+        let res = this.write(send_buf);
+        console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
+    }
+    async request_config(): Promise<void> {
+      try {
+          await this.read_advanced_keys();
+          await this.read_rgb_configs();
+          await this.read_keymap();
+          await this.read_dynamic_keys();
+          console.log("Config loaded successfully");
+          this.dispatchEvent(new Event('updateData'));
+      } catch (e) {
+          console.error("Error loading config:", e);
+      }
     }
     request_debug(): void {
         let send_buf = new Uint8Array(63);
@@ -611,10 +501,10 @@ export class LibampKeyboardController extends KeyboardController {
                 if (key_index < this.advanced_keys.length ){
                     dataView.setUint16(3 + 0 + 12 * j,key_index,true);
                 }
-                //console.log(key_index);
+                console.log(key_index);
             }
             //console.debug(send_buf);
-            let res = this.hidCommand(send_buf);
+            let res = this.write(send_buf);
             //console.debug("Wrote RGB Configs: {:?} byte(s)", res);
         }
     }
@@ -622,176 +512,212 @@ export class LibampKeyboardController extends KeyboardController {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;
         send_buf[1] = 0xFE | (((1<<6) | (0x20 + 0)) << 8);
-        this.hidCommand(send_buf);
+        this.write(send_buf);
     }
     stop_debug(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;
         send_buf[1] = 0xFE | (((0<<6) | (0x20 + 0)) << 8);
-        this.hidCommand(send_buf);
+        this.write(send_buf);
     }
-    send_advanced_keys() {
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeSet;
-        send_buf[1] = PacketData.PacketDataAdvancedKey;
-        let dataView = new DataView(send_buf.buffer);
-        this.advanced_keys.forEach((item, index) =>{
-            dataView.setUint16(2,index,true);
-            this.packet_process(send_buf)
-            let res = this.hidCommand(send_buf);
-            console.debug("Wrote Advanced Key: {:?} byte(s)", res);
-        });
-    }
-
-    read_advanced_keys() {
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeGet;
-        send_buf[1] = PacketData.PacketDataAdvancedKey;
-        let dataView = new DataView(send_buf.buffer);
-        this.advanced_keys.forEach((item, index) =>{
-            dataView.setUint16(2,index,true);
-            let res = this.hidCommand(send_buf);
-            console.debug("Wrote Advanced Key: {:?} byte(s)", res);
-        });
-    }
-
-
-    send_rgb_configs() {
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeSet;
-        send_buf[1] = PacketData.PacketDataRgbBaseConfig;
-        {
-            this.packet_process(send_buf)
-            let res = this.hidCommand(send_buf);
-            //console.log("send rgb base config");
-            //console.log(send_buf);
-            console.debug("Wrote RGB Switch: {:?} byte(s)", res);
+    
+    async send_advanced_keys() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeSet;
+        this.txBuffer[1] = PacketData.PacketDataAdvancedKey;
+        let dataView = new DataView(this.txBuffer.buffer);
+        
+        for(let index = 0; index < this.advanced_keys.length; index++) {
+            const item = this.advanced_keys[index];
+            dataView.setUint16(2, index, true);
+            this.packet_process(this.txBuffer);
+            try {
+                await this.sendAndWait(this.txBuffer);
+            } catch (e) {
+                console.error(`Failed to set Advanced Key ${index}`, e);
+            }
         }
-        send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeSet;
-        send_buf[1] = PacketData.PacketDataRgbConfig;
+    }
+
+    async read_advanced_keys() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataAdvancedKey;
+        const dataView = new DataView(this.txBuffer.buffer);
+        for (let index = 0; index < this.advanced_keys.length; index++) {
+            dataView.setUint16(2, index, true);
+            try {
+                const res = await this.sendAndWait(this.txBuffer);
+                this.packet_process_advanced_key(res);
+                console.debug(`Read Advanced Key: ${index}`);
+            } catch (e) {
+                console.error(`Failed to read Advanced Key ${index}`, e);
+            }
+        }
+    }
+
+    async send_rgb_configs() {
+        this.txBuffer[0] = PacketCode.PacketCodeSet;
+        this.txBuffer[1] = PacketData.PacketDataRgbBaseConfig;
+        
+        this.packet_process(this.txBuffer); 
+        
+        try {
+            await this.sendAndWait(this.txBuffer);
+        } catch (e) {
+            console.error("Failed to send RGB Base Config", e);
+        }
         const rgb_page_num = Math.ceil(this.rgb_configs.length / 6);
-        for (var rgb_page_index = 0; rgb_page_index < rgb_page_num; rgb_page_index+=1){
-            let page_length = (rgb_page_index + 1) * 6 > this.rgb_configs.length ? this.rgb_configs.length % 6 : 6;
-            send_buf[2] = page_length;
-            for (var j = 0; j < page_length; j += 1){
-                let dataView = new DataView(send_buf.buffer);
-                let rgb_index = rgb_page_index * 6 + j;
-                if (rgb_index < this.rgb_configs.length ){
-                    dataView.setUint16(3 + 0 + 10 * j,rgb_index,true);
-                }
+        for (let i = 0; i < rgb_page_num; i++) {
+            this.txBuffer.fill(0);
+            this.txBuffer[0] = PacketCode.PacketCodeSet;
+            this.txBuffer[1] = PacketData.PacketDataRgbConfig;
+
+            let page_length = (i + 1) * 6 > this.rgb_configs.length ? this.rgb_configs.length % 6 : 6;
+            this.txBuffer[2] = page_length;
+            
+            let dataView = new DataView(this.txBuffer.buffer);
+
+            // 【关键点】先填充“索引”，也就是告诉 packet_process 我们要发哪些键
+            for (let j = 0; j < page_length; j++) {
+                let rgb_index = i * 6 + j;
+                // RGB Config 的 Index 偏移量是 3 + 10*j
+                dataView.setUint16(3 + 10 * j, rgb_index, true); 
             }
-            this.packet_process(send_buf);
-            //console.debug(send_buf);
-            let res = this.hidCommand(send_buf);
-            //console.debug("Wrote RGB Configs: {:?} byte(s)", res);
+            this.packet_process(this.txBuffer);
+
+            try {
+                await this.sendAndWait(this.txBuffer);
+            } catch (e) {
+                console.error(`Failed to send RGB Page ${i}`, e);
+            }
         }
     }
 
-    read_rgb_configs() {
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeGet;
-        send_buf[1] = PacketData.PacketDataRgbBaseConfig;
-        {
-            let res = this.hidCommand(send_buf);
-            //console.log("send rgb base config");
-            //console.log(send_buf);
-            console.debug("Wrote RGB Switch: {:?} byte(s)", res);
+    async read_rgb_configs() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataRgbBaseConfig;
+        
+        try {
+            const baseRes = await this.sendAndWait(this.txBuffer);
+            this.packet_process(baseRes);
+        } catch (e) {
+            console.error("Failed to read RGB Base Config", e);
         }
-        send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeGet;
-        send_buf[1] = PacketData.PacketDataRgbConfig;
+
         const rgb_page_num = Math.ceil(this.rgb_configs.length / 6);
-        for (var rgb_page_index = 0; rgb_page_index < rgb_page_num; rgb_page_index+=1){
+        for (let rgb_page_index = 0; rgb_page_index < rgb_page_num; rgb_page_index++) {
+            this.txBuffer.fill(0);
+            this.txBuffer[0] = PacketCode.PacketCodeGet;
+            this.txBuffer[1] = PacketData.PacketDataRgbConfig;
+            
             let page_length = (rgb_page_index + 1) * 6 > this.rgb_configs.length ? this.rgb_configs.length % 6 : 6;
-            send_buf[2] = page_length;
-            for (var j = 0; j < page_length; j += 1){
-                let dataView = new DataView(send_buf.buffer);
+            this.txBuffer[2] = page_length;
+            
+            const dataView = new DataView(this.txBuffer.buffer);
+            for (let j = 0; j < page_length; j++) {
                 let rgb_index = rgb_page_index * 6 + j;
-                if (rgb_index < this.rgb_configs.length ){
-                    dataView.setUint16(3 + 0 + 10 * j,rgb_index,true);
+                if (rgb_index < this.rgb_configs.length) {
+                    dataView.setUint16(3 + 0 + 10 * j, rgb_index, true);
                 }
             }
-            //console.debug(send_buf);
-            let res = this.hidCommand(send_buf);
-            //console.debug("Wrote RGB Configs: {:?} byte(s)", res);
+
+            try {
+                const res = await this.sendAndWait(this.txBuffer);
+                this.packet_process(res);
+                console.debug(`Read RGB Page: ${rgb_page_index}`);
+            } catch (e) {
+                console.error(`Failed to read RGB Page ${rgb_page_index}`, e);
+            }
+        }
+    }
+    async send_keymap() {const layer_page_length = 16;
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeSet;
+        this.txBuffer[1] = PacketData.PacketDataKeymap;
+        let dataView = new DataView(this.txBuffer.buffer);
+
+        for (let i = 0; i < this.keymap.length; i++) {
+            const layer = this.keymap[i];
+            for (let index = 0; index < layer.length; index += layer_page_length) {
+                let layer_seg_len = (index + layer_page_length > layer.length) ? (layer.length - index) : layer_page_length;
+                
+                this.txBuffer[2] = i; // layer
+                dataView.setUint16(3, index, true); // start address
+                this.txBuffer[5] = layer_seg_len; // length
+
+                this.packet_process(this.txBuffer);
+
+                try {
+                    await this.sendAndWait(this.txBuffer);
+                } catch (e) {
+                    console.error("Failed to send Keymap", e);
+                }
+            }
+        }
+        console.debug("Sent Keymap");
+    }
+
+    async read_keymap() {
+        const layer_page_length = 16;
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataKeymap;
+        const dataView = new DataView(this.txBuffer.buffer);
+
+        for (let i = 0; i < this.keymap.length; i++) {
+            const layer = this.keymap[i];
+            for (let index = 0; index < layer.length; index += layer_page_length) {
+                let layer_seg_len = (index + layer_page_length > layer.length) ? (layer.length - index) : layer_page_length;
+                
+                this.txBuffer[2] = i; // layer index
+                dataView.setUint16(3, index, true); // start index
+                this.txBuffer[5] = layer_seg_len; // length
+
+                try {
+                    const res = await this.sendAndWait(this.txBuffer);
+                    this.packet_process_keymap(res);
+                } catch (e) {
+                    console.error(`Failed to read Keymap Layer ${i} Offset ${index}`, e);
+                }
+            }
         }
     }
 
-    send_keymap() {
-        const layer_page_length = 16;
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeSet;
-        send_buf[1] = PacketData.PacketDataKeymap;
-        let dataView = new DataView(send_buf.buffer);        
-        this.keymap.forEach((layer,i) => {
-            send_buf[2] = i; //layer_index
-            for (var index = 0; index < layer.length; index+=layer_page_length) {
-                var layer_seg;
-                if (index + layer_page_length > layer.length) {
-                    layer_seg = layer.length - index; 
-                }
-                else
-                {
-                    layer_seg = layer_page_length; 
-                }
-                dataView.setUint16(3,index,true);
-                send_buf[5] = layer_seg;
-                this.packet_process(send_buf);
-                console.debug(send_buf);
-                let res = this.hidCommand(send_buf);
-                console.debug("Wrote Keymap: {:?} byte(s)", res);
+    async send_dynamic_keys() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeSet;
+        this.txBuffer[1] = PacketData.PacketDataDynamicKey;
+        
+        for (let i = 0; i < this.dynamic_keys.length; i++) {
+            this.txBuffer.fill(0, 2); 
+            this.txBuffer[2] = i; 
+            this.packet_process(this.txBuffer);
+
+            try {
+                await this.sendAndWait(this.txBuffer);
+            } catch (e) {
+                console.error(`Failed to send Dynamic Key ${i}`, e);
             }
-        });
+        }
+        console.debug("Sent Dynamic Keys");
     }
 
-    read_keymap() {
-        const layer_page_length = 16;
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeGet;
-        send_buf[1] = PacketData.PacketDataKeymap;
-        let dataView = new DataView(send_buf.buffer);        
-        this.keymap.forEach((layer,i) => {
-            send_buf[2] = i; //layer_index
-            for (var index = 0; index < layer.length; index+=layer_page_length) {
-                var layer_seg;
-                if (index + layer_page_length > layer.length) {
-                    layer_seg = layer.length - index; 
-                }
-                else
-                {
-                    layer_seg = layer_page_length; 
-                }
-                dataView.setUint16(3,index,true);
-                send_buf[5] = layer_seg;
-                console.debug(send_buf);
-                let res = this.hidCommand(send_buf);
-                console.debug("Wrote Keymap: {:?} byte(s)", res);
+    async read_dynamic_keys() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataDynamicKey;
+        
+        for (let i = 0; i < this.dynamic_keys.length; i++) {
+            this.txBuffer[2] = i; // index
+            try {
+                const res = await this.sendAndWait(this.txBuffer);
+                this.packet_process(res);
+            } catch (e) {
+                console.error(`Failed to read Dynamic Key ${i}`, e);
             }
-        });
-    }
-
-    send_dynamic_keys() {
-        this.dynamic_keys.forEach((item,i) => {
-            var send_buf = new Uint8Array(63);
-            send_buf[0] = PacketCode.PacketCodeSet;
-            send_buf[1] = PacketData.PacketDataDynamicKey;
-            send_buf[2] = i;
-            this.packet_process(send_buf);
-            let res = this.hidCommand(send_buf);
-            console.debug("Wrote dynamic key: {:?} byte(s)", res);
-        });
-    }
-
-    read_dynamic_keys() {
-        this.dynamic_keys.forEach((item,i) => {
-            var send_buf = new Uint8Array(63);
-            send_buf[0] = PacketCode.PacketCodeGet;
-            send_buf[1] = PacketData.PacketDataDynamicKey;
-            send_buf[2] = i;
-            let res = this.hidCommand(send_buf);
-            console.debug("Wrote dynamic key: {:?} byte(s)", res);
-        });
+        }
     }
 
     get_config_file_num(): number {
@@ -802,152 +728,24 @@ export class LibampKeyboardController extends KeyboardController {
         return this.config_file_number;
     }
 
-    set_config_file_index(index: number) : void {
+    async set_config_file_index(index: number) {
         this.config_file_number = index;
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = this.config_file_number + 0x10;
-        let res = this.hidCommand(send_buf);
-        this.request_config();
-    }
+        const commandId = this.config_file_number + 0x10;
 
+        // 1. 准备指令
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeAction;
+        this.txBuffer[1] = commandId;
 
-  get commandQueueWrapper() {
-    if (!globalCommandQueue[this.path]) {
-      globalCommandQueue[this.path] = {isFlushing: false, commandQueue: []};
-      return globalCommandQueue[this.path];
-    }
-    return globalCommandQueue[this.path];
-  }
+        console.log(`Commanding switch to config ${index}...`);
 
-  async hidCommand(
-    bytes: Uint8Array,
-  ): Promise<number[]> {
-    return new Promise((res, rej) => {
-      this.commandQueueWrapper.commandQueue.push({
-        res,
-        rej,
-        args: bytes.slice(),
-      });
-      if (!this.commandQueueWrapper.isFlushing) {
-        this.flushQueue();
-      }
-    });
-  }
-
-  async flushQueue() {
-    if (this.commandQueueWrapper.isFlushing === true) {
-      return;
-    }
-    this.commandQueueWrapper.isFlushing = true;
-    while (this.commandQueueWrapper.commandQueue.length !== 0) {
-      const {res, rej, args} =
-        this.commandQueueWrapper.commandQueue.shift() as CommandQueueEntry;
-        // This allows us to queue promises in between hid commands, useful for timeouts
-        if (typeof args === 'function') {
-          await args();
-          res();
-        } else {
-          try {
-            const ans = await this._hidCommand(args);
-            res(ans);
-          } catch (e: any) {
-            console.error(e);
-            rej(e);
-          }
+        try {
+            await this.sendAndWait(this.txBuffer, 1000);
+            console.log("MCU confirmed switch. Requesting data...");
+            await this.request_config();
+            
+        } catch (e) {
+            console.error("Config switch failed or timed out:", e);
         }
     }
-    this.commandQueueWrapper.isFlushing = false;
-  }
-
-  async _hidCommand(paddedArray: Uint8Array): Promise<any> {
-    await this.writeBuffer(paddedArray);
-
-    const buffer = await this.getByteBuffer();
-    //console.log(buffer);
-    //logCommand(this.kbAddr, commandBytes, buffer);
-    if (!eqArr(Array.from(paddedArray), Array.from(paddedArray))) {
-      console.error(
-        `Command for `,
-        paddedArray,
-        'Bad Resp:',
-        paddedArray,
-      );
-      //throw new Error('Receiving incorrect response for command');
-    }
-    //console.log(buffer[0], buffer[1]);
-    if (buffer[0]==PacketCode.PacketCodeGet) {
-      this.packet_process(buffer);
-      this.dispatchEvent(new Event('updateData'));
-    }
-    console.debug(
-      `Command for `,
-      paddedArray,
-      'Correct Resp:',
-      paddedArray,
-    );
-    return paddedArray;
-  }
-
-  async getByteBuffer(): Promise<Uint8Array> {
-    return this.readP();
-  }
-
-  readBuffer(fn: (err?: Error, data?: ArrayBuffer) => void) {
-    this.fastForwardGlobalBuffer(Date.now());
-    if (globalBuffer[this.path].length > 0) {
-      // this should be a noop normally
-      fn(undefined, globalBuffer[this.path].shift()?.message as any);
-    } else {
-      eventWaitBuffer[this.path].push((data) => fn(undefined, data));
-    }
-  }
-  
-  async writeBuffer(arr: Uint8Array) {
-      await this.openPromise;
-      await this.device?.sendReport(0, arr);
-  }
-  
-  //eadP = promisify((arg: any) => this.readBuffer(arg));
-  readP = (): Promise<Uint8Array> => {
-    return new Promise((resolve, reject) => {
-        this.readBuffer((err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(data as Uint8Array);
-            }
-        });
-    });
-};
-  // The idea is discard any messages that have happened before the time a command was issued
-  // since time-travel is not possible yet...
-  fastForwardGlobalBuffer(time: number) {
-    let messagesLeft = globalBuffer[this.path].length;
-    while (messagesLeft) {
-      messagesLeft--;
-      // message in buffer happened before requested time
-      if (globalBuffer[this.path][0].currTime < time) {
-        globalBuffer[this.path].shift();
-      } else {
-        break;
-      }
-    }
-  }
 }
-
-const promisify = (cb: Function) => () => {
-  return new Promise((res, rej) => {
-    cb((e: any, d: any) => {
-      if (e) rej(e);
-      else res(d);
-    });
-  });
-};
-
-const eqArr = <T>(arr1: T[], arr2: T[]) => {
-  if (arr1.length !== arr2.length) {
-    return false;
-  }
-  return arr1[0] === arr2[0] && arr1[1] === arr2[1] && arr1[2] === arr2[2] && arr1[3] === arr2[3];
-};

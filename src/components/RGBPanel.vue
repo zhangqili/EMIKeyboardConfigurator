@@ -180,11 +180,11 @@ function applyRainbowEffect() {
       reference_color.h += 360;
     }
     var real_color = tinycolor(reference_color).toRgb();
-    rgb_configs.value[index].rgb.red = real_color.r;
-    rgb_configs.value[index].rgb.green = real_color.g;
-    rgb_configs.value[index].rgb.blue = real_color.b;
-    rgb_configs.value[index].mode = rgb_config.value.mode;
-    rgb_configs.value[index].speed = isNaN(speed.value) ? 0 : Math.round(speed.value) / 1000;
+    rgb_configs.value[key.id].rgb.red = real_color.r;
+    rgb_configs.value[key.id].rgb.green = real_color.g;
+    rgb_configs.value[key.id].rgb.blue = real_color.b;
+    rgb_configs.value[key.id].mode = rgb_config.value.mode;
+    rgb_configs.value[key.id].speed = isNaN(speed.value) ? 0 : Math.round(speed.value) / 1000;
   });
 }
 

@@ -173,8 +173,10 @@ function updateData()
   if (keymap.value != undefined) {
     mapBackDynamicKey(keymap.value, dynamic_keys.value);
   }
+  console.log("update data");
   triggerRef(advanced_keys);
   triggerRef(keymap);
+  triggerRef(rgb_base_config);
   triggerRef(rgb_configs);
   triggerRef(dynamic_keys);
 }

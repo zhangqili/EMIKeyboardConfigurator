@@ -109,8 +109,8 @@ const labels = computed(() => {
 });
 
 const color = computed(() => {
-  if(rgb_configs.value[props.index])
-    return rgbToHex(rgb_configs.value[props.index].rgb);
+  if(rgb_configs.value[props.id])
+    return rgbToHex(rgb_configs.value[props.id].rgb);
 })
 
 const props = defineProps([
