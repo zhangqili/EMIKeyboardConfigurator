@@ -40,6 +40,7 @@ declare module 'vue' {
     NGi: typeof import('naive-ui')['NGi']
     NGrid: typeof import('naive-ui')['NGrid']
     NGridItem: typeof import('naive-ui')['NGridItem']
+    NIcon: typeof import('naive-ui')['NIcon']
     NInputNumber: typeof import('naive-ui')['NInputNumber']
     NLayoutSider: typeof import('naive-ui')['NLayoutSider']
     NList: typeof import('naive-ui')['NList']
@@ -60,5 +61,6 @@ declare module 'vue' {
     PerformancePanel: typeof import('./src/components/PerformancePanel.vue')['default']
     PlainKey: typeof import('./src/components/PlainKey.vue')['default']
     RGBPanel: typeof import('./src/components/RGBPanel.vue')['default']
+    ScriptPanel: typeof import('./src/components/ScriptPanel.vue')['default']
   }
 }

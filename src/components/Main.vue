@@ -18,6 +18,7 @@ import KeymapPanel from "./KeymapPanel.vue";
 import DebugPanel from "./DebugPanel.vue";
 import KeyboardRender from "./KeyboardRender.vue";
 import AboutPanel from "./AboutPanel.vue";
+import ScriptPanel from "./ScriptPanel.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "../locales/i18n";
 
@@ -53,7 +54,105 @@ const {
 
 const message = useMessage();
 const notification = useNotification();
-const isConnected = ref<boolean>(false);
+const isConnected = ref<boolean>(false);// 在 <script setup lang="ts"> 中
+
+// ... 原有的 imports ...
+
+// 定义变量
+const keyboardContentRef = ref<HTMLElement | null>(null);
+const customHeight = ref<number | null>(null); 
+const isResizing = ref(false);
+let resizeObserver: ResizeObserver | null = null;
+
+// 【新增】监听内容高度变化
+onMounted(() => {
+  if (keyboardContentRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      // 如果正在由用户手动拖拽中，不进行自动调整，避免冲突
+      if (isResizing.value) return;
+
+      for (const entry of entries) {
+        const contentHeight = entry.contentRect.height;
+        
+        // 核心逻辑 1：防止空白
+        // 如果当前是固定高度模式，且 固定高度 > 真实内容高度
+        // 说明键盘变小了，或者是切换了更小的配列
+        // 这时应该放弃固定高度，吸附回 Auto 模式
+        if (customHeight.value !== null && customHeight.value > contentHeight) {
+          customHeight.value = null;
+        }
+      }
+    });
+    resizeObserver.observe(keyboardContentRef.value.firstElementChild as Element || keyboardContentRef.value);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+});
+
+// ... startResize 保持不变 ...
+function startResize(e: MouseEvent) {
+  isResizing.value = true;
+  document.body.style.cursor = 'ns-resize';
+  document.body.style.userSelect = 'none';
+  window.addEventListener('mousemove', handleMouseMove);
+  window.addEventListener('mouseup', stopResize);
+}
+
+// 【修改】handleMouseMove：增加吸附逻辑
+function handleMouseMove(e: MouseEvent) {
+  if (!isResizing.value) return;
+  
+  // 1. 计算目标高度
+  let targetHeight = e.clientY - 80; // 减去 header 高度
+  
+  // 2. 获取当前内容的真实高度
+  // 注意：这里我们取 children 的高度或者 scrollHeight，确保获取的是撑开后的高度
+  const contentEl = keyboardContentRef.value;
+  if (!contentEl) return;
+  
+  const maxContentHeight = contentEl.scrollHeight; 
+  const minAllowedHeight = 50; 
+
+  // 3. 核心逻辑 2：吸附到底部
+  // 如果用户试图拖拽的高度 >= 内容的真实高度（允许 5px 的误差）
+  // 意味着用户想“看全”键盘。
+  // 此时直接设为 null (Auto模式)，这样以后键盘变大，容器也会自动变大。
+  if (targetHeight >= maxContentHeight - 5) {
+      customHeight.value = null;
+      return; // 直接返回，不再设置具体的像素值
+  }
+
+  // 4. 普通限制逻辑
+  if (targetHeight < minAllowedHeight) targetHeight = minAllowedHeight;
+
+  // 5. 设置高度
+  customHeight.value = targetHeight;
+}
+
+// ... stopResize, resetToAutoHeight 等保持不变 ...
+function stopResize() {
+  isResizing.value = false;
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  window.removeEventListener('mousemove', handleMouseMove);
+  window.removeEventListener('mouseup', stopResize);
+}
+
+function resetToAutoHeight() {
+  customHeight.value = null; 
+}
+
+function toggleKeyboardCollapse() {
+  if (customHeight.value === 0 || (customHeight.value !== null && customHeight.value < 50)) {
+    customHeight.value = null; 
+  } else {
+    customHeight.value = 0;
+  }
+}
 
 const themeLabelMap = computed(() => ({
   dark: t('light'),
@@ -461,6 +560,10 @@ const menuOptions = computed(()=>[
     key: 'DynamicKeyPanel',
   },
   {
+    label: t('main_tabs_script'),
+    key: 'ScriptPanel',
+  },
+  {
     label: t('main_tabs_debug'),
     key: 'DebugPanel',
   },
@@ -605,6 +708,7 @@ const currentPanel = computed(() => {
         case 'RGBPanel': return RGBPanel;
         case 'DynamicKeyPanel': return DynamicKeyPanel;
         case 'DebugPanel': return DebugPanel;
+        case 'ScriptPanel': return ScriptPanel;
         case 'AboutPanel': return AboutPanel;
         default: return null;
       }
@@ -683,31 +787,61 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
               :indent="20" :options="menuOptions" v-model:value="tab_selection">
             </n-menu>
           </n-space>
-        </n-layout-sider>
-        <div style="flex: 1; display: flex; flex-direction: column;">
-          <div class="keyboard_render">
-            <KeyboardRender v-model:keys="keyboard_keys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
-            <div style="display: flex; justify-content: center; min-height: 24px;" >
-              <Transition>
-                <n-radio-group v-model:value="current_layer" size="small" v-if="tab_selection == 'KeymapPanel'||tab_selection == 'DynamicKeyPanel'">
-                  <TransitionGroup name="list">
-                    <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />
-                  </TransitionGroup>
-                </n-radio-group>
-              </Transition>
-            </div>
-            <Transition>
-              <div style="position: relative;"  v-if="tab_selection == 'PerformancePanel'||tab_selection == 'KeymapPanel'||tab_selection == 'RGBPanel'">
-                <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">{{ t('apply_to_all') }}</n-button>
-              </div>
-            </Transition>
-            <n-divider style="margin: 0px;"/>
+        </n-layout-sider><div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+  
+  <div 
+    class="keyboard-resizable-container"
+    :style="{ 
+      height: customHeight === null ? 'auto' : customHeight + 'px',
+      flexShrink: 0,
+      transition: isResizing ? 'none' : 'height 0.3s ease',
+      overflow: 'hidden' /* 裁剪超出部分 */
+    }"
+  >
+    <div ref="keyboardContentRef" style="overflow-y: auto; height: 100%;">
+      
+      <div class="keyboard_render_content">
+        <KeyboardRender v-model:keys="keyboard_keys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
+        
+        <div style="display: flex; justify-content: center; min-height: 24px;" >
+          <Transition>
+            <n-radio-group v-model:value="current_layer" size="small" v-if="tab_selection == 'KeymapPanel'||tab_selection == 'DynamicKeyPanel'">
+              <TransitionGroup name="list">
+                <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />
+              </TransitionGroup>
+            </n-radio-group>
+          </Transition>
+        </div>
+        
+        <Transition>
+          <div style="position: relative;"  v-if="tab_selection == 'PerformancePanel'||tab_selection == 'KeymapPanel'||tab_selection == 'RGBPanel'">
+            <n-button size="small" style="position: absolute; bottom: 0px;" @click="applyToAllKeys">{{ t('apply_to_all') }}</n-button>
           </div>
-          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
-            <Transition name="fade" mode="out-in" >
-              <component :is="currentPanel"/>
-            </Transition>
-          </div>
+        </Transition>
+        <n-divider style="margin: 0px;"/>
+      </div>
+      
+    </div>
+  </div>
+
+  <div class="resize-handle" @mousedown="startResize" @dblclick="resetToAutoHeight">
+    <div class="handle-bar" :class="{ 'active': customHeight === null }"></div>
+    
+    <div class="toggle-btn" @click.stop="toggleKeyboardCollapse">
+      <n-icon size="16">
+        <svg v-if="customHeight === 0" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z"/></svg>
+        <svg v-else viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6l-6 6l1.41 1.41z"/></svg>
+      </n-icon>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+    <Transition name="fade" mode="out-in" >
+      <component :is="currentPanel"/>
+    </Transition>
+  </div>
+</div>
         </div>
       </div>
     </n-layout>
@@ -792,4 +926,59 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
     display: flex;
     align-items: center;
   }
+  
+  .resize-handle {
+  height: 12px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background-color 0.2s;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* 暗色模式适配 */
+:deep(.n-layout--d-dark) .resize-handle {
+  background-color: #26262a;
+  border-color: #333;
+}
+
+.resize-handle:hover {
+  background-color: #e0e0e0;
+}
+:deep(.n-layout--d-dark) .resize-handle:hover {
+  background-color: #36363a;
+}
+
+.handle-bar {
+  width: 40px;
+  height: 4px;
+  background-color: #ccc;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+/* 当处于 Auto 模式时，把手显示为绿色或其他颜色提示 */
+.handle-bar.active {
+  background-color: #18a058; /* Naive UI Primary Color */
+  width: 50px;
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #666;
+}
+
+.keyboard_render_content {
+    /* 确保内容本身没有奇怪的 margin 导致测量不准 */
+}
 </style>

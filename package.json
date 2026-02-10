@@ -9,11 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/noto-sans-mono": "^5.2.10",
+    "@guolao/vue-monaco-editor": "^1.6.0",
     "@ijprest/kle-serial": "^0.15.1",
     "@types/lodash": "^4.17.16",
     "echarts": "^5.5.1",
     "emi-keyboard-controller": "link:emi-keyboard-controller",
     "lodash": "^4.17.21",
+    "monaco-editor": "^0.55.1",
     "pinia": "^2.3.0",
     "tinycolor2": "^1.6.0",
     "unplugin-auto-import": "^0.18.6",
