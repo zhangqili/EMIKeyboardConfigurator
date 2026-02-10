@@ -1,6 +1,6 @@
 ;''
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, provide, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, ref, provide, watch, shallowRef,triggerRef } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -35,155 +35,167 @@ use([
 ]);
 
 provide(THEME_KEY, 'dark');
-
 const { t } = useI18n();
 const store = useMainStore();
-const { advanced_keys, debug_raw_chart_option,debug_value_chart_option,debug_switch } = storeToRefs(store);
-let timer = 0;
+// 只取 switch 和 advanced_keys 用于显示
+// 移除 chart_option 的响应式解构，我们只在初始化时用它
+const { advanced_keys, debug_switch } = storeToRefs(store);
+// 手动非响应式获取初始配置，避免 watch 开销
+const rawOptionInitial = shallowRef(store.debug_raw_chart_option);
+const valueOptionInitial = shallowRef(store.debug_value_chart_option);
+const isPolling = ref(false);
 
-interface AdvancedKey {
-    no: number
-    raw: number
-    normalized: number
-}
+async function startAdaptivePolling() {
+    isPolling.value = true;
+    console.log("start pollinh");
+    while (isPolling.value) {
+        const start = performance.now();
+        
+        try {
+            // 1. 发起全量请求
+            // 因为我们在 controller 里用了 Promise.all，这行代码会等到 16 个包全部回来才继续
+            await apis.request_debug();
+            triggerRef(advanced_keys);
+            
+            // 2. 数据全部到位，只更新一次 UI
+            // 使用 requestAnimationFrame 避免在不可见时浪费资源
+            requestAnimationFrame(() => {
+                updateCharts();
+            });
 
-const columns: DataTableColumns<ekc.IAdvancedKey> = [
-    {
-        title: t('debug_panel_state'),
-        key: 'state',
-    },
-    {
-        title: t('debug_panel_raw'),
-        key: 'raw',
-    },
-    {
-        title: t('debug_panel_value'),
-        key: 'value',
-    },
-]
-
-
-function randomData(): DebugDataItem {
-    now = now + oneSecond;
-    value = advanced_keys.value[0].raw;
-    return {
-        name: now.toString(),
-        value: [
-            Date.now(),
-            value
-        ]
-    };
-}
-
-let data: DebugDataItem[] = [];
-let now = 1609459200000;
-let oneSecond = 1;
-let value = Math.random();
-
-const chart = ref<EChartsType | null>(null)
-
-
-function handleListeners() {
-    debug_raw_chart_option.value.series.forEach((item, index) => {
-        let data = (item.data as DebugDataItem[])
-        if (data.length > 500) {
-            data.shift();
+            // 3. 性能监控 (可选)
+            const cost = performance.now() - start;
+            console.log(`Frame cost: ${cost.toFixed(2)}ms, FPS: ${(1000/cost).toFixed(0)}`);
+            
+        } catch (e) {
+            console.error("Polling disrupted:", e);
+            // 出错时稍微缓一缓，避免死循环卡死浏览器
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
-        data.push({
-            name: Date.now().toString(),
-            value: [
-                Date.now(),
-                advanced_keys.value[item.id as number].raw
-            ]
-        });
-    });
-    debug_value_chart_option.value.series.forEach((item, index) => {
-        let data = (item.data as DebugDataItem[])
-        if (data.length > 500) {
-            data.shift();
-        }
-        data.push({
-            name: Date.now().toString(),
-            value: [
-                Date.now(),
-                advanced_keys.value[item.id as number].value
-            ]
-        });
-    });
+    }
+}
+function stopPolling() {
+    isPolling.value = false;
 }
 
 function handleChange(value: boolean) {
     if (value) {
-        timer = setInterval(() => {
-          apis.request_debug();
-        }, 333);
+        startAdaptivePolling();
+    } else {
+        stopPolling();
     }
-    else {
-        if (timer > 0) {
-            clearInterval(timer);
-            timer = 0;
-        }
+}
+let timer = 0;
+
+// 表格列定义
+const columns: DataTableColumns<ekc.IAdvancedKey> = [
+    { title: t('debug_panel_state'), key: 'state', width: 80 },
+    { title: t('debug_panel_raw'), key: 'raw', width: 100 },
+    { title: t('debug_panel_value'), key: 'value', width: 100 },
+]
+
+// 关键优化 1：使用普通 JS 对象/数组存储高频数据，不要用 ref/reactive
+// 这样 Vue 就不会去监听这些数据的 push/shift 操作
+const localRawSeries: { [key: number]: DebugDataItem[] } = {};
+const localValueSeries: { [key: number]: DebugDataItem[] } = {};
+
+// 初始化本地数据缓存
+const initLocalData = () => {
+    store.debug_raw_chart_option.series.forEach((s: any) => {
+        if (!localRawSeries[s.id]) localRawSeries[s.id] = [];
+    });
+    store.debug_value_chart_option.series.forEach((s: any) => {
+        if (!localValueSeries[s.id]) localValueSeries[s.id] = [];
+    });
+}
+initLocalData();
+
+// 获取 ECharts 实例引用
+const rawChartRef = ref<any>(null);
+const valueChartRef = ref<any>(null);
+
+watch(
+    () => store.debug_raw_chart_option.series.length, 
+    () => {
+        // 1. 为新加入的 ID 初始化本地数组缓存
+        initLocalData();
+
+        // 2. 必须告诉 ECharts 有新的 Series 定义加入了 (比如颜色、名字等配置)
+        // 注意：这里只同步配置，数据会在定时器中通过 setOption 更新
+        rawChartRef.value?.chart?.setOption({
+            series: store.debug_raw_chart_option.series
+        });
+        valueChartRef.value?.chart?.setOption({
+            series: store.debug_value_chart_option.series
+        });
+    }
+);
+
+function updateCharts() {
+    const nowStr = Date.now().toString();
+    const timestamp = Date.now();
+    const keys = advanced_keys.value;
+
+    // 辅助函数：只处理数据，不触碰 Vue 响应式对象
+    const processData = (localBuffer: any, keyName: 'raw' | 'value') => {
+        const newSeriesData: any[] = [];
+        
+        // 遍历所有需要显示的系列
+        store.debug_raw_chart_option.series.forEach((seriesConfig: any, index: number) => {
+            const keyId = seriesConfig.id as number;
+            
+            // 确保该 key 存在
+            if (keys[keyId]) {
+                const buffer = localBuffer[keyId];
+                if (!buffer) return;
+
+                // 纯数组操作，极快
+                if (buffer.length > 500) buffer.shift();
+                
+                buffer.push({
+                    name: nowStr,
+                    value: [timestamp, keys[keyId][keyName]]
+                });
+
+                // 构造 ECharts 增量更新所需的 series 对象
+                // 注意：这里我们只更新 data 字段，复用 store 里的其他配置
+                newSeriesData.push({
+                    data: buffer 
+                });
+            }
+        });
+        return newSeriesData;
+    };
+
+    const rawSeriesUpdate = processData(localRawSeries, 'raw');
+    const valueSeriesUpdate = processData(localValueSeries, 'value');
+
+    if (rawChartRef.value?.chart) {
+        rawChartRef.value.chart.setOption({ series: rawSeriesUpdate });
+    }
+    if (valueChartRef.value?.chart) {
+        valueChartRef.value.chart.setOption({ series: valueSeriesUpdate });
     }
 }
 
-
-// 使用 watch 监听 advanced_keys 的变化
-watch(advanced_keys, (newKeys) => {
-
-    debug_raw_chart_option.value.series.forEach((item) => {
-        const data = (item.data as DebugDataItem[]);
-        if (data.length > 500) {
-            data.shift();
-        }
-        const keyIndex = item.id as number;
-        if (newKeys[keyIndex]) {
-            data.push({
-                name: Date.now().toString(),
-                value: [Date.now(), newKeys[keyIndex].raw]
-            });
-        }
-    });
-    
-    debug_value_chart_option.value.series.forEach((item) => {
-        const data = (item.data as DebugDataItem[]);
-        if (data.length > 500) {
-            data.shift();
-        }
-        const keyIndex = item.id as number;
-        if (newKeys[keyIndex]) {
-            data.push({
-                name: Date.now().toString(),
-                value: [Date.now(), newKeys[keyIndex].value]
-            });
-        }
-    });
-}, { deep: true }); // 使用 deep watch 来侦听数组内部对象的变化
-
-
-onBeforeUnmount(()=>{
-    if (timer > 0) {
-        clearInterval(timer);
-        timer = 0;
-    }
-})
+onBeforeUnmount(() => {
+    stopPolling();
+});
 
 function clearCommand() {
-    debug_raw_chart_option.value.series.forEach((item, index) => {
-        item.data = [];
-    });
-    debug_value_chart_option.value.series.forEach((item, index) => {
-        item.data = [];
-    });
-    debug_raw_chart_option.value.series = [];
-    //debug_raw_chart_option.value.legend.data.length = 0;
-    debug_value_chart_option.value.series = [];
-    debug_raw_chart.value?.chart?.clear(); 
-    debug_value_chart.value?.chart?.clear(); 
-    //debug_value_chart_option.value.legend.data.length = 0;
-}
+    store.debug_raw_chart_option.series.length = 0;
+    store.debug_value_chart_option.series.length = 0;
 
-const debug_raw_chart = ref<InstanceType<typeof VChart> | null>(null);
-const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
+    for (const key in localRawSeries) delete localRawSeries[key];
+    for (const key in localValueSeries) delete localValueSeries[key];
+    
+    if (rawChartRef.value?.chart) {
+        rawChartRef.value.chart.setOption(store.debug_raw_chart_option, true);
+    }
+    if (valueChartRef.value?.chart) {
+        valueChartRef.value.chart.setOption(store.debug_value_chart_option, true);
+    }
+}
 
 </script>
 
@@ -194,25 +206,21 @@ const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
             <n-flex>
                 <div>{{ t('debug_panel_enable_debug') }}</div>
                 <n-switch v-model:value="debug_switch" @update:value="handleChange"></n-switch>
-            </n-flex>
-            <n-flex>
                 <n-button @click="clearCommand">{{ t('clear') }}</n-button>
             </n-flex>
-            <n-flex>
-                <n-tabs type="segment" animated>
-                    <n-tab-pane name="raw_chart" :tab="t('debug_panel_raw')">
-                        <v-chart ref="debug_raw_chart" :option="debug_raw_chart_option" class="chart" autoresize />
-                    </n-tab-pane>
-                    <n-tab-pane name="value_chart" :tab="t('debug_panel_value')">
-                        <v-chart ref="debug_value_chart" :option="debug_value_chart_option" class="chart" autoresize />
-                    </n-tab-pane>
-                </n-tabs>
-            </n-flex>
-            <n-data-table :data="advanced_keys" :columns="columns" :bordered="false" />
-            <!--         <n-collapse>
-                <n-collapse-item title="Data table" name="0">
-                </n-collapse-item>
-            </n-collapse> -->
+            
+            <n-tabs type="segment" animated style="flex-shrink: 0;">
+                <n-tab-pane name="raw_chart" :tab="t('debug_panel_raw')">
+                    <v-chart ref="rawChartRef" :option="rawOptionInitial" class="chart" autoresize />
+                </n-tab-pane>
+                <n-tab-pane name="value_chart" :tab="t('debug_panel_value')">
+                    <v-chart ref="valueChartRef" :option="valueOptionInitial" class="chart" autoresize />
+                </n-tab-pane>
+            </n-tabs>
+
+            <div style="flex: 1; min-height: 0;">
+                <n-data-table :data="advanced_keys" :columns="columns" :bordered="false" />
+            </div>
         </n-flex>
 
         </n-scrollbar>
@@ -222,6 +230,6 @@ const debug_value_chart = ref<InstanceType<typeof VChart> | null>(null);
 <style scoped>
 .chart {
     height: 300px;
-    background: white;
+    /*background: white;*/
 }
 </style>

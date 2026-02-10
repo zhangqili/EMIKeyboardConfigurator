@@ -24,12 +24,60 @@ interface PendingRequest {
     timer: number;
 }
 
+export class RequestQueue {
+    private queue: { 
+        task: () => Promise<any>; 
+        resolve: (value: any) => void; 
+        reject: (reason: any) => void 
+    }[] = [];
+    private isProcessing: boolean = false;
+
+    /**
+     * 添加一个任务到队列中
+     * @param task 一个返回 Promise 的函数（例如：() => this.sendAndWait(...)）
+     * @returns 返回该任务执行后的结果
+     */
+    public add<T>(task: () => Promise<T>): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            // 将任务推入队列
+            this.queue.push({ task, resolve, reject });
+            // 尝试处理队列
+            this.process();
+        });
+    }
+
+    private async process() {
+        // 如果正在处理中，直接返回，避免并发
+        if (this.isProcessing) return;
+
+        this.isProcessing = true;
+
+        while (this.queue.length > 0) {
+            // 取出第一个任务
+            const item = this.queue.shift();
+            if (item) {
+                try {
+                    // 执行任务并等待结果
+                    const result = await item.task();
+                    item.resolve(result);
+                } catch (error) {
+                    // 捕获错误并通知调用者
+                    item.reject(error);
+                }
+            }
+        }
+
+        this.isProcessing = false;
+    }
+}
+
 export class LibampKeyboardController extends KeyboardController {
     device: HIDDevice | undefined;
     private handleInputReport: (event: HIDInputReportEvent) => void;
     config_file_number:number = 4;
     private pendingRequest: PendingRequest | null = null;
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
+    private requestQueue = new RequestQueue();
 
     constructor() {
         super();
@@ -56,14 +104,6 @@ export class LibampKeyboardController extends KeyboardController {
 
     }
     private async sendAndWait(buf: Uint8Array, timeout: number = 200): Promise<Uint8Array> {
-        // 1. 简单的互斥锁
-        if (this.pendingRequest) {
-            // 如果上一个请求还没结束，直接报错，防止状态错乱
-            throw new Error("Device is busy processing another request");
-        }
-
-        // 2. [核心修正] 直接从 Buffer 中提取期望的 Code 和 Type
-        // 因为固件是 Echo 机制，发的什么 Code/Type，回的就是什么 Code/Type
         const expectedCode = buf[0];
 
         return new Promise((resolve, reject) => {
@@ -94,6 +134,17 @@ export class LibampKeyboardController extends KeyboardController {
                 this.pendingRequest = null;
                 reject(error);
             }
+        });
+    }
+
+    private async enqueueCommand(buf: Uint8Array, timeout: number = 200): Promise<Uint8Array> {
+        // 【关键点】必须复制一份数据！
+        // 因为 buf 可能是 this.txBuffer，在排队等待期间可能会被修改。
+        const packetCopy = new Uint8Array(buf); 
+
+        return this.requestQueue.add(async () => {
+            // 这里面的代码会在轮到该任务时执行
+            return await this.sendAndWait(packetCopy, timeout);
         });
     }
 
@@ -487,27 +538,50 @@ export class LibampKeyboardController extends KeyboardController {
           console.error("Error loading config:", e);
       }
     }
-    request_debug(): void {
-        let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeGet;
-        send_buf[1] = PacketData.PacketDataDebug;
-        const advanced_keys_page_num = Math.ceil(this.advanced_keys.length / 5);
-        for (var key_page_index = 0; key_page_index < advanced_keys_page_num; key_page_index+=1){
-            let page_length = (key_page_index + 1) * 5 > this.advanced_keys.length ? this.advanced_keys.length % 5 : 5;
-            send_buf[2] = page_length;
-            for (var j = 0; j < page_length; j += 1){
-                let dataView = new DataView(send_buf.buffer);
-                let key_index = key_page_index * 5 + j;
-                if (key_index < this.advanced_keys.length ){
-                    dataView.setUint16(3 + 0 + 12 * j,key_index,true);
-                }
-                console.log(key_index);
+async request_debug(): Promise<void> {
+        const KEYS_PER_PACKET = 5; // 固件限制每包 5 个
+        // 假设你有 80 个键，这里 advanced_keys.length = 80
+        const total_keys = this.advanced_keys.length;
+        const page_num = Math.ceil(total_keys / KEYS_PER_PACKET);
+        
+        // 创建一个任务数组
+        const tasks: Promise<Uint8Array>[] = [];
+
+        for (let i = 0; i < page_num; i++) {
+            let send_buf = new Uint8Array(64);
+            send_buf[0] = PacketCode.PacketCodeGet;
+            send_buf[1] = PacketData.PacketDataDebug;
+
+            let page_length = (i + 1) * KEYS_PER_PACKET > total_keys ? total_keys % KEYS_PER_PACKET : KEYS_PER_PACKET;
+            send_buf[2] = page_length; // 告诉固件我要读几个
+
+            let dataView = new DataView(send_buf.buffer);
+            // 填充我要读的那些按键的 Index
+            for (let j = 0; j < page_length; j++) {
+                let key_index = i * KEYS_PER_PACKET + j;
+                // 注意偏移量：PacketDebug 结构体 header 占 3 字节 (Code, Type, Len)
+                // 每个 Item 占 12 字节。请求时我们只需要填 Index (2 bytes)
+                // 固件 packet.c 逻辑是读取 packet->data[i].index
+                // PacketDebug data offset = 3
+                // item size = 12
+                // index offset inside item = 0
+                // 所以 offset = 3 + j * 12
+                dataView.setUint16(3 + j * 12, key_index, true);
             }
-            //console.debug(send_buf);
-            let res = this.write(send_buf);
-            //console.debug("Wrote RGB Configs: {:?} byte(s)", res);
+
+            // 关键：将发送任务加入数组，使用 enqueueCommand (记得你上一轮引入的队列方法)
+            // 如果你还没定义 enqueueCommand，请使用你现有的带队列的发送方法
+            tasks.push(this.enqueueCommand(send_buf));
         }
+
+        // 等待所有包发送并接收完成
+        // 这样可以保证这一行代码执行完时，this.advanced_keys 里的数据已经是最新的一整帧了
+        const results = await Promise.all(tasks);
+        
+        // 处理回包数据 (虽然 enqueueCommand 内部可能处理了，但为了保险可以在这里统一再处理一次，或者依赖内部的 packet_process)
+        results.forEach(res => this.packet_process_debug(res));
     }
+    
     start_debug(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;
@@ -532,7 +606,7 @@ export class LibampKeyboardController extends KeyboardController {
             dataView.setUint16(2, index, true);
             this.packet_process(this.txBuffer);
             try {
-                await this.sendAndWait(this.txBuffer);
+                await this.enqueueCommand(this.txBuffer);
             } catch (e) {
                 console.error(`Failed to set Advanced Key ${index}`, e);
             }
@@ -547,7 +621,7 @@ export class LibampKeyboardController extends KeyboardController {
         for (let index = 0; index < this.advanced_keys.length; index++) {
             dataView.setUint16(2, index, true);
             try {
-                const res = await this.sendAndWait(this.txBuffer);
+                const res = await this.enqueueCommand(this.txBuffer);
                 this.packet_process_advanced_key(res);
                 console.debug(`Read Advanced Key: ${index}`);
             } catch (e) {
@@ -563,7 +637,7 @@ export class LibampKeyboardController extends KeyboardController {
         this.packet_process(this.txBuffer); 
         
         try {
-            await this.sendAndWait(this.txBuffer);
+            await this.enqueueCommand(this.txBuffer);
         } catch (e) {
             console.error("Failed to send RGB Base Config", e);
         }
@@ -587,7 +661,7 @@ export class LibampKeyboardController extends KeyboardController {
             this.packet_process(this.txBuffer);
 
             try {
-                await this.sendAndWait(this.txBuffer);
+                await this.enqueueCommand(this.txBuffer);
             } catch (e) {
                 console.error(`Failed to send RGB Page ${i}`, e);
             }
@@ -600,7 +674,7 @@ export class LibampKeyboardController extends KeyboardController {
         this.txBuffer[1] = PacketData.PacketDataRgbBaseConfig;
         
         try {
-            const baseRes = await this.sendAndWait(this.txBuffer);
+            const baseRes = await this.enqueueCommand(this.txBuffer);
             this.packet_process(baseRes);
         } catch (e) {
             console.error("Failed to read RGB Base Config", e);
@@ -624,7 +698,7 @@ export class LibampKeyboardController extends KeyboardController {
             }
 
             try {
-                const res = await this.sendAndWait(this.txBuffer);
+                const res = await this.enqueueCommand(this.txBuffer);
                 this.packet_process(res);
                 console.debug(`Read RGB Page: ${rgb_page_index}`);
             } catch (e) {
@@ -650,7 +724,7 @@ export class LibampKeyboardController extends KeyboardController {
                 this.packet_process(this.txBuffer);
 
                 try {
-                    await this.sendAndWait(this.txBuffer);
+                    await this.enqueueCommand(this.txBuffer);
                 } catch (e) {
                     console.error("Failed to send Keymap", e);
                 }
@@ -676,7 +750,7 @@ export class LibampKeyboardController extends KeyboardController {
                 this.txBuffer[5] = layer_seg_len; // length
 
                 try {
-                    const res = await this.sendAndWait(this.txBuffer);
+                    const res = await this.enqueueCommand(this.txBuffer);
                     this.packet_process_keymap(res);
                 } catch (e) {
                     console.error(`Failed to read Keymap Layer ${i} Offset ${index}`, e);
@@ -696,7 +770,7 @@ export class LibampKeyboardController extends KeyboardController {
             this.packet_process(this.txBuffer);
 
             try {
-                await this.sendAndWait(this.txBuffer);
+                await this.enqueueCommand(this.txBuffer);
             } catch (e) {
                 console.error(`Failed to send Dynamic Key ${i}`, e);
             }
@@ -712,7 +786,7 @@ export class LibampKeyboardController extends KeyboardController {
         for (let i = 0; i < this.dynamic_keys.length; i++) {
             this.txBuffer[2] = i; // index
             try {
-                const res = await this.sendAndWait(this.txBuffer);
+                const res = await this.enqueueCommand(this.txBuffer);
                 this.packet_process(res);
             } catch (e) {
                 console.error(`Failed to read Dynamic Key ${i}`, e);
@@ -740,7 +814,7 @@ export class LibampKeyboardController extends KeyboardController {
         console.log(`Commanding switch to config ${index}...`);
 
         try {
-            await this.sendAndWait(this.txBuffer, 1000);
+            await this.enqueueCommand(this.txBuffer, 1000);
             console.log("MCU confirmed switch. Requesting data...");
             await this.request_config();
             
