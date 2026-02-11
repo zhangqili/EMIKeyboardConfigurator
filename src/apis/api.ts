@@ -161,8 +161,12 @@ export async function get_config_file_num(){
     return CONTROLLER.get_config_file_num();
 }
 
-export async function set_config_file_num(index : number){
+export async function set_config_file_index(index : number){
     return CONTROLLER.set_config_file_index(index);
+}
+
+export async function get_config_file_index(){
+    return CONTROLLER.get_config_file_index();
 }
 
 export async function addEventListener(type: string, listener: EventListener){
@@ -174,4 +178,8 @@ export async function removeEventListener(type: string, listener: EventListener)
 
 export async function get_layout_labels(){
     return CONTROLLER.get_layout_labels();
+}
+
+export async function get_firmware_version(){
+    return CONTROLLER.get_firmware_version();
 }

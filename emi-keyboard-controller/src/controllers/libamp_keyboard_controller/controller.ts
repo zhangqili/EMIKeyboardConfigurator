@@ -1,4 +1,5 @@
-import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig} from "./../../interface";
+import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion} from "./../../interface";
+import semver, { SemVer } from 'semver';
 
 enum PacketCode {
   PacketCodeAction = 0x00,
@@ -16,6 +17,9 @@ enum PacketData {
   PacketDataConfigIndex = 0x05,
   PacketDataConfig = 0x06,
   PacketDataDebug = 0x07,
+  PacketDataReport = 0x08,
+  PacketDataVersion = 0x09,
+  PacketDataMacro = 0x0A,
 };
 interface PendingRequest {
     resolve: (data: Uint8Array) => void;
@@ -75,9 +79,11 @@ export class LibampKeyboardController extends KeyboardController {
     device: HIDDevice | undefined;
     private handleInputReport: (event: HIDInputReportEvent) => void;
     config_file_number:number = 4;
+    config_file_index:number = 0;
     private pendingRequest: PendingRequest | null = null;
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
     private requestQueue = new RequestQueue();
+    firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
 
     constructor() {
         super();
@@ -206,6 +212,9 @@ export class LibampKeyboardController extends KeyboardController {
                 break;
             case PacketData.PacketDataDebug:
                 this.packet_process_debug(buf);
+                break;
+            case PacketData.PacketDataVersion:
+                this.packet_process_version(buf);
                 break;
             default:
                 break;
@@ -455,6 +464,10 @@ export class LibampKeyboardController extends KeyboardController {
 
     packet_process_config_index(buf : Uint8Array)
     {
+      let dataView = new DataView(buf.buffer);  
+      if (buf[0] == PacketCode.PacketCodeGet) {
+        this.config_file_index = buf[2];
+      }
     }
 
     packet_process_config(buf : Uint8Array)
@@ -482,7 +495,23 @@ export class LibampKeyboardController extends KeyboardController {
         }
       }
     }
-
+    packet_process_version(buf: Uint8Array) {
+        let dataView = new DataView(buf.buffer);
+        if (buf[0] == PacketCode.PacketCodeGet) {
+            // Offset 2: info_length (uint16) - 暂时没用到，直接读后面的
+            this.firmware_version.major = dataView.getUint32(4, true);
+            this.firmware_version.minor = dataView.getUint32(8, true);
+            this.firmware_version.patch = dataView.getUint32(12, true);
+            
+            const infoLen = dataView.getUint16(2, true);
+            // 提取字符串，注意偏移量是 16
+            const infoBytes = buf.slice(16, 16 + infoLen);
+            const decoder = new TextDecoder('utf-8');
+            this.firmware_version.info = decoder.decode(infoBytes).replace(/\0/g, ''); // 去除可能的空字符
+            
+            console.log("Firmware Version:", this.firmware_version);
+        }
+    }
     get_connection_state(): boolean {
         return this.device != undefined;
     }
@@ -532,13 +561,15 @@ export class LibampKeyboardController extends KeyboardController {
           await this.read_rgb_configs();
           await this.read_keymap();
           await this.read_dynamic_keys();
+          await this.read_config_index();
+          await this.request_version();
           console.log("Config loaded successfully");
           this.dispatchEvent(new Event('updateData'));
       } catch (e) {
           console.error("Error loading config:", e);
       }
     }
-async request_debug(): Promise<void> {
+    async request_debug(): Promise<void> {
         const KEYS_PER_PACKET = 5; // 固件限制每包 5 个
         // 假设你有 80 个键，这里 advanced_keys.length = 80
         const total_keys = this.advanced_keys.length;
@@ -794,12 +825,24 @@ async request_debug(): Promise<void> {
         }
     }
 
+    async read_config_index() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataConfigIndex;
+        try {
+            const res = await this.enqueueCommand(this.txBuffer);
+            this.packet_process(res);
+        } catch (e) {
+            console.error(`Failed to read Config Index`, e);
+        }
+    }
+
     get_config_file_num(): number {
         return this.config_file_number;
     }
 
     get_config_file_index(): number {
-        return this.config_file_number;
+        return this.config_file_index;
     }
 
     async set_config_file_index(index: number) {
@@ -821,5 +864,25 @@ async request_debug(): Promise<void> {
         } catch (e) {
             console.error("Config switch failed or timed out:", e);
         }
+    }
+
+    async request_version() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataVersion;
+        
+        try {
+            // 使用队列发送并等待回复
+            const res = await this.enqueueCommand(this.txBuffer);
+            this.packet_process_version(res);
+            return this.firmware_version;
+        } catch (e) {
+            console.error("Failed to get firmware version", e);
+            return null;
+        }
+    }
+    
+    get_firmware_version() {
+        return this.firmware_version;
     }
 }

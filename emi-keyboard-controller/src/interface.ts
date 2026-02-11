@@ -126,6 +126,12 @@ export interface IDynamicKeyMutex extends IDynamicKey {
     mode : (DynamicKeyMutexMode | number);
 }
 
+export interface FirmwareVersion {
+    major: number;
+    minor: number;
+    patch: number;
+    info: string;
+}
 // Interface for AdvancedKey
 export interface IAdvancedKey {
     state: boolean;
@@ -824,6 +830,7 @@ export interface IKeyboardController{
     get_config_file_index(): number;
     set_config_file_index(index: number) : void;
     get_layout_labels(): string[][];
+    get_firmware_version() : FirmwareVersion;
 }
 
 export abstract class KeyboardController implements IKeyboardController, EventTarget{
@@ -1001,6 +1008,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     get_layout_labels(): string[][] {
         return [[]];
+    }
+    get_firmware_version(): FirmwareVersion {
+        return { major: 0, minor: 0, patch: 0, info: "" }
     }
 }
 

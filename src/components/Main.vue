@@ -50,13 +50,43 @@ const {
   debug_value_chart_option,
   dynamic_keys,
   keyboard_keys,
-  theme_name
+  theme_name,
+  firmware_version
 } = storeToRefs(store);
 
 const message = useMessage();
 const notification = useNotification();
 const isConnected = ref<boolean>(false);
 
+const latest_version = ref({
+  major: 0,
+  minor: 1,
+  patch: 0,
+  info: "beta"
+});
+
+const versionStatusType = computed(() => {
+  console.log(firmware_version.value)
+  const current = firmware_version.value;
+  const target = latest_version.value;
+  if (current.major !== target.major || current.minor !== target.minor) {
+    return 'error';
+  }
+  if (current.patch !== target.patch || current.info != target.info) {
+    return 'warning';
+  }
+  return 'success';
+});
+
+const isReady = computed(()=>{
+  return isConnected.value && (versionStatusType.value == 'warning' || versionStatusType.value == 'success');
+})
+const displayVersion = computed(() => {
+  const v = firmware_version.value;
+  const base = `${v.major}.${v.minor}.${v.patch}`;
+  const ver = v.info ? `${base}-${v.info}` : base;
+  return ((versionStatusType.value == 'warning' || versionStatusType.value == 'error') && isConnected.value) ? ver + t('need_update') : ver;
+});
 // Split 面板的大小 (字符串形式，如 "400px")
 const splitSize = ref("400px");
 // 是否处于“自动高度”模式
@@ -249,6 +279,8 @@ async function getController() {
   rgb_base_config.value = await apis.get_rgb_base_config();
   rgb_configs.value = await apis.get_rgb_configs();
   dynamic_keys.value = await apis.get_dynamic_keys();
+  firmware_version.value = await apis.get_firmware_version();
+  selected_config_file_index.value = await apis.get_config_file_index();
   const cnofig_file_num = await apis.get_config_file_num();
   layout_labels.value = await apis.get_layout_labels();
   files.value.length = 0;
@@ -263,16 +295,19 @@ async function getController() {
   //console.debug(rgb_configs.value);
 }
 
-function updateData() {
+async function updateData() {
   if (keymap.value != undefined) {
     mapBackDynamicKey(keymap.value, dynamic_keys.value);
   }
   console.log("update data");
+  selected_config_file_index.value = await apis.get_config_file_index();
   triggerRef(advanced_keys);
   triggerRef(keymap);
   triggerRef(rgb_base_config);
   triggerRef(rgb_configs);
   triggerRef(dynamic_keys);
+  triggerRef(selected_config_file_index);
+  triggerRef(firmware_version);
 }
 
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
@@ -285,7 +320,7 @@ async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
-  await apis.set_config_file_num(option.value as number);
+  await apis.set_config_file_index(option.value as number);
 }
 
 function applyToAllKeys() {
@@ -727,17 +762,20 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
         <n-grid :x-gap="12" :y-gap="12" :cols="5">
           <n-gi :span="4">
             <n-flex>
-              <n-select @update:value="handleUpdateDeviceValue" style="max-width: 200px;" :disabled="isConnected"
+              <n-select @update:value="handleUpdateDeviceValue" style="max-width: 200px;" :disabled="isReady"
                 v-model:value="selected_device" v-model:options="devices" filterable
                 :placeholder="t('toolbar_select_device')" />
               <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ?
                 t('toolbar_disconnect') :
                 t('toolbar_connect') }}</n-button>
-              <n-button @click="saveCommand" :disabled="!isConnected">{{ t('toolbar_save') }}</n-button>
-              <n-dropdown :disabled="!isConnected" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
+              <n-button @click="saveCommand" :disabled="!isReady">{{ t('toolbar_save') }}</n-button>
+              <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
                 :options="advanced_options">
-                <n-button :disabled="!isConnected">{{ t('toolbar_advance') }}</n-button>
+                <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>
               </n-dropdown>
+              <n-button tertiary :type="versionStatusType">
+                {{ displayVersion }}
+              </n-button>
             </n-flex>
           </n-gi>
           <n-gi :span="1">
