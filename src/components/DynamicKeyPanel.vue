@@ -16,6 +16,7 @@ import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import PlainKey from "./PlainKey.vue";
 import { cloneDeep } from 'lodash';
+import KeyEditCell from './KeyEditCell.vue';
 
 const { t } = useI18n();
 
@@ -199,16 +200,16 @@ const data = computed<DynamicKeyRow[]>(
     {
       switch (item.type) {
         case ekc.DynamicKeyType.DynamicKeyStroke:
-          dynamic_key_rows.push({index: index,type: 'Dynamic Key Stroke', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_dks'), bindings: item.bindings});
           break;
         case ekc.DynamicKeyType.DynamicKeyModTap:
-          dynamic_key_rows.push({index: index,type: 'Mod Tap', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_mt'), bindings: item.bindings});
           break;
         case ekc.DynamicKeyType.DynamicKeyToggleKey:
-          dynamic_key_rows.push({index: index,type: 'Toggle Key', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_tk'), bindings: item.bindings});
           break;
         case ekc.DynamicKeyType.DynamicKeyMutex:
-          dynamic_key_rows.push({index: index,type: 'Mutex', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_mutex'), bindings: item.bindings});
           break;
         default:
           break;
@@ -259,13 +260,6 @@ const dynamic_key_mutex= computed({
             <n-scrollbar style="flex: 1; overflow-y: auto;">
             <DynamicKeyStrokePanel v-model:dynamic_key="dynamic_key_stroke"></DynamicKeyStrokePanel>
             </n-scrollbar>
-            <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <div>
-              <KeyTracker v-model:binding="key_binding"></KeyTracker>
-              <n-divider></n-divider>
-              <KeySelector v-model:binding="key_binding"></KeySelector>
-            </div>
-          </n-scrollbar>
           </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
@@ -282,13 +276,6 @@ const dynamic_key_mutex= computed({
         <div style="flex: 1; display: flex; height: 100%;">
           <n-scrollbar style="flex: 1; overflow-y: auto;">
             <DynamicKeyModTapPanel v-model:dynamic_key="dynamic_key_mt"></DynamicKeyModTapPanel>
-          </n-scrollbar>
-          <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <div>
-              <KeyTracker v-model:binding="key_binding"></KeyTracker>
-              <n-divider></n-divider>
-              <KeySelector v-model:binding="key_binding"></KeySelector>
-            </div>
           </n-scrollbar>
         </div>
         <template #header-extra>
@@ -307,13 +294,6 @@ const dynamic_key_mutex= computed({
           <n-scrollbar style="flex: 1; overflow-y: auto;">
             <DynamicKeyToggleKeyPanel v-model:dynamic_key="dynamic_key_tk"></DynamicKeyToggleKeyPanel>
           </n-scrollbar>
-          <n-scrollbar style="flex: 1; overflow-y: auto;">
-          <div style="flex: 1; overflow-y: auto;">
-            <KeyTracker v-model:binding="key_binding"></KeyTracker>
-            <n-divider></n-divider>
-            <KeySelector v-model:binding="key_binding"></KeySelector>
-          </div>
-          </n-scrollbar>
         </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
@@ -329,14 +309,6 @@ const dynamic_key_mutex= computed({
       <div style="flex: 1; display: flex; height: 100%;">
         <n-scrollbar style="flex: 1; overflow-y: auto;">
           <DynamicKeyMutexPanel v-model:dynamic_key="dynamic_key_mutex"></DynamicKeyMutexPanel>
-        </n-scrollbar>
-        <n-scrollbar style="flex: 1; overflow-y: auto;">
-          <div>
-            <KeyTracker v-model:binding="key_binding"></KeyTracker>
-            <n-divider></n-divider>
-            <KeySelector v-model:binding="key_binding"></KeySelector>
-          </div>
-
         </n-scrollbar>
         </div>
         <template #header-extra>

@@ -5,7 +5,8 @@ import KeySelector from './KeySelector.vue';
 import { keyCodeToKeyName, keyCodeToStringLabels } from "../apis/utils"; // 假设你有这个工具
 
 const props = defineProps<{
-  value: number
+  value: number,
+  x: number
 }>();
 
 const emit = defineEmits<{
@@ -38,8 +39,7 @@ const displayKeyName = computed(() => {
 </script>
 
 <template>
-  <div class="key-edit-cell" style="height: 54px;">
-    <PlainKey :width="1" :height="1" :x=0
+    <PlainKey :width="1" :height="1" :x="x"
       :labels="keyCodeToStringLabels(props.value)"
       @click="showModal = true"></PlainKey>
 
@@ -75,5 +75,4 @@ const displayKeyName = computed(() => {
         </template>
       </n-card>
     </n-modal>
-  </div>
 </template>

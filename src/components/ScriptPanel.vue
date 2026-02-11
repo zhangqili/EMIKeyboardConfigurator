@@ -93,12 +93,6 @@ const editorOptions = {
       />
     </div>
     <template #header-extra>
-      <n-button style="margin-left: 12px;">
-          {{ t('full_screen') }}
-      </n-button>
-      <n-button style="margin-left: 12px;">
-          {{ t('apply') }}
-      </n-button>
     </template>
   </n-card>
   

@@ -36,7 +36,7 @@ const currentMacroIndex = ref(0);
 // 3. 辅助函数：创建一个全新的占位行
 const createPlaceholderRow = (): RowData => ({
   id: Date.now() + Math.random(), // 确保ID唯一
-  isVirtual: false,
+  isVirtual: true,
   keyId: 0,
   tick: 0,
   event: 3,
@@ -196,7 +196,6 @@ function handleBindingUpdate(row: RowData, newValue: number) {
                         :ref="(el) => setInputRef(el, row.id)"
                         :value="row.tick" 
                         @update:value="(v) => handleTickUpdate(row, v)"
-                        size="small" 
                         :min="0" 
                         :show-button="false"
                         :placeholder="row.binding === 0 ? 'Auto' : ''"
@@ -211,7 +210,6 @@ function handleBindingUpdate(row: RowData, newValue: number) {
                     <div>
                       <n-input-number 
                         v-model:value="row.keyId" 
-                        size="small" 
                         :min="0" 
                         :disabled="row.isVirtual"
                         :show-button="false"
@@ -222,7 +220,6 @@ function handleBindingUpdate(row: RowData, newValue: number) {
                     <div>
                       <n-select 
                         v-model:value="row.event" 
-                        size="small" 
                         :options="[
                           { label: t('macro_panel_key_press') || 'Press', value: 3 },
                           { label: t('macro_panel_key_release') || 'Release', value: 1 }
@@ -232,10 +229,12 @@ function handleBindingUpdate(row: RowData, newValue: number) {
 
                     <div>
                       <div style="height: 40px; display: flex; align-items: center;">
-                        <KeyEditCell 
-                          :value="row.binding" 
-                          @update:value="(val) => handleBindingUpdate(row, val)" 
-                        />
+                        <div style="height: 54px;">
+                          <KeyEditCell 
+                            :value="row.binding" :x="0"
+                            @update:value="(val) => handleBindingUpdate(row, val)" 
+                          />
+                        </div>
                       </div>
                     </div>
 

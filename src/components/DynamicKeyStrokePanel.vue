@@ -11,6 +11,7 @@ import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, key
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import PlainKey from "./PlainKey.vue";
+import KeyEditCell from './KeyEditCell.vue';
 
 const { t } = useI18n();
 
@@ -128,10 +129,8 @@ function setAction(key : number, index : number, action : number)
     </n-form-item>
     <n-form-item :label="t('dynamic_key_s_panel_key_bindings')">
       <div class="keyboard no-select" style="height: 54px;">
-      <PlainKey v-for="(item,index) in dynamic_key_stroke.bindings" :width="1" :height="1" :x=index
-      :labels="keyCodeToStringLabels(item)"
-      @mousedown="(event : MouseEvent) => handleMouseDown(event, index)"
-      @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index)"></PlainKey>
+        <KeyEditCell v-for="(item,index) in dynamic_key_stroke.bindings" :width="1" :height="1" :x=index
+          v-model:value="dynamic_key_stroke.bindings[index]"></KeyEditCell>
       </div>
     </n-form-item>
     <n-form-item :label="t('dynamic_key_s_panel_key_control')" style="text-align: center;">
