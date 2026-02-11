@@ -19,6 +19,7 @@ import DebugPanel from "./DebugPanel.vue";
 import KeyboardRender from "./KeyboardRender.vue";
 import AboutPanel from "./AboutPanel.vue";
 import ScriptPanel from "./ScriptPanel.vue";
+import MacroPanel from "./MacroPanel.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "../locales/i18n";
 
@@ -549,6 +550,10 @@ const menuOptions = computed(() => [
     key: 'DynamicKeyPanel',
   },
   {
+    label: t('main_tabs_macro'),
+    key: 'MacroPanel',
+  },
+  {
     label: t('main_tabs_script'),
     key: 'ScriptPanel',
   },
@@ -694,6 +699,7 @@ const currentPanel = computed(() => {
     case 'RGBPanel': return RGBPanel;
     case 'DynamicKeyPanel': return DynamicKeyPanel;
     case 'DebugPanel': return DebugPanel;
+    case 'MacroPanel': return MacroPanel;
     case 'ScriptPanel': return ScriptPanel;
     case 'AboutPanel': return AboutPanel;
     default: return null;
