@@ -14,7 +14,7 @@ import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 const { t } = useI18n();
 
 const store = useMainStore();
-const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
+const { theme_name } = storeToRefs(store); // 获取全局主题状态
 
 const code = ref(
 `// Code outside functions runs once at startup/boot.
@@ -65,12 +65,19 @@ const handleMount = (editor: any, monaco: any) => {
   `, 'filename/keyboard.d.ts')
 }
 
+const editorTheme = computed(() => {
+  return theme_name.value === 'dark' ? 'vs-dark' : 'vs';
+});
+
 const editorOptions = {
   theme: 'vs-dark', // 'vs' (light), 'vs-dark', 'hc-black',
   fontFamily: "'Noto Sans Mono', 'Fira Code', 'Consolas', 'Cascadia Code', 'Menlo', 'Monaco', 'Courier New', monospace",
   fontSize: 14,
-  minimap: { enabled: false }, // 关闭右侧缩略图节省空间
+  minimap: { enabled: true }, // 关闭右侧缩略图节省空间
   automaticLayout: true, // 自动适应父容器大小
+  smoothScrolling: true,
+  //cursorSmoothCaretAnimation: 'on', 
+
 }
 
 </script>
@@ -79,7 +86,7 @@ const editorOptions = {
     <div class="editor-container">
       <VueMonacoEditor
         v-model:value="code"
-        theme="vs-dark"
+        :theme="editorTheme"
         language="javascript"
         :options="editorOptions"
         @mount="handleMount"
