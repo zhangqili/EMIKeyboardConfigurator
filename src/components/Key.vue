@@ -5,6 +5,7 @@ import { Translation } from "vue-i18n";
 import {useMainStore} from "../store/main"
 import * as ekc from "emi-keyboard-controller";
 import { storeToRefs } from "pinia";
+import { NPopover, NButton} from 'naive-ui'
 import { DynamicKeyToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
 
 const store = useMainStore();
@@ -219,12 +220,35 @@ const button_style = computed(() : CSSProperties => {
     outline: props.selected ? "solid red 2px" : "none",
   };
 });
+
+const tooltipContent = computed(() => {
+  const content = [];
+  content.push(`ID: ${props.id}`); // 显示按键 ID
+  //content.push(`Index: ${props.index}`); // 显示索引
+  
+  // 添加当前模式下计算出的非空标签信息
+  labels.value.forEach(label => {
+    if (label && label.trim() !== "") {
+      // 移除可能存在的制表符，换成空格以便阅读
+      content.push(label.replace(/\t/g, " ")); 
+    }
+  });
+  
+  // 如果是 RGB 模式，可以额外显示颜色代码
+  if (store.tab_selection === 'RGBPanel' && rgb_configs.value[props.id]) {
+     content.push(`Color: ${rgbToHex(rgb_configs.value[props.id].rgb)}`);
+  }
+
+  return content;
+});
 </script>
 
 <template>
   <div class="key" :style="rotation">
     <div :style="keycap_size">
       <div style="position: absolute; inset: 2px;">
+        <n-popover trigger="hover" placement="top" :animated="false" :delay="0" :duration="0">
+          <template #trigger>
         <n-button :style="button_style" :focusable="false" class="keycap" >
           <div class="keylabels">
             <div v-for="(label, index) in labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
@@ -233,6 +257,14 @@ const button_style = computed(() : CSSProperties => {
             </div>
           </div>
         </n-button>
+          </template>
+          
+          <div style="text-align: center; font-size: 12px;">
+             <div v-for="(line, idx) in tooltipContent" :key="idx">
+               {{ line }}
+             </div>
+          </div>
+        </n-popover>
       </div>
     </div>
   </div>
