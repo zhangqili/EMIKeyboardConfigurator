@@ -9,14 +9,14 @@ import { useMainStore } from "./store/main";
 import { storeToRefs } from "pinia";
 const store = useMainStore();
 const { 
-  theme_name
+  themeName
 } = storeToRefs(store);
 
 const greetMsg = ref("");
 const name = ref("");
 
-theme_name.value = useOsTheme().value === 'dark' ? 'dark' : 'light';
-const theme = computed(() => (theme_name.value === 'dark' ? darkTheme : null));
+themeName.value = useOsTheme().value === 'dark' ? 'dark' : 'light';
+const theme = computed(() => (themeName.value === 'dark' ? darkTheme : null));
 
 window.addEventListener("contextmenu", (e) => e.preventDefault(), false);
 

@@ -11,49 +11,49 @@ import { DynamicKeyToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplay
 const store = useMainStore();
 const { 
   lang,
-  selected_device,
-  advanced_key, 
-  rgb_config, 
-  dynamic_key,
-  dynamic_key_index,
-  advanced_keys, 
-  rgb_base_config,
-  rgb_configs, 
+  selectedDevice,
+  advancedKey, 
+  rgbConfig, 
+  dynamicKey,
+  dynamicKeyIndex,
+  advancedKeys, 
+  rgbBaseConfig,
+  rgbConfigs, 
   keymap, 
-  key_binding, 
-  current_layer, 
-  tab_selection,
-  config_files,
-  selected_config_file_index,
-  debug_raw_chart_option, 
-  debug_value_chart_option,
-  dynamic_keys,
-  keyboard_keys,
-  theme_name
+  keyBinding, 
+  currentLayerIndex, 
+  tabSelection,
+  profiles,
+  selectedProfileIndex,
+  debugRawChartOption, 
+  debugValueChartOption,
+  dynamicKeys,
+  keyboardKeys,
+  themeName
 } = storeToRefs(store);
 
 const labels = computed(() => {
   let labels = [...props.labels];
-  //console.debug(tab_selection.value);
-  switch (tab_selection.value) {
+  //console.debug(tabSelection.value);
+  switch (tabSelection.value) {
     case "PerformancePanel": {
-      const advanced_key = advanced_keys.value[props.id];
-      if (advanced_key != undefined) {
+      const advancedKey = advancedKeys.value[props.id];
+      if (advancedKey != undefined) {
         labels = labels.map(() => "");
-        labels[0] = keyModeDisplayMap[advanced_key.mode];
-        switch (advanced_key.mode) {
+        labels[0] = keyModeDisplayMap[advancedKey.mode];
+        switch (advancedKey.mode) {
           case ekc.KeyMode.KeyAnalogNormalMode: {
-            labels[3] = `↓${Math.round(advanced_key.activation_value * 1000) / 10}\t↑${Math.round(advanced_key.deactivation_value * 1000) / 10}`;
+            labels[3] = `↓${Math.round(advancedKey.activation_value * 1000) / 10}\t↑${Math.round(advancedKey.deactivation_value * 1000) / 10}`;
             break;
           }
           case ekc.KeyMode.KeyAnalogRapidMode: {
-            labels[3] = `↓${Math.round(advanced_key.trigger_distance * 1000) / 10}\t↑${Math.round(advanced_key.release_distance * 1000) / 10}`;
-            labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
+            labels[3] = `↓${Math.round(advancedKey.trigger_distance * 1000) / 10}\t↑${Math.round(advancedKey.release_distance * 1000) / 10}`;
+            labels[6] = `↧${Math.round(advancedKey.upper_deadzone * 1000) / 10}\t↥${Math.round(advancedKey.lower_deadzone * 1000) / 10}`;
             break;
           }
           case ekc.KeyMode.KeyAnalogSpeedMode: {
-            labels[3] = `↓${Math.round(advanced_key.trigger_speed * 1000) / 10}\t↑${Math.round(advanced_key.release_speed * 1000) / 10}`;
-            labels[6] = `↧${Math.round(advanced_key.upper_deadzone * 1000) / 10}\t↥${Math.round(advanced_key.lower_deadzone * 1000) / 10}`;
+            labels[3] = `↓${Math.round(advancedKey.trigger_speed * 1000) / 10}\t↑${Math.round(advancedKey.release_speed * 1000) / 10}`;
+            labels[6] = `↧${Math.round(advancedKey.upper_deadzone * 1000) / 10}\t↥${Math.round(advancedKey.lower_deadzone * 1000) / 10}`;
             break;
           }
           default: {
@@ -67,17 +67,17 @@ const labels = computed(() => {
     case "DynamicKeyPanel": {
       labels = labels.map(() => "");
       if (keymap.value != undefined) {
-        if((keymap.value[current_layer.value][props.id] & 0xFF) == ekc.Keycode.DynamicKey)
+        if((keymap.value[currentLayerIndex.value][props.id] & 0xFF) == ekc.Keycode.DynamicKey)
         {
-          const strings = keyCodeToString(keymap.value[current_layer.value][props.id]);
-          const dk_id = ((keymap.value[current_layer.value][props.id] >> 8) & 0xFF)
+          const strings = keyCodeToString(keymap.value[currentLayerIndex.value][props.id]);
+          const dk_id = ((keymap.value[currentLayerIndex.value][props.id] >> 8) & 0xFF)
           //labels[0] = strings.subString;
-          labels[6] = DynamicKeyToKeyName[dynamic_keys.value[dk_id].type as ekc.DynamicKeyType];
+          labels[6] = DynamicKeyToKeyName[dynamicKeys.value[dk_id].type as ekc.DynamicKeyType];
           labels[9] = strings.mainString;
         }
         else
         {
-          var strings = keyCodeToString(keymap.value[current_layer.value][props.id]);
+          var strings = keyCodeToString(keymap.value[currentLayerIndex.value][props.id]);
           labels[0] = strings.subString;
           labels[6] = strings.mainString;
         }
@@ -86,19 +86,19 @@ const labels = computed(() => {
     }
     case "RGBPanel": {
       labels = labels.map(() => "");
-      if(rgb_configs.value[props.id])
+      if(rgbConfigs.value[props.id])
       {
-        labels[0] = rgbModeDisplayMap[rgb_configs.value[props.id].mode];
-        labels[6] = `${Math.round(rgb_configs.value[props.id].speed * 1000)}\t`;
-        labels[9] = rgbToHex(rgb_configs.value[props.id].rgb);
+        labels[0] = rgbModeDisplayMap[rgbConfigs.value[props.id].mode];
+        labels[6] = `${Math.round(rgbConfigs.value[props.id].speed * 1000)}\t`;
+        labels[9] = rgbToHex(rgbConfigs.value[props.id].rgb);
       }
       break;
     }
     case "DebugPanel": {
       labels = labels.map(() => "");
-      labels[0] = advanced_keys.value[props.id].raw.toFixed(2);
-      labels[3] = advanced_keys.value[props.id].value.toFixed(3);
-      labels[6] = advanced_keys.value[props.id].state.toString();
+      labels[0] = advancedKeys.value[props.id].raw.toFixed(2);
+      labels[3] = advancedKeys.value[props.id].value.toFixed(3);
+      labels[6] = advancedKeys.value[props.id].state.toString();
       break;
     }
     default: {
@@ -110,8 +110,8 @@ const labels = computed(() => {
 });
 
 const color = computed(() => {
-  if(rgb_configs.value[props.id])
-    return rgbToHex(rgb_configs.value[props.id].rgb);
+  if(rgbConfigs.value[props.id])
+    return rgbToHex(rgbConfigs.value[props.id].rgb);
 })
 
 const props = defineProps([
@@ -235,8 +235,8 @@ const tooltipContent = computed(() => {
   });
   
   // 如果是 RGB 模式，可以额外显示颜色代码
-  if (store.tab_selection === 'RGBPanel' && rgb_configs.value[props.id]) {
-     content.push(`Color: ${rgbToHex(rgb_configs.value[props.id].rgb)}`);
+  if (store.tabSelection === 'RGBPanel' && rgbConfigs.value[props.id]) {
+     content.push(`Color: ${rgbToHex(rgbConfigs.value[props.id].rgb)}`);
   }
 
   return content;

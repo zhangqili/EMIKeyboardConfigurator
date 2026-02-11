@@ -12,86 +12,86 @@ import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();
 const store = useMainStore();
-const {rgb_config, keyboard_keys, rgb_configs, rgb_base_config} = storeToRefs(store);
+const {rgbConfig, keyboardKeys, rgbConfigs, rgbBaseConfig} = storeToRefs(store);
 const direction = ref(0);
 const density = ref(10);
 
 const base_speed = computed<number>({
-  get: () => (Math.round(rgb_base_config.value.speed * 1000)),
+  get: () => (Math.round(rgbBaseConfig.value.speed * 1000)),
   set: (value: number) => {
-    rgb_base_config.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
+    rgbBaseConfig.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
   },
 });
 
 const base_mode = computed<ekc.RGBBaseMode>({
-  get: () => rgb_base_config.value.mode,
+  get: () => rgbBaseConfig.value.mode,
   set: (value: ekc.RGBBaseMode) => {
-    rgb_base_config.value.mode = value;
+    rgbBaseConfig.value.mode = value;
   },
 });
 
 const base_color = computed<string>({
-  get: () => rgbToHex(rgb_base_config.value.rgb),
+  get: () => rgbToHex(rgbBaseConfig.value.rgb),
   set: (value: string) => {
     var c = tinycolor(value).toRgb();
-    rgb_base_config.value.rgb.red = c.r;
-    rgb_base_config.value.rgb.green = c.g;
-    rgb_base_config.value.rgb.blue = c.b;
+    rgbBaseConfig.value.rgb.red = c.r;
+    rgbBaseConfig.value.rgb.green = c.g;
+    rgbBaseConfig.value.rgb.blue = c.b;
   },
 });
 
 const base_sub_color = computed<string>({
-  get: () => rgbToHex(rgb_base_config.value.secondary_rgb),
+  get: () => rgbToHex(rgbBaseConfig.value.secondary_rgb),
   set: (value: string) => {
     var c = tinycolor(value).toRgb();
-    rgb_base_config.value.secondary_rgb.red = c.r;
-    rgb_base_config.value.secondary_rgb.green = c.g;
-    rgb_base_config.value.secondary_rgb.blue = c.b;
+    rgbBaseConfig.value.secondary_rgb.red = c.r;
+    rgbBaseConfig.value.secondary_rgb.green = c.g;
+    rgbBaseConfig.value.secondary_rgb.blue = c.b;
   },
 });
 
 const base_direction = computed<number>({
-  get: () => rgb_base_config.value.direction,
+  get: () => rgbBaseConfig.value.direction,
   set: (value: number) => {
-    rgb_base_config.value.direction = value;
+    rgbBaseConfig.value.direction = value;
   },
 });
 
 const base_density = computed<number>({
-  get: () => rgb_base_config.value.density,
+  get: () => rgbBaseConfig.value.density,
   set: (value: number) => {
-    rgb_base_config.value.density = value;
+    rgbBaseConfig.value.density = value;
   },
 });
 
 const base_brightness = computed<number>({
-  get: () => rgb_base_config.value.brightness,
+  get: () => rgbBaseConfig.value.brightness,
   set: (value: number) => {
-    rgb_base_config.value.brightness = value;
+    rgbBaseConfig.value.brightness = value;
   },
 });
 
 const speed = computed<number>({
-  get: () => (Math.round(rgb_config.value.speed * 1000)),
+  get: () => (Math.round(rgbConfig.value.speed * 1000)),
   set: (value: number) => {
-    rgb_config.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
+    rgbConfig.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
   },
 });
 
 const mode = computed<ekc.RGBMode>({
-  get: () => rgb_config.value.mode,
+  get: () => rgbConfig.value.mode,
   set: (value: ekc.RGBMode) => {
-    rgb_config.value.mode = value;
+    rgbConfig.value.mode = value;
   },
 });
 
 const color = computed<string>({
-  get: () => rgbToHex(rgb_config.value.rgb),
+  get: () => rgbToHex(rgbConfig.value.rgb),
   set: (value: string) => {
     var c = tinycolor(value).toRgb();
-    rgb_config.value.rgb.red = c.r;
-    rgb_config.value.rgb.green = c.g;
-    rgb_config.value.rgb.blue = c.b;
+    rgbConfig.value.rgb.red = c.r;
+    rgbConfig.value.rgb.green = c.g;
+    rgbConfig.value.rgb.blue = c.b;
   },
 });
 
@@ -171,7 +171,7 @@ const modes = computed(()=>
 
 
 function applyRainbowEffect() {
-  keyboard_keys.value.forEach((key, index) => {
+  keyboardKeys.value.forEach((key, index) => {
     var reference_color = tinycolor(color.value).toHsv();
     var direction_c = direction.value / 360 * 2 * Math.PI;
     var vertical_distance = (key.x + key.width/2) * Math.cos(direction_c) + (key.y + key.height/2) * Math.sin(direction_c);
@@ -180,11 +180,11 @@ function applyRainbowEffect() {
       reference_color.h += 360;
     }
     var real_color = tinycolor(reference_color).toRgb();
-    rgb_configs.value[key.id].rgb.red = real_color.r;
-    rgb_configs.value[key.id].rgb.green = real_color.g;
-    rgb_configs.value[key.id].rgb.blue = real_color.b;
-    rgb_configs.value[key.id].mode = rgb_config.value.mode;
-    rgb_configs.value[key.id].speed = isNaN(speed.value) ? 0 : Math.round(speed.value) / 1000;
+    rgbConfigs.value[key.id].rgb.red = real_color.r;
+    rgbConfigs.value[key.id].rgb.green = real_color.g;
+    rgbConfigs.value[key.id].rgb.blue = real_color.b;
+    rgbConfigs.value[key.id].mode = rgbConfig.value.mode;
+    rgbConfigs.value[key.id].speed = isNaN(speed.value) ? 0 : Math.round(speed.value) / 1000;
   });
 }
 

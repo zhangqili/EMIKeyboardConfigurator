@@ -18,18 +18,18 @@ const { t } = useI18n();
 const message = useMessage();
 
 const store = useMainStore();
-const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
+const { keyBinding, currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
 
-const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamic_key",{ 
+const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamicKey",{ 
   default: {
-    key_binding: 0,
+    keyBinding: 0,
   }
 });
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_tk.value != undefined) {
-      dynamic_key_tk.value.bindings[0] = key_binding.value;
+      dynamic_key_tk.value.bindings[0] = keyBinding.value;
       triggerRef(dynamic_key_tk);
       }
   } else {
@@ -40,7 +40,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_tk.value != undefined) {
-      dynamic_key_tk.value.bindings[0] = key_binding.value;
+      dynamic_key_tk.value.bindings[0] = keyBinding.value;
       triggerRef(dynamic_key_tk);
       }
   } else {

@@ -32,26 +32,26 @@ const { t } = useI18n();
 const store = useMainStore();
 const {
   lang,
-  selected_device,
-  advanced_key,
-  rgb_config,
-  dynamic_key,
-  dynamic_key_index,
-  advanced_keys,
-  rgb_base_config,
-  rgb_configs,
+  selectedDevice,
+  advancedKey,
+  rgbConfig,
+  dynamicKey,
+  dynamicKeyIndex,
+  advancedKeys,
+  rgbBaseConfig,
+  rgbConfigs,
   keymap,
-  key_binding,
-  current_layer,
-  tab_selection,
-  config_files,
-  selected_config_file_index,
-  debug_raw_chart_option,
-  debug_value_chart_option,
-  dynamic_keys,
-  keyboard_keys,
-  theme_name,
-  firmware_version
+  keyBinding,
+  currentLayerIndex,
+  tabSelection,
+  profiles,
+  selectedProfileIndex,
+  debugRawChartOption,
+  debugValueChartOption,
+  dynamicKeys,
+  keyboardKeys,
+  themeName,
+  firmwareVersion
 } = storeToRefs(store);
 
 const message = useMessage();
@@ -66,8 +66,8 @@ const latest_version = ref({
 });
 
 const versionStatusType = computed(() => {
-  console.log(firmware_version.value)
-  const current = firmware_version.value;
+  console.log(firmwareVersion.value)
+  const current = firmwareVersion.value;
   const target = latest_version.value;
   if (current.major !== target.major || current.minor !== target.minor) {
     return 'error';
@@ -82,7 +82,7 @@ const isReady = computed(()=>{
   return isConnected.value && (versionStatusType.value == 'warning' || versionStatusType.value == 'success');
 })
 const displayVersion = computed(() => {
-  const v = firmware_version.value;
+  const v = firmwareVersion.value;
   const base = `${v.major}.${v.minor}.${v.patch}`;
   const ver = v.info ? `${base}-${v.info}` : base;
   return ((versionStatusType.value == 'warning' || versionStatusType.value == 'error') && isConnected.value) ? ver + t('need_update') : ver;
@@ -221,7 +221,7 @@ function updateKeyboard(value: kle.Keyboard) {
     }
   });
   keyboard_layout.value.text = JSON.stringify(value, null, 2);
-  keyboard_keys.value = value.keys.map((k, i) => {
+  keyboardKeys.value = value.keys.map((k, i) => {
     return {
       ...k,
       id: (Number.isNaN(parseInt(k.labels[0])) ? i : parseInt(k.labels[0])),
@@ -236,7 +236,7 @@ async function connectCommand() {
     isConnected.value = false;
   }
   else {
-    if (selected_device != undefined) {
+    if (selectedDevice != undefined) {
       var result = await apis.connect_device();
       isConnected.value = result;
       if (isConnected.value) {
@@ -252,13 +252,13 @@ async function connectCommand() {
 
 async function saveCommand() {
   if (isConnected.value) {
-    apis.set_advanced_keys(advanced_keys.value);
-    apis.set_rgb_base_config(rgb_base_config.value);
+    apis.set_advanced_keys(advancedKeys.value);
+    apis.set_rgb_base_config(rgbBaseConfig.value);
     if (keymap.value != undefined) {
       apis.set_keymap(keymap.value);
     }
-    apis.set_rgb_configs(rgb_configs.value);
-    apis.set_dynamic_keys(dynamic_keys.value);
+    apis.set_rgb_configs(rgbConfigs.value);
+    apis.set_dynamic_keys(dynamicKeys.value);
     var result = await apis.save_config();
     console.debug(result);
 
@@ -274,13 +274,13 @@ async function flashCommand() {
 }
 
 async function getController() {
-  advanced_keys.value = await apis.get_advanced_keys();
+  advancedKeys.value = await apis.get_advanced_keys();
   keymap.value = await apis.get_keymap();
-  rgb_base_config.value = await apis.get_rgb_base_config();
-  rgb_configs.value = await apis.get_rgb_configs();
-  dynamic_keys.value = await apis.get_dynamic_keys();
-  firmware_version.value = await apis.get_firmware_version();
-  selected_config_file_index.value = await apis.get_config_file_index();
+  rgbBaseConfig.value = await apis.get_rgb_base_config();
+  rgbConfigs.value = await apis.get_rgb_configs();
+  dynamicKeys.value = await apis.get_dynamic_keys();
+  firmwareVersion.value = await apis.get_firmware_version();
+  selectedProfileIndex.value = await apis.get_config_file_index();
   const cnofig_file_num = await apis.get_config_file_num();
   layout_labels.value = await apis.get_layout_labels();
   files.value.length = 0;
@@ -290,24 +290,24 @@ async function getController() {
       value: index,
     });
   }
-  current_layer.value = 0;
+  currentLayerIndex.value = 0;
   triggerRef(keymap);
-  //console.debug(rgb_configs.value);
+  //console.debug(rgbConfigs.value);
 }
 
 async function updateData() {
   if (keymap.value != undefined) {
-    mapBackDynamicKey(keymap.value, dynamic_keys.value);
+    mapBackDynamicKey(keymap.value, dynamicKeys.value);
   }
   console.log("update data");
-  selected_config_file_index.value = await apis.get_config_file_index();
-  triggerRef(advanced_keys);
+  selectedProfileIndex.value = await apis.get_config_file_index();
+  triggerRef(advancedKeys);
   triggerRef(keymap);
-  triggerRef(rgb_base_config);
-  triggerRef(rgb_configs);
-  triggerRef(dynamic_keys);
-  triggerRef(selected_config_file_index);
-  triggerRef(firmware_version);
+  triggerRef(rgbBaseConfig);
+  triggerRef(rgbConfigs);
+  triggerRef(dynamicKeys);
+  triggerRef(selectedProfileIndex);
+  triggerRef(firmwareVersion);
 }
 
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
@@ -324,7 +324,7 @@ async function handleUpdateFileValue(_value: string, option: SelectOption) {
 }
 
 function applyToAllKeys() {
-  advanced_keys.value.forEach((item, index) => {
+  advancedKeys.value.forEach((item, index) => {
     applyToSelectedKey(index);
   });
 }
@@ -332,81 +332,81 @@ function applyToAllKeys() {
 function applyToSelectedKey(index: number) {
   //message.info(id.toString());
   let id = index;
-  var keys = keyboard_keys.value;
-  switch (tab_selection.value) {
+  var keys = keyboardKeys.value;
+  switch (tabSelection.value) {
     case "PerformancePanel": {
-      advanced_keys.value[id] = cloneDeep(advanced_key.value);
+      advancedKeys.value[id] = cloneDeep(advancedKey.value);
       break;
     }
     case "KeymapPanel": {
       if (keymap.value != undefined) {
-        keymap.value[current_layer.value][id] = key_binding.value;
+        keymap.value[currentLayerIndex.value][id] = keyBinding.value;
       }
       break;
     }
     case "DynamicKeyPanel": {
-      if (dynamic_key.value.type != ekc.DynamicKeyType.DynamicKeyNone) {
-        switch (dynamic_key.value.type) {
+      if (dynamicKey.value.type != ekc.DynamicKeyType.DynamicKeyNone) {
+        switch (dynamicKey.value.type) {
           case ekc.DynamicKeyType.DynamicKeyMutex:
-            var dynamic_key_mutex = dynamic_key.value as ekc.DynamicKeyMutex;
+            var dynamic_key_mutex = dynamicKey.value as ekc.DynamicKeyMutex;
             if (keymap.value != undefined) {
               if (dynamic_key_mutex.target_keys_location.length == 0) {
                 dynamic_key_mutex.is_key2_primary = false;
-                const binding = keymap.value[current_layer.value][id];
-                dynamic_key_mutex.target_keys_location[0] = { layer: current_layer.value, id: id };
-                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                const binding = keymap.value[currentLayerIndex.value][id];
+                dynamic_key_mutex.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
+                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
-                dynamic_key.value = dynamic_key_mutex;
+                dynamicKey.value = dynamic_key_mutex;
 
               }
               else if (dynamic_key_mutex.target_keys_location.length == 1) {
                 dynamic_key_mutex.is_key2_primary = true;
-                const binding = keymap.value[current_layer.value][id];
-                dynamic_key_mutex.target_keys_location[1] = { layer: current_layer.value, id: id };
-                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
+                const binding = keymap.value[currentLayerIndex.value][id];
+                dynamic_key_mutex.target_keys_location[1] = { layer: currentLayerIndex.value, id: id };
+                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
-                dynamic_key.value = dynamic_key_mutex;
+                dynamicKey.value = dynamic_key_mutex;
               }
               else {
                 if (dynamic_key_mutex.is_key2_primary) {
-                  const last_binding = dynamic_key.value.get_primary_binding();
-                  keymap.value[dynamic_key.value.target_keys_location[1].layer][dynamic_key.value.target_keys_location[1].id] = last_binding;
-                  const binding = keymap.value[current_layer.value][id];
-                  dynamic_key.value.target_keys_location[1] = { layer: current_layer.value, id: id };
-                  keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
-                  dynamic_key.value.set_primary_binding(binding);
+                  const last_binding = dynamicKey.value.get_primary_binding();
+                  keymap.value[dynamicKey.value.target_keys_location[1].layer][dynamicKey.value.target_keys_location[1].id] = last_binding;
+                  const binding = keymap.value[currentLayerIndex.value][id];
+                  dynamicKey.value.target_keys_location[1] = { layer: currentLayerIndex.value, id: id };
+                  keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                  dynamicKey.value.set_primary_binding(binding);
                 }
                 else {
-                  const last_binding = dynamic_key.value.get_primary_binding();
-                  keymap.value[dynamic_key.value.target_keys_location[0].layer][dynamic_key.value.target_keys_location[0].id] = last_binding;
-                  const binding = keymap.value[current_layer.value][id];
-                  dynamic_key.value.target_keys_location[0] = { layer: current_layer.value, id: id };
-                  keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
-                  dynamic_key.value.set_primary_binding(binding);
+                  const last_binding = dynamicKey.value.get_primary_binding();
+                  keymap.value[dynamicKey.value.target_keys_location[0].layer][dynamicKey.value.target_keys_location[0].id] = last_binding;
+                  const binding = keymap.value[currentLayerIndex.value][id];
+                  dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
+                  keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                  dynamicKey.value.set_primary_binding(binding);
 
                 }
               }
-              triggerRef(dynamic_key);
-              mapDynamicKey(keymap.value, dynamic_keys.value);
+              triggerRef(dynamicKey);
+              mapDynamicKey(keymap.value, dynamicKeys.value);
             }
             break;
           default:
             if (keymap.value != undefined) {
-              if (dynamic_key.value.target_keys_location.length == 0) {
-                const binding = keymap.value[current_layer.value][id];
-                dynamic_key.value.target_keys_location[0] = { layer: current_layer.value, id: id };
-                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
-                dynamic_key.value.set_primary_binding(binding);
+              if (dynamicKey.value.target_keys_location.length == 0) {
+                const binding = keymap.value[currentLayerIndex.value][id];
+                dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
+                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                dynamicKey.value.set_primary_binding(binding);
               }
               else {
-                const last_binding = dynamic_key.value.get_primary_binding();
-                keymap.value[dynamic_key.value.target_keys_location[0].layer][dynamic_key.value.target_keys_location[0].id] = last_binding;
-                const binding = keymap.value[current_layer.value][id];
-                dynamic_key.value.target_keys_location[0] = { layer: current_layer.value, id: id };
-                keymap.value[current_layer.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamic_key_index.value & 0xFF << 8));
-                dynamic_key.value.set_primary_binding(binding);
+                const last_binding = dynamicKey.value.get_primary_binding();
+                keymap.value[dynamicKey.value.target_keys_location[0].layer][dynamicKey.value.target_keys_location[0].id] = last_binding;
+                const binding = keymap.value[currentLayerIndex.value][id];
+                dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
+                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                dynamicKey.value.set_primary_binding(binding);
               }
-              mapDynamicKey(keymap.value, dynamic_keys.value);
+              mapDynamicKey(keymap.value, dynamicKeys.value);
             }
             break;
         }
@@ -414,19 +414,19 @@ function applyToSelectedKey(index: number) {
       break;
     }
     case "RGBPanel": {
-      rgb_configs.value[id] = cloneDeep(rgb_config.value);
+      rgbConfigs.value[id] = cloneDeep(rgbConfig.value);
       break;
     }
     case "DebugPanel": {
-      if (!debug_raw_chart_option.value.series.some(item => item.id == id)) {
-        debug_raw_chart_option.value.series.push({
+      if (!debugRawChartOption.value.series.some(item => item.id == id)) {
+        debugRawChartOption.value.series.push({
           id: id,
           name: 'KEY' + id.toString(),
           type: 'line',
           showSymbol: false,
           data: Array<DebugDataItem>()
         });
-        debug_value_chart_option.value.series.push({
+        debugValueChartOption.value.series.push({
           id: id,
           name: 'KEY' + id.toString(),
           type: 'line',
@@ -445,20 +445,20 @@ function applyToSelectedKey(index: number) {
 
 interface IConfig {
   device: string;
-  advanced_keys: ekc.IAdvancedKey[];
-  rgb_base_config: ekc.IRGBBaseConfig;
+  advancedKeys: ekc.IAdvancedKey[];
+  rgbBaseConfig: ekc.IRGBBaseConfig;
   keymap: number[][];
-  rgb_configs: ekc.IRGBConfig[];
-  dynamic_keys: ekc.IDynamicKey[];
+  rgbConfigs: ekc.IRGBConfig[];
+  dynamicKeys: ekc.IDynamicKey[];
 }
 
 
 async function loadDefaultConfig() {
   apis.reset_to_default();
-  advanced_keys.value = await apis.get_advanced_keys();
+  advancedKeys.value = await apis.get_advanced_keys();
   keymap.value = await apis.get_keymap();
-  rgb_configs.value = await apis.get_rgb_configs();
-  dynamic_keys.value = await apis.get_dynamic_keys();
+  rgbConfigs.value = await apis.get_rgb_configs();
+  dynamicKeys.value = await apis.get_dynamic_keys();
 }
 
 async function importConfig() {
@@ -475,9 +475,9 @@ async function importConfig() {
     const file = await fileHandle.getFile();
     const text = await file.text();
     const configData = JSON.parse(text) as IConfig;
-    if (selected_device.value == configData.device) {
-      advanced_keys.value.forEach((item, index) => {
-        advanced_keys.value[index] = configData.advanced_keys[index];
+    if (selectedDevice.value == configData.device) {
+      advancedKeys.value.forEach((item, index) => {
+        advancedKeys.value[index] = configData.advancedKeys[index];
       });
       if (keymap.value != undefined) {
         keymap.value = keymap.value.map((item, index) => {
@@ -486,14 +486,14 @@ async function importConfig() {
           });
         });
       }
-      rgb_base_config.value = configData.rgb_base_config;
-      rgb_configs.value.forEach((item, index) => {
-        rgb_configs.value[index] = configData.rgb_configs[index];
+      rgbBaseConfig.value = configData.rgbBaseConfig;
+      rgbConfigs.value.forEach((item, index) => {
+        rgbConfigs.value[index] = configData.rgbConfigs[index];
       });
-      dynamic_keys.value.forEach((item, index) => {
-        dynamic_keys.value[index] = configData.dynamic_keys[index];
+      dynamicKeys.value.forEach((item, index) => {
+        dynamicKeys.value[index] = configData.dynamicKeys[index];
       });
-      mapDynamicKey(keymap.value, dynamic_keys.value);
+      mapDynamicKey(keymap.value, dynamicKeys.value);
     }
     else {
       message.error(t('main_device_mistatch'));
@@ -509,12 +509,12 @@ async function importConfig() {
 async function exportConfig() {
   const jsonStr = JSON.stringify(
     {
-      device: selected_device.value,
-      advanced_keys: advanced_keys.value,
+      device: selectedDevice.value,
+      advancedKeys: advancedKeys.value,
       keymap: keymap.value,
-      rgb_base_config: rgb_base_config.value,
-      rgb_configs: rgb_configs.value,
-      dynamic_keys: dynamic_keys.value,
+      rgbBaseConfig: rgbBaseConfig.value,
+      rgbConfigs: rgbConfigs.value,
+      dynamicKeys: dynamicKeys.value,
     }, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
 
@@ -728,7 +728,7 @@ const layers = computed(() => {
 }
 );
 const currentPanel = computed(() => {
-  switch (tab_selection.value) {
+  switch (tabSelection.value) {
     case 'PerformancePanel': return PerformancePanel;
     case 'KeymapPanel': return KeymapPanel;
     case 'RGBPanel': return RGBPanel;
@@ -743,11 +743,11 @@ const currentPanel = computed(() => {
 
 
 function handleThemeUpdate() {
-  if (theme_name.value === 'dark') {
-    theme_name.value = 'light'
+  if (themeName.value === 'dark') {
+    themeName.value = 'light'
   }
   else {
-    theme_name.value = 'dark'
+    themeName.value = 'dark'
   }
 }
 
@@ -763,9 +763,9 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
           <n-gi :span="4">
             <n-flex>
               <n-select @update:value="handleUpdateDeviceValue" style="max-width: 200px;" :disabled="isReady"
-                v-model:value="selected_device" v-model:options="devices" filterable
+                v-model:value="selectedDevice" v-model:options="devices" filterable
                 :placeholder="t('toolbar_select_device')" />
-              <n-button @click="connectCommand" :disabled="selected_device == undefined">{{ isConnected ?
+              <n-button @click="connectCommand" :disabled="selectedDevice == undefined">{{ isConnected ?
                 t('toolbar_disconnect') :
                 t('toolbar_connect') }}</n-button>
               <n-button @click="saveCommand" :disabled="!isReady">{{ t('toolbar_save') }}</n-button>
@@ -781,7 +781,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
           <n-gi :span="1">
             <n-flex justify="end">
               <n-button @click="handleThemeUpdate">
-                {{ themeLabelMap[theme_name as 'light' | 'dark'] }}
+                {{ themeLabelMap[themeName as 'light' | 'dark'] }}
               </n-button>
               <n-select @update:value="handleLanguageMenu" style="max-width: 100px;" v-model:value="lang"
                 :options="language_options" />
@@ -793,7 +793,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
         <n-layout-sider :width="200" style="flex-shrink: 0;">
           <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
             <n-select style="font-size: 14px;" size="large" :placeholder="t('main_tabs_config_file')"
-              @update:value="handleUpdateFileValue" v-model:value="selected_config_file_index"
+              @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex"
               v-model:options="files"></n-select>
           </div>
           <n-space vertical>
@@ -814,7 +814,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 </div>
               </n-gi>
             </n-grid>
-            <n-menu :indent="20" :options="menuOptions" v-model:value="tab_selection">
+            <n-menu :indent="20" :options="menuOptions" v-model:value="tabSelection">
             </n-menu>
           </n-space>
         </n-layout-sider>
@@ -847,7 +847,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
           trigger="hover"
         >
           <div ref="keyboardContentRef" style="padding-bottom: 4px;">
-             <KeyboardRender v-model:keys="keyboard_keys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
+             <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
           </div>
         </n-scrollbar>
 
@@ -856,7 +856,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
 
     <template #resize-trigger><div 
         class="custom-resize-trigger" 
-        :class="{ 'dark': theme_name === 'dark' }" 
+        :class="{ 'dark': themeName === 'dark' }" 
       ><div 
                   style="position: absolute; inset: 0; z-index: 0; pointer-events: auto;"
                   @dblclick="resetToAuto"
@@ -865,7 +865,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 <div class="trigger-left" style="z-index: 1;">
                   <Transition name="fade">
                     <div 
-                      v-if="tab_selection == 'PerformancePanel'||tab_selection == 'KeymapPanel'||tab_selection == 'RGBPanel'"
+                      v-if="tabSelection == 'PerformancePanel'||tabSelection == 'KeymapPanel'||tabSelection == 'RGBPanel'"
                       @mousedown.stop
                       style="pointer-events: auto;"
                     >
@@ -879,15 +879,15 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 <div class="trigger-center" style="z-index: 1;">
                   <Transition name="fade" mode="out-in">
                     <div 
-                      v-if="tab_selection == 'KeymapPanel' || tab_selection == 'DynamicKeyPanel'"
+                      v-if="tabSelection == 'KeymapPanel' || tabSelection == 'DynamicKeyPanel'"
                       key="layer-selector" 
                       @mousedown.stop
                       style="display: flex; align-items: center; justify-content: center; pointer-events: auto;"
                     >
                       <n-radio-group 
                         v-if="layers && layers.length > 0"
-                        :key="selected_device + '-' + layers.length"
-                        v-model:value="current_layer" 
+                        :key="selectedDevice + '-' + layers.length"
+                        v-model:value="currentLayerIndex" 
                         size="tiny" 
                       > 
                         <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />

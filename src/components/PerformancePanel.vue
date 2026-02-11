@@ -11,62 +11,62 @@ import { useMainStore } from '../store/main';
 const { t } = useI18n();
 
 const store = useMainStore();
-const {advanced_key} = storeToRefs(store);
+const {advancedKey} = storeToRefs(store);
 
 const mode = computed<ekc.KeyMode>({
-  get: () => advanced_key.value.mode,
+  get: () => advancedKey.value.mode,
   set: (value: ekc.KeyMode) => {
-    advanced_key.value.mode = value;
+    advancedKey.value.mode = value;
   },
 });
 
 const activation_value = computed<number>({
-  get: () => (Math.round(advanced_key.value.activation_value * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.activation_value * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.activation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.activation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 
 const deactivation_value = computed<number>({
-  get: () => (Math.round(advanced_key.value.deactivation_value * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.deactivation_value * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.deactivation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.deactivation_value = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const trigger_distance = computed<number>({
-  get: () => (Math.round(advanced_key.value.trigger_distance * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.trigger_distance * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.trigger_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.trigger_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const release_distance = computed<number>({
-  get: () => (Math.round(advanced_key.value.release_distance * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.release_distance * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.release_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.release_distance = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const upper_deadzone = computed<number>({
-  get: () => (Math.round(advanced_key.value.upper_deadzone * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.upper_deadzone * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.upper_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.upper_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const lower_deadzone = computed<number>({
-  get: () => (Math.round(advanced_key.value.lower_deadzone * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.lower_deadzone * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.lower_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.lower_deadzone = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const trigger_speed = computed<number>({
-  get: () => (Math.round(advanced_key.value.trigger_speed * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.trigger_speed * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.trigger_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.trigger_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 const release_speed = computed<number>({
-  get: () => (Math.round(advanced_key.value.release_speed * 1000) / 10),
+  get: () => (Math.round(advancedKey.value.release_speed * 1000) / 10),
   set: (value: number) => {
-    advanced_key.value.release_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
+    advancedKey.value.release_speed = isNaN(value) ? 0 : Math.round(value * 10) / 1000;
   },
 });
 

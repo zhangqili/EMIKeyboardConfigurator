@@ -14,7 +14,7 @@ import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 const { t } = useI18n();
 
 const store = useMainStore();
-const { theme_name } = storeToRefs(store); // 获取全局主题状态
+const { themeName } = storeToRefs(store); // 获取全局主题状态
 
 const code = ref(
 `// Code outside functions runs once at startup/boot.
@@ -66,7 +66,7 @@ const handleMount = (editor: any, monaco: any) => {
 }
 
 const editorTheme = computed(() => {
-  return theme_name.value === 'dark' ? 'vs-dark' : 'vs';
+  return themeName.value === 'dark' ? 'vs-dark' : 'vs';
 });
 
 const editorOptions = {

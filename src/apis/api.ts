@@ -102,8 +102,8 @@ export async function get_layout_json(){
 export async function get_dynamic_keys(){
     return CONTROLLER.get_dynamic_keys() as ekc.IDynamicKey[];
 }
-export async function set_dynamic_keys(dynamic_keys: ekc.IDynamicKey[]){
-    return CONTROLLER.set_dynamic_keys(dynamic_keys);
+export async function set_dynamic_keys(dynamicKeys: ekc.IDynamicKey[]){
+    return CONTROLLER.set_dynamic_keys(dynamicKeys);
 }
 
 export async function reset_to_default(){

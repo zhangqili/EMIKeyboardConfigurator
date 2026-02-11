@@ -16,10 +16,10 @@ const { t } = useI18n();
 
 const message = useMessage();
 
-const dynamic_key = ref<ekc.IDynamicKey>();
+const dynamicKey = ref<ekc.IDynamicKey>();
 
 const store = useMainStore();
-const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
+const { keyBinding, currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
 
 </script>
 

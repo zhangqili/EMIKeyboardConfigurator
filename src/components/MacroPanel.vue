@@ -9,7 +9,7 @@ import KeyEditCell from './KeyEditCell.vue';
 
 const { t } = useI18n();
 const store = useMainStore();
-const { dynamic_key } = storeToRefs(store);
+const { dynamicKey } = storeToRefs(store);
 
 interface RowData {
   id: number;
@@ -146,7 +146,7 @@ function handleBindingUpdate(row: RowData, newValue: number) {
 
 <template>
   <div style="flex: 1; display: flex; height: 100%;">
-    <div style="flex: 1; display: flex; height: 100%;" v-if="dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone">
+    <div style="flex: 1; display: flex; height: 100%;" v-if="dynamicKey?.type == ekc.DynamicKeyType.DynamicKeyNone">
       <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
         
         <template #header>

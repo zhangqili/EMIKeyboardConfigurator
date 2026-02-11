@@ -9,30 +9,30 @@ export const useMainStore = defineStore('main',
     () => {
         // 所有这些属性都将自动推断出它们的类型
         const lang = ref<string>('en');
-        const theme_name = ref<string>('dark');
+        const themeName = ref<string>('dark');
 
-        const keyboard_keys = ref<KeyConfig[]>([]);
+        const keyboardKeys = ref<KeyConfig[]>([]);
 
-        const selected_device = ref<string | undefined>(undefined);
-        const advanced_key = ref<IAdvancedKey>(new AdvancedKey());
-        const rgb_config = ref<IRGBConfig>(new RGBConfig());
-        const dynamic_key = ref<IDynamicKey>(new DynamicKey());;
-        const dynamic_key_index = ref<number>(-1);;
+        const selectedDevice = ref<string | undefined>(undefined);
+        const advancedKey = ref<IAdvancedKey>(new AdvancedKey());
+        const rgbConfig = ref<IRGBConfig>(new RGBConfig());
+        const dynamicKey = ref<IDynamicKey>(new DynamicKey());;
+        const dynamicKeyIndex = ref<number>(-1);;
 
-        const advanced_keys = ref<IAdvancedKey[]>([]);
-        const rgb_base_config = ref<IRGBBaseConfig>(new RGBBaseConfig());
-        const rgb_configs = ref<IRGBConfig[]>([]);
+        const advancedKeys = ref<IAdvancedKey[]>([]);
+        const rgbBaseConfig = ref<IRGBBaseConfig>(new RGBBaseConfig());
+        const rgbConfigs = ref<IRGBConfig[]>([]);
         const keymap = ref<number[][]>([]);
-        const dynamic_keys = ref<IDynamicKey[]>([]);
+        const dynamicKeys = ref<IDynamicKey[]>([]);
 
-        const key_binding = ref<number>(0);
-        const current_layer = ref<number>(0);
+        const keyBinding = ref<number>(0);
+        const currentLayerIndex = ref<number>(0);
         
-        const tab_selection = ref<string | null>("PerformancePanel");
-        const config_files = ref<string[]>([]);
-        const selected_config_file_index = ref<number | undefined>(undefined);
-        const debug_switch = ref(false);
-        const debug_raw_chart_option = ref({
+        const tabSelection = ref<string | null>("PerformancePanel");
+        const profiles = ref<string[]>([]);
+        const selectedProfileIndex = ref<number | undefined>(undefined);
+        const debugSwitch = ref(false);
+        const debugRawChartOption = ref({
             animation: false,
             tooltip: {
                 trigger: 'axis',
@@ -62,7 +62,7 @@ export const useMainStore = defineStore('main',
             series: Array<SeriesOption>()
         
         });
-        const debug_value_chart_option = ref({
+        const debugValueChartOption = ref({
             animation: false,
             tooltip: {
                 trigger: 'axis',
@@ -94,39 +94,39 @@ export const useMainStore = defineStore('main',
             series: Array<SeriesOption>()
         
         });
-        const firmware_version = ref<FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
+        const firmwareVersion = ref<FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
 
         //keymap: [][] as number[][],
         //hasChanged: true,
         return {
             lang,
-            theme_name,
+            themeName,
 
-            keyboard_keys,
+            keyboardKeys,
 
-            selected_device,
-            advanced_key,
-            rgb_config,
-            dynamic_key,
-            dynamic_key_index,
+            selectedDevice,
+            advancedKey,
+            rgbConfig,
+            dynamicKey,
+            dynamicKeyIndex,
 
-            advanced_keys,
-            rgb_base_config,
-            rgb_configs,
+            advancedKeys,
+            rgbBaseConfig,
+            rgbConfigs,
             keymap,
-            dynamic_keys,
+            dynamicKeys,
 
-            tab_selection,
-            config_files,
-            selected_config_file_index,
+            tabSelection,
+            profiles,
+            selectedProfileIndex,
 
-            key_binding,
-            current_layer,
+            keyBinding,
+            currentLayerIndex,
 
-            debug_raw_chart_option,
-            debug_value_chart_option,
-            debug_switch,
-            firmware_version
+            debugRawChartOption,
+            debugValueChartOption,
+            debugSwitch,
+            firmwareVersion
         }
     }
   );

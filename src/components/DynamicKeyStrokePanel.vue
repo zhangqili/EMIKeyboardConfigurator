@@ -18,12 +18,12 @@ const { t } = useI18n();
 const message = useMessage();
 
 const store = useMainStore();
-const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
+const { keyBinding, currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
 
-const dynamic_key_stroke = defineModel<ekc.IDynamicKeyStroke4x4>("dynamic_key",{ 
+const dynamic_key_stroke = defineModel<ekc.IDynamicKeyStroke4x4>("dynamicKey",{ 
   default: {
     type: ekc.DynamicKeyType.DynamicKeyStroke,
-    key_binding:[0,0,0,0],
+    keyBinding:[0,0,0,0],
     key_control:[0,0,0,0],
     press_begin_distance: 0.25, 
     press_fully_distance: 0.75,
@@ -75,7 +75,7 @@ const release_fully_distance = computed<number>({
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_stroke.value != undefined) {
-      dynamic_key_stroke.value.bindings[index] = key_binding.value;
+      dynamic_key_stroke.value.bindings[index] = keyBinding.value;
       triggerRef(dynamic_key_stroke);
       }
   } else {
@@ -86,7 +86,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_stroke.value != undefined) {
-      dynamic_key_stroke.value.bindings[index] = key_binding.value;
+      dynamic_key_stroke.value.bindings[index] = keyBinding.value;
       triggerRef(dynamic_key_stroke);
       }
   } else {
