@@ -183,3 +183,11 @@ export async function get_layout_labels(){
 export async function get_firmware_version(){
     return CONTROLLER.get_firmware_version();
 }
+
+export async function get_macros(){
+    return CONTROLLER.get_macros();
+}
+
+export async function set_macros(macros : ekc.IMacroAction[][] ){
+    return CONTROLLER.set_macros(macros);
+}

@@ -9,7 +9,7 @@
     "toolbar_settings": "Settings",
     "toolbar_select_device": "Select device",
 
-    "main_tabs_config_file": "Config file",
+    "main_tabs_profile": "Profile",
     "main_tabs_performance": "Performance",
     "main_tabs_keymap": "Keymap",
     "main_tabs_rgb": "RGB",
@@ -21,8 +21,8 @@
     "main_device_not_found": "Device not found",
 
     "main_device_mistatch": "Device mismatch",
-    "main_import_success": "Config file imported",
-    "main_import_failed": "Config file import failed",
+    "main_import_success": "Profile imported",
+    "main_import_failed": "Profile import failed",
 
     "main_linux_detect_title" : "Linux system detected",
     "main_linux_detect_content" : "You may modifiy udev rules to access your device.",

@@ -385,10 +385,10 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardResetToDefault]: 'Reset to Default',
   [KeyboardKeycode.KeyboardRgbBrightnessUp]: 'Brightness Up',
   [KeyboardKeycode.KeyboardRgbBrightnessDown]: 'Brightness Down',
-  [KeyboardKeycode.KeyboardConfig0]: 'Config 0',
-  [KeyboardKeycode.KeyboardConfig1]: 'Config 1',
-  [KeyboardKeycode.KeyboardConfig2]: 'Config 2',
-  [KeyboardKeycode.KeyboardConfig3]: 'Config 3',
+  [KeyboardKeycode.KeyboardConfig0]: 'Profile 0',
+  [KeyboardKeycode.KeyboardConfig1]: 'Profile 1',
+  [KeyboardKeycode.KeyboardConfig2]: 'Profile 2',
+  [KeyboardKeycode.KeyboardConfig3]: 'Profile 3',
   [KeyboardKeycode.KeyboardConfigBase]: 'Config Base',
 };
 

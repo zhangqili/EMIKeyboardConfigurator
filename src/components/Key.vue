@@ -221,6 +221,12 @@ const button_style = computed(() : CSSProperties => {
   };
 });
 
+function toUint16Hex(num: number): string {
+  // 确保数字在 uint16 范围内 (0 - 65535)
+  const safeNum = num & 0xFFFF; 
+  return "0x" + safeNum.toString(16).toUpperCase().padStart(4, '0');
+}
+
 const tooltipContent = computed(() => {
   const content = [];
   content.push(`ID: ${props.id}`); // 显示按键 ID
@@ -238,7 +244,9 @@ const tooltipContent = computed(() => {
   if (store.tabSelection === 'RGBPanel' && rgbConfigs.value[props.id]) {
      content.push(`Color: ${rgbToHex(rgbConfigs.value[props.id].rgb)}`);
   }
-
+  if ((store.tabSelection === 'KeymapPanel' || store.tabSelection === 'DynamicKeyPanel' )&& keymap.value[currentLayerIndex.value][props.id]) {
+     content.push(`Keycode:  #${toUint16Hex(keymap.value[currentLayerIndex.value][props.id])}`);
+  }
   return content;
 });
 </script>
@@ -249,14 +257,14 @@ const tooltipContent = computed(() => {
       <div style="position: absolute; inset: 2px;">
         <n-popover trigger="hover" placement="top" :animated="false" :delay="0" :duration="0">
           <template #trigger>
-        <n-button :style="button_style" :focusable="false" class="keycap" >
-          <div class="keylabels">
-            <div v-for="(label, index) in labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
-              <div v-if="index<9" :style="sizeLabel">{{ label }}</div>
-              <div v-if="index>=9" :style="sizeLabel1">{{ label }}</div>
-            </div>
-          </div>
-        </n-button>
+            <n-button :style="button_style" :focusable="false" class="keycap" >
+              <div class="keylabels">
+                <div v-for="(label, index) in labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
+                  <div v-if="index<9" :style="sizeLabel">{{ label }}</div>
+                  <div v-if="index>=9" :style="sizeLabel1">{{ label }}</div>
+                </div>
+              </div>
+            </n-button>
           </template>
           
           <div style="text-align: center; font-size: 12px;">

@@ -1,4 +1,4 @@
-import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion} from "./../../interface";
+import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction} from "./../../interface";
 import semver, { SemVer } from 'semver';
 
 enum PacketCode {
@@ -14,7 +14,7 @@ enum PacketData {
   PacketDataRgbBaseConfig = 0x02,
   PacketDataRgbConfig = 0x03,
   PacketDataDynamicKey = 0x04,
-  PacketDataConfigIndex = 0x05,
+  PacketDataProfileIndex = 0x05,
   PacketDataConfig = 0x06,
   PacketDataDebug = 0x07,
   PacketDataReport = 0x08,
@@ -84,6 +84,7 @@ export class LibampKeyboardController extends KeyboardController {
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
     private requestQueue = new RequestQueue();
     firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
+    macros : MacroAction[][] = [new Array<MacroAction>];
 
     constructor() {
         super();
@@ -204,7 +205,7 @@ export class LibampKeyboardController extends KeyboardController {
             case PacketData.PacketDataDynamicKey:
                 this.packet_process_dynamic_key(buf);
                 break;
-            case PacketData.PacketDataConfigIndex:
+            case PacketData.PacketDataProfileIndex:
                 this.packet_process_config_index(buf);
                 break;
             case PacketData.PacketDataConfig:
@@ -212,6 +213,9 @@ export class LibampKeyboardController extends KeyboardController {
                 break;
             case PacketData.PacketDataDebug:
                 this.packet_process_debug(buf);
+                break;
+            case PacketData.PacketDataMacro:
+                this.packet_process_macro(buf);
                 break;
             case PacketData.PacketDataVersion:
                 this.packet_process_version(buf);
@@ -512,6 +516,75 @@ export class LibampKeyboardController extends KeyboardController {
             console.log("Firmware Version:", this.firmware_version);
         }
     }
+    packet_process_macro(buf: Uint8Array) {
+        const dataView = new DataView(buf.buffer);
+        const code = buf[0];
+        const macro_index = buf[2];
+        const count = dataView.getUint16(3, true);
+
+        // 确保本地数据结构存在 (仅在 GET 时或 SET 检查时需要)
+        if (!this.macros[macro_index]) {
+            this.macros[macro_index] = [];
+        }
+
+        let offset = 5; // Header 长度 (Code+Type+Index+Length)
+        const ACTION_SIZE = 12; // 结构体大小
+
+        for (let i = 0; i < count; i++) {
+            // Action 的 Index 字段偏移量是 offset + 4
+            // 无论是 GET 还是 SET，我们都需要知道这个 Action 的索引
+            
+            if (code === PacketCode.PacketCodeGet) {
+                // === 接收逻辑 (反序列化) ===
+                const delay = dataView.getUint32(offset, true);
+                const idx = dataView.getUint16(offset + 4, true);
+                const key_id = dataView.getUint16(offset + 6, true);
+                const is_virtual = dataView.getUint8(offset + 8) > 0;
+                const event = dataView.getUint8(offset + 9);
+                const keycode = dataView.getUint16(offset + 10, true);
+
+                this.macros[macro_index][idx] = {
+                    delay,
+                    key_id,
+                    is_virtual,
+                    event,
+                    keycode
+                }
+            } 
+            else if (code === PacketCode.PacketCodeSet) {
+                // === 发送逻辑 (序列化) ===
+                // 对于 SET 包，调用者 (send_macros) 必须已经预先在 Buffer 中填好了
+                // 它想要发送的 Action Index (位于 offset+4)。
+                // 我们根据这个 Index 去 this.macros 里拿数据填入 Buffer 的其他字段。
+                
+                const idx = dataView.getUint16(offset + 4, true);
+                const action = this.macros[macro_index][idx];
+
+                if (action) {
+                    dataView.setUint32(offset, action.delay, true);
+                    // offset+4 (idx) 已经被调用者填好了，不需要重写，或者重写一遍也无妨
+                    dataView.setUint16(offset + 6, action.key_id, true);
+                    dataView.setUint8(offset + 8, action.is_virtual ? 1 : 0);
+                    dataView.setUint8(offset + 9, action.event);
+                    dataView.setUint16(offset + 10, action.keycode, true);
+                } else {
+                    // 如果本地没有这个 Action (越界或空)，填充 0 或默认值
+                    // 通常建议填充 MacroEnd (0)
+                    dataView.setUint32(offset, 0, true);
+                    dataView.setUint16(offset + 6, 0, true);
+                    dataView.setUint8(offset + 8, 0);
+                    dataView.setUint8(offset + 9, 0);
+                    dataView.setUint16(offset + 10, 0, true);
+                }
+            }
+
+            offset += ACTION_SIZE;
+        }
+        
+        if (code === PacketCode.PacketCodeGet) {
+            console.log(`Processed Macro ${macro_index} (GET), count: ${count}`);
+        }
+    }
     get_connection_state(): boolean {
         return this.device != undefined;
     }
@@ -526,6 +599,7 @@ export class LibampKeyboardController extends KeyboardController {
         await this.send_rgb_configs();
         await this.send_keymap();
         await this.send_dynamic_keys();
+        await this.send_macros();
     }
     flash_config(): void {
         let send_buf = new Uint8Array(63);
@@ -561,6 +635,7 @@ export class LibampKeyboardController extends KeyboardController {
           await this.read_rgb_configs();
           await this.read_keymap();
           await this.read_dynamic_keys();
+          await this.read_macros();
           await this.read_config_index();
           await this.request_version();
           console.log("Config loaded successfully");
@@ -828,13 +903,110 @@ export class LibampKeyboardController extends KeyboardController {
     async read_config_index() {
         this.txBuffer.fill(0);
         this.txBuffer[0] = PacketCode.PacketCodeGet;
-        this.txBuffer[1] = PacketData.PacketDataConfigIndex;
+        this.txBuffer[1] = PacketData.PacketDataProfileIndex;
         try {
             const res = await this.enqueueCommand(this.txBuffer);
             this.packet_process(res);
         } catch (e) {
             console.error(`Failed to read Config Index`, e);
         }
+    }
+
+    async send_macros() {
+        const MAX_ACTIONS_PER_PACKET = 4; // (64-5)/12 = 4.9
+        const ACTION_SIZE = 12;
+
+        for (let macro_idx = 0; macro_idx < this.macros.length; macro_idx++) {
+            const macro_actions = this.macros[macro_idx];
+            // 即使是空宏，可能也需要发一个包去清空，视固件逻辑而定
+            // 这里假设如果不为空才发
+            if (!macro_actions || macro_actions.length === 0) continue;
+
+            const page_count = Math.ceil(macro_actions.length / MAX_ACTIONS_PER_PACKET);
+
+            for (let page = 0; page < page_count; page++) {
+                // 1. 准备 Header
+                this.txBuffer.fill(0);
+                this.txBuffer[0] = PacketCode.PacketCodeSet;
+                this.txBuffer[1] = PacketData.PacketDataMacro;
+                this.txBuffer[2] = macro_idx;
+
+                const start_idx = page * MAX_ACTIONS_PER_PACKET;
+                const end_idx = Math.min(start_idx + MAX_ACTIONS_PER_PACKET, macro_actions.length);
+                const current_count = end_idx - start_idx;
+
+                const dataView = new DataView(this.txBuffer.buffer);
+                dataView.setUint16(3, current_count, true); // Length
+
+                // 2. 预填充 Index 字段
+                // 我们告诉 packet_process_macro: "我要发送第 X, Y, Z 号 Action，请把数据填进来"
+                let offset = 5;
+                for (let i = 0; i < current_count; i++) {
+                    const abs_index = start_idx + i;
+                    // 在 struct 的 offset+4 处写入 index
+                    dataView.setUint16(offset + 4, abs_index, true);
+                    offset += ACTION_SIZE;
+                }
+
+                // 3. 【核心】调用统一处理函数进行数据填充
+                // 这一步会读取 this.macros 并填入 txBuffer
+                this.packet_process_macro(this.txBuffer); 
+
+                // 4. 发送
+                try {
+                    await this.enqueueCommand(this.txBuffer);
+                } catch (e) {
+                    console.error(`Failed to send Macro ${macro_idx} page ${page}`, e);
+                }
+            }
+        }
+        console.debug("Sent Macros");
+    }
+
+    async read_macros() {
+        // 假设最大宏数量和最大Action数
+        const MAX_MACRO_NUM = 4; 
+        const MACRO_MAX_ACTIONS = 128; 
+        const ACTIONS_PER_PACKET = 4;
+        const ACTION_SIZE = 12;
+
+        this.macros = []; // 重置本地缓存
+
+        for (let m = 0; m < MAX_MACRO_NUM; m++) {
+            this.macros[m] = [];
+            const page_count = Math.ceil(MACRO_MAX_ACTIONS / ACTIONS_PER_PACKET);
+
+            for (let page = 0; page < page_count; page++) {
+                // 1. 准备 Header
+                this.txBuffer.fill(0);
+                this.txBuffer[0] = PacketCode.PacketCodeGet;
+                this.txBuffer[1] = PacketData.PacketDataMacro;
+                this.txBuffer[2] = m; // macro_index
+
+                const start_idx = page * ACTIONS_PER_PACKET;
+                const count = Math.min(ACTIONS_PER_PACKET, MACRO_MAX_ACTIONS - start_idx);
+                
+                const dataView = new DataView(this.txBuffer.buffer);
+                dataView.setUint16(3, count, true); // length
+
+                // 2. 填充请求的 Index
+                let offset = 5;
+                for (let i = 0; i < count; i++) {
+                    dataView.setUint16(offset + 4, start_idx + i, true);
+                    offset += ACTION_SIZE;
+                }
+
+                // 3. 发送请求并处理回包
+                try {
+                    const res = await this.enqueueCommand(this.txBuffer);
+                    // 回包是一个 GET 类型的包，packet_process_macro 会自动将其写入 this.macros
+                    this.packet_process_macro(res);
+                } catch (e) {
+                    console.error(`Failed to read Macro ${m} page ${page}`, e);
+                }
+            }
+        }
+        console.log("Macros read complete");
     }
 
     get_config_file_num(): number {
@@ -885,4 +1057,13 @@ export class LibampKeyboardController extends KeyboardController {
     get_firmware_version() {
         return this.firmware_version;
     }
+
+    get_macros(): IMacroAction[][] {
+        return this.macros;
+    }
+    set_macros(macros: IMacroAction[][]): void {
+        this.macros = macros;
+    }
+
+
 }

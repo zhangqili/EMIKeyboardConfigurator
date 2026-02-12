@@ -49,6 +49,7 @@ const {
   debugRawChartOption,
   debugValueChartOption,
   dynamicKeys,
+  macros,
   keyboardKeys,
   themeName,
   firmwareVersion
@@ -252,13 +253,14 @@ async function connectCommand() {
 
 async function saveCommand() {
   if (isConnected.value) {
-    apis.set_advanced_keys(advancedKeys.value);
-    apis.set_rgb_base_config(rgbBaseConfig.value);
+    await apis.set_advanced_keys(advancedKeys.value);
+    await apis.set_rgb_base_config(rgbBaseConfig.value);
     if (keymap.value != undefined) {
-      apis.set_keymap(keymap.value);
+      await apis.set_keymap(keymap.value);
     }
-    apis.set_rgb_configs(rgbConfigs.value);
-    apis.set_dynamic_keys(dynamicKeys.value);
+    await apis.set_rgb_configs(rgbConfigs.value);
+    await apis.set_dynamic_keys(dynamicKeys.value);
+    await apis.set_macros(macros.value);
     var result = await apis.save_config();
     console.debug(result);
 
@@ -280,13 +282,14 @@ async function getController() {
   rgbConfigs.value = await apis.get_rgb_configs();
   dynamicKeys.value = await apis.get_dynamic_keys();
   firmwareVersion.value = await apis.get_firmware_version();
+  macros.value = await apis.get_macros();
   selectedProfileIndex.value = await apis.get_config_file_index();
   const cnofig_file_num = await apis.get_config_file_num();
   layout_labels.value = await apis.get_layout_labels();
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
     files.value.push({
-      label: "Config" + index.toString(),
+      label: "Profile" + index.toString(),
       value: index,
     });
   }
@@ -301,12 +304,15 @@ async function updateData() {
   }
   console.log("update data");
   selectedProfileIndex.value = await apis.get_config_file_index();
+  console.log(await apis.get_macros());
+  macros.value = await apis.get_macros();
   triggerRef(advancedKeys);
   triggerRef(keymap);
   triggerRef(rgbBaseConfig);
   triggerRef(rgbConfigs);
   triggerRef(dynamicKeys);
   triggerRef(selectedProfileIndex);
+  triggerRef(macros);
   triggerRef(firmwareVersion);
 }
 
@@ -533,7 +539,7 @@ async function exportConfig() {
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
-      message.success("Config file exported.");
+      message.success("Profile exported.");
     } catch (error) {
       console.error(error);
     }
@@ -792,7 +798,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
       <div class="container">
         <n-layout-sider :width="200" style="flex-shrink: 0;">
           <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
-            <n-select style="font-size: 14px;" size="large" :placeholder="t('main_tabs_config_file')"
+            <n-select style="font-size: 14px;" size="large" :placeholder="t('main_tabs_profile')"
               @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex"
               v-model:options="files"></n-select>
           </div>

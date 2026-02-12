@@ -831,6 +831,25 @@ export interface IKeyboardController{
     set_config_file_index(index: number) : void;
     get_layout_labels(): string[][];
     get_firmware_version() : FirmwareVersion;
+    get_macros(): IMacroAction[][];
+    set_macros(macros : IMacroAction[][]) : void;
+}
+
+export interface IMacroAction {
+    delay: number;
+    keycode: number;
+    event: number;
+    is_virtual : boolean;
+    key_id : number;
+}
+
+export class MacroAction implements IMacroAction {
+    delay: number = 0;
+    keycode: number = 0;
+    event: number = 0;
+    is_virtual: boolean = false;
+    key_id: number = 0;
+
 }
 
 export abstract class KeyboardController implements IKeyboardController, EventTarget{
@@ -848,6 +867,12 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.device = undefined;
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    get_macros(): IMacroAction[][] {
+        throw new Error("Method not implemented.");
+    }
+    set_macros(macros: IMacroAction[][]): void {
+        throw new Error("Method not implemented.");
     }
     // 添加事件监听
     addEventListener(type: string, listener: EventListener): void {
