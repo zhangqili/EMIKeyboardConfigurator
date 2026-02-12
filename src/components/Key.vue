@@ -245,7 +245,7 @@ const tooltipContent = computed(() => {
      content.push(`Color: ${rgbToHex(rgbConfigs.value[props.id].rgb)}`);
   }
   if ((store.tabSelection === 'KeymapPanel' || store.tabSelection === 'DynamicKeyPanel' )&& keymap.value[currentLayerIndex.value][props.id]) {
-     content.push(`Keycode:  #${toUint16Hex(keymap.value[currentLayerIndex.value][props.id])}`);
+     content.push(`Keycode:  ${toUint16Hex(keymap.value[currentLayerIndex.value][props.id])}`);
   }
   return content;
 });

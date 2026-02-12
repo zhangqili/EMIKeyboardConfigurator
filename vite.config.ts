@@ -33,7 +33,8 @@ export default defineConfig(async () => ({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
       },
       manifest: {
         name: 'EMI Keyboard Configurator',
@@ -83,5 +84,19 @@ export default defineConfig(async () => ({
     port: 1420,
     strictPort: true,
     host: host || false,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 将 monaco-editor 单独拆包
+          'monaco-editor': ['monaco-editor'],
+          // 将 echarts 单独拆包
+          'echarts': ['echarts'],
+          // 如果 naive-ui 很大，也可以拆
+          'naive-ui': ['naive-ui'],
+        },
+      },
+    },
   },
 }));

@@ -1,7 +1,7 @@
 {
     "toolbar_connect": "连接",
     "toolbar_disconnect": "断开连接",
-    "toolbar_save": "保存",
+    "toolbar_apply": "应用",
     "toolbar_advance": "高级",
     "toolbar_device_flash_configuration": "保存配置至Flash",
     "toolbar_device_reset": "重启设备",
@@ -14,6 +14,8 @@
     "main_tabs_keymap": "映射",
     "main_tabs_rgb": "灯效",
     "main_tabs_dynamic_key": "动态按键",
+    "main_tabs_macro": "宏",
+    "main_tabs_script": "脚本",
     "main_tabs_debug": "调试",
     "main_tabs_about": "关于",
     

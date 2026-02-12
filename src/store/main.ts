@@ -96,6 +96,7 @@ export const useMainStore = defineStore('main',
         
         });
         const firmwareVersion = ref<FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
+        const readmeMarkdown = ref("");
 
         //keymap: [][] as number[][],
         //hasChanged: true,
@@ -128,7 +129,8 @@ export const useMainStore = defineStore('main',
             debugRawChartOption,
             debugValueChartOption,
             debugSwitch,
-            firmwareVersion
+            firmwareVersion,
+            readmeMarkdown
         }
     }
   );

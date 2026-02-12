@@ -191,3 +191,7 @@ export async function get_macros(){
 export async function set_macros(macros : ekc.IMacroAction[][] ){
     return CONTROLLER.set_macros(macros);
 }
+
+export async function get_readme_markdown(){
+    return CONTROLLER.get_readme_markdown();
+}

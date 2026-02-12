@@ -52,7 +52,8 @@ const {
   macros,
   keyboardKeys,
   themeName,
-  firmwareVersion
+  firmwareVersion,
+  readmeMarkdown
 } = storeToRefs(store);
 
 const message = useMessage();
@@ -286,10 +287,11 @@ async function getController() {
   selectedProfileIndex.value = await apis.get_config_file_index();
   const cnofig_file_num = await apis.get_config_file_num();
   layout_labels.value = await apis.get_layout_labels();
+  readmeMarkdown.value = await apis.get_readme_markdown();
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
     files.value.push({
-      label: "Profile" + index.toString(),
+      label: t("main_tabs_profile") + ' ' + index.toString(),
       value: index,
     });
   }
@@ -774,7 +776,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
               <n-button @click="connectCommand" :disabled="selectedDevice == undefined">{{ isConnected ?
                 t('toolbar_disconnect') :
                 t('toolbar_connect') }}</n-button>
-              <n-button @click="saveCommand" :disabled="!isReady">{{ t('toolbar_save') }}</n-button>
+              <n-button @click="saveCommand" :disabled="!isReady">{{ t('toolbar_apply') }}</n-button>
               <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
                 :options="advanced_options">
                 <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>

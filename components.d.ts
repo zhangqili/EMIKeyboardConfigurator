@@ -25,7 +25,7 @@ declare module 'vue' {
     LayoutSubSelector: typeof import('./src/components/LayoutSubSelector.vue')['default']
     MacroPanel: typeof import('./src/components/MacroPanel.vue')['default']
     Main: typeof import('./src/components/Main.vue')['default']
-    NA: typeof import('naive-ui')['NA']
+    MarkdownRender: typeof import('./src/components/MarkdownRender.vue')['default']
     NButton: typeof import('naive-ui')['NButton']
     NButtonGroup: typeof import('naive-ui')['NButtonGroup']
     NCard: typeof import('naive-ui')['NCard']

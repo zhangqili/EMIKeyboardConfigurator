@@ -1,7 +1,7 @@
 {
     "toolbar_connect": "Connect",
     "toolbar_disconnect": "Disconnect",
-    "toolbar_save": "Save",
+    "toolbar_apply": "Apply",
     "toolbar_advance": "Advance",
     "toolbar_device_flash_configuration": "Flash configuration",
     "toolbar_device_reset": "Reset device",
@@ -14,6 +14,8 @@
     "main_tabs_keymap": "Keymap",
     "main_tabs_rgb": "RGB",
     "main_tabs_dynamic_key": "Dynamic Key",
+    "main_tabs_macro": "Macro",
+    "main_tabs_script": "Script",
     "main_tabs_debug": "Debug",
     "main_tabs_about": "About",
 

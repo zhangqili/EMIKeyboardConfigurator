@@ -833,6 +833,7 @@ export interface IKeyboardController{
     get_firmware_version() : FirmwareVersion;
     get_macros(): IMacroAction[][];
     set_macros(macros : IMacroAction[][]) : void;
+    get_readme_markdown() : string;
 }
 
 export interface IMacroAction {
@@ -867,6 +868,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.device = undefined;
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    get_readme_markdown(): string {
+        return "KeyboardController";
     }
     get_macros(): IMacroAction[][] {
         throw new Error("Method not implemented.");

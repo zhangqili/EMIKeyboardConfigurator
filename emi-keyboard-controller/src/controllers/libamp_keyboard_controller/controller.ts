@@ -1065,5 +1065,7 @@ export class LibampKeyboardController extends KeyboardController {
         this.macros = macros;
     }
 
-
+    get_readme_markdown(): string {
+        return "LibampKeyboardController";
+    }
 }
