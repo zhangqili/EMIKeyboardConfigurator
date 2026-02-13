@@ -737,6 +737,25 @@ export interface Srgb {
     blue: number;
 }
 
+export enum ScriptLevel {
+    Disable = 0x00,
+    BytecodeOnly = 0x01,
+    AdditionalCodeWithBytecode = 0x02,
+    CodeOnly = 0x03
+}
+export interface IFeature {
+    advanced_key_flag : boolean;
+    rgb_flag : boolean;
+    script_level : ScriptLevel;
+}
+
+export class Feature implements IFeature {
+    script_level: ScriptLevel = ScriptLevel.Disable;
+    advanced_key_flag: boolean = false;
+    rgb_flag: boolean = false;
+}
+
+
 // Interface for RGBConfig
 export interface IRGBConfig {
     mode: RGBMode;
@@ -834,6 +853,7 @@ export interface IKeyboardController{
     get_macros(): IMacroAction[][];
     set_macros(macros : IMacroAction[][]) : void;
     get_readme_markdown() : string;
+    get_feature() : IFeature;
 }
 
 export interface IMacroAction {
@@ -873,10 +893,10 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         return "KeyboardController";
     }
     get_macros(): IMacroAction[][] {
-        throw new Error("Method not implemented.");
+        return [new Array<MacroAction>];
     }
     set_macros(macros: IMacroAction[][]): void {
-        throw new Error("Method not implemented.");
+        
     }
     // 添加事件监听
     addEventListener(type: string, listener: EventListener): void {
@@ -981,7 +1001,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.rgb_base_config = new RGBBaseConfig();
         this.rgb_configs = new Array<IRGBConfig>();
         this.keymap = new Array<Array<number>>();
-        this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
+        this.dynamic_keys = new Array<IDynamicKey>();
         this.config_index = 0;
     }
     fetch_config() : void
@@ -1040,6 +1060,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     get_firmware_version(): FirmwareVersion {
         return { major: 0, minor: 0, patch: 0, info: "" }
+    }
+    get_feature(): IFeature {
+        return new Feature();
     }
 }
 

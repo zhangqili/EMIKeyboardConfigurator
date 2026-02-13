@@ -1,4 +1,4 @@
-import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction} from "./../../interface";
+import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction, IFeature, Feature, ScriptLevel} from "./../../interface";
 import semver, { SemVer } from 'semver';
 
 enum PacketCode {
@@ -20,6 +20,7 @@ enum PacketData {
   PacketDataReport = 0x08,
   PacketDataVersion = 0x09,
   PacketDataMacro = 0x0A,
+  PacketDataFeature = 0x0B,
 };
 interface PendingRequest {
     resolve: (data: Uint8Array) => void;
@@ -85,6 +86,11 @@ export class LibampKeyboardController extends KeyboardController {
     private requestQueue = new RequestQueue();
     firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
     macros : MacroAction[][] = [new Array<MacroAction>];
+    feature : Feature = {
+        script_level: ScriptLevel.Disable,
+        advanced_key_flag: true,
+        rgb_flag: false,
+    };
 
     constructor() {
         super();
@@ -219,6 +225,9 @@ export class LibampKeyboardController extends KeyboardController {
                 break;
             case PacketData.PacketDataVersion:
                 this.packet_process_version(buf);
+                break;
+            case PacketData.PacketDataFeature:
+                this.packet_process_feature(buf);
                 break;
             default:
                 break;
@@ -514,6 +523,17 @@ export class LibampKeyboardController extends KeyboardController {
             this.firmware_version.info = decoder.decode(infoBytes).replace(/\0/g, ''); // 去除可能的空字符
             
             console.log("Firmware Version:", this.firmware_version);
+        }
+    }
+    packet_process_feature(buf: Uint8Array) {
+        let dataView = new DataView(buf.buffer);
+        if (buf[0] == PacketCode.PacketCodeGet) {
+            // Offset 2: info_length (uint16) - 暂时没用到，直接读后面的
+            let features = dataView.getUint32(2, true);
+            let rgb_features = dataView.getUint32(6, true);
+            let layer_count = dataView.getUint8(10);
+            let profile_count = dataView.getUint8(10);
+            
         }
     }
     packet_process_macro(buf: Uint8Array) {
@@ -964,16 +984,12 @@ export class LibampKeyboardController extends KeyboardController {
     }
 
     async read_macros() {
-        // 假设最大宏数量和最大Action数
-        const MAX_MACRO_NUM = 4; 
-        const MACRO_MAX_ACTIONS = 128; 
         const ACTIONS_PER_PACKET = 4;
         const ACTION_SIZE = 12;
 
-        this.macros = []; // 重置本地缓存
 
-        for (let m = 0; m < MAX_MACRO_NUM; m++) {
-            this.macros[m] = [];
+        for (let m = 0; m < this.macros.length; m++) {
+            const MACRO_MAX_ACTIONS = this.macros[0].length; 
             const page_count = Math.ceil(MACRO_MAX_ACTIONS / ACTIONS_PER_PACKET);
 
             for (let page = 0; page < page_count; page++) {
@@ -1067,5 +1083,9 @@ export class LibampKeyboardController extends KeyboardController {
 
     get_readme_markdown(): string {
         return "LibampKeyboardController";
+    }
+    
+    get_feature(): IFeature {
+        return this.feature;
     }
 }

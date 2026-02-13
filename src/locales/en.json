@@ -161,6 +161,13 @@
     "dynamic_key_mutex_panel_always" : "Always trigger when fully pressed",
     "dynamic_key_mutex_panel_key_bindings" : "Key bindings",
 
+    "macro_panel_tick" : "Tick",
+    "macro_panel_is_virtual" : "Virtual",
+    "macro_panel_key_id" : "Key ID",
+    "macro_panel_event" : "Event",
+    "macro_panel_binding" : "Binding",
+    "macro_panel_action" : "Actions",
+
     "key" : "Key",
     "apply" : "Apply",
     "apply_to_all" : "Apply to all",

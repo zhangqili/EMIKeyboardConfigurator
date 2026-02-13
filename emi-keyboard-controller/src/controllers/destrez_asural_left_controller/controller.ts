@@ -11,6 +11,7 @@ export class DestrezAsuralLeftController extends LibampKeyboardController {
         super();
         this.device = undefined;
         this.reset_to_default();
+        this.feature.rgb_flag = true;
     }
 
     async detect(): Promise<HIDDevice[]> {

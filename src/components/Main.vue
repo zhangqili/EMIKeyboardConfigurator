@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, getCurrentInstance, triggerRef } from "vue";
+import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, getCurrentInstance, triggerRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
-import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar} from 'naive-ui'
+import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar } from 'naive-ui'
 import * as apis from '../apis/api'
 import * as ekc from "emi-keyboard-controller";
 import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup } from "../apis/utils";
@@ -53,7 +53,8 @@ const {
   keyboardKeys,
   themeName,
   firmwareVersion,
-  readmeMarkdown
+  readmeMarkdown,
+  firmwareFeature
 } = storeToRefs(store);
 
 const message = useMessage();
@@ -80,7 +81,7 @@ const versionStatusType = computed(() => {
   return 'success';
 });
 
-const isReady = computed(()=>{
+const isReady = computed(() => {
   return isConnected.value && (versionStatusType.value == 'warning' || versionStatusType.value == 'success');
 })
 const displayVersion = computed(() => {
@@ -116,15 +117,15 @@ onMounted(() => {
         // 确保此时关闭动画
 
         if (isAutoHeight.value) {
-           splitSize.value = (h + splitBuffer) + 'px'; 
-        } 
+          splitSize.value = (h + splitBuffer) + 'px';
+        }
         else {
-           const currentSplitPx = parseFloat(splitSize.value);
-           // 如果当前高度已经足够容纳内容（接近自动高度），则吸附过去
-           if (currentSplitPx > h + 10) {
-             isAutoHeight.value = true;
-             splitSize.value = (h + splitBuffer) + 'px';
-           }
+          const currentSplitPx = parseFloat(splitSize.value);
+          // 如果当前高度已经足够容纳内容（接近自动高度），则吸附过去
+          if (currentSplitPx > h + 10) {
+            isAutoHeight.value = true;
+            splitSize.value = (h + splitBuffer) + 'px';
+          }
         }
       }
     });
@@ -167,18 +168,18 @@ function toggleCollapse() {// 1. 开启动画
   enableTransition.value = true;
 
   nextTick(() => {
-      const currentPx = parseFloat(splitSize.value);
-      if (currentPx < 50) {
-        resetToAuto();
-      } else {
-        isAutoHeight.value = false;
-        splitSize.value = "0px";
-      }
+    const currentPx = parseFloat(splitSize.value);
+    if (currentPx < 50) {
+      resetToAuto();
+    } else {
+      isAutoHeight.value = false;
+      splitSize.value = "0px";
+    }
 
-      // 2. 动画结束后关闭开关
-      setTimeout(() => {
-        enableTransition.value = false;
-      }, 350);
+    // 2. 动画结束后关闭开关
+    setTimeout(() => {
+      enableTransition.value = false;
+    }, 350);
   });
 }
 
@@ -284,10 +285,14 @@ async function getController() {
   dynamicKeys.value = await apis.get_dynamic_keys();
   firmwareVersion.value = await apis.get_firmware_version();
   macros.value = await apis.get_macros();
+
+  console.log("d",macros.value);
   selectedProfileIndex.value = await apis.get_config_file_index();
   const cnofig_file_num = await apis.get_config_file_num();
   layout_labels.value = await apis.get_layout_labels();
   readmeMarkdown.value = await apis.get_readme_markdown();
+  firmwareFeature.value = await apis.get_feature();
+  console.log(firmwareFeature.value);
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
     files.value.push({
@@ -307,7 +312,9 @@ async function updateData() {
   console.log("update data");
   selectedProfileIndex.value = await apis.get_config_file_index();
   console.log(await apis.get_macros());
+  console.log("d",macros.value);
   macros.value = await apis.get_macros();
+  console.log("a",macros.value);
   triggerRef(advancedKeys);
   triggerRef(keymap);
   triggerRef(rgbBaseConfig);
@@ -574,41 +581,85 @@ const language_options = computed(() => [
     value: 'zh'
   }
 ]);
+const menuOptions = computed(() => {
+  const opts: MenuOption[] = [];
 
-const menuOptions = computed(() => [
-  {
-    label: t('main_tabs_performance'),
-    key: 'PerformancePanel',
-  },
-  {
+  // 获取特性标志，如果尚未初始化（未连接），可以使用默认值或全部显示/隐藏
+  // 这里假设 feature 初始化为 new Feature()，即默认全 false
+  const f = firmwareFeature.value || new ekc.Feature();
+
+  // 1. 性能面板 (通常对应 Advanced Key / Rapid Trigger 功能)
+  if (f.advanced_key_flag) {
+    opts.push({
+      label: t('main_tabs_performance'),
+      key: 'PerformancePanel',
+    });
+  }
+
+  // 2. 按键映射 (核心功能，通常总是显示)
+  opts.push({
     label: t('main_tabs_keymap'),
     key: 'KeymapPanel',
-  },
-  {
-    label: t('main_tabs_rgb'),
-    key: 'RGBPanel',
-  },
-  {
-    label: t('main_tabs_dynamic_key'),
-    key: 'DynamicKeyPanel',
-  },
-  {
-    label: t('main_tabs_macro'),
-    key: 'MacroPanel',
-  },
-  {
-    label: t('main_tabs_script'),
-    key: 'ScriptPanel',
-  },
-  {
-    label: t('main_tabs_debug'),
-    key: 'DebugPanel',
-  },
-  {
+  });
+
+  // 3. RGB 面板
+  if (rgbBaseConfig.value || rgbConfigs.value.length > 0) {
+    opts.push({
+      label: t('main_tabs_rgb'),
+      key: 'RGBPanel',
+    });
+  }
+
+  // 4. 动态键面板
+  if (dynamicKeys.value.length != 0) {
+    opts.push({
+      label: t('main_tabs_dynamic_key'),
+      key: 'DynamicKeyPanel',
+    });
+  }
+
+  // 5. 宏面板
+  if (macros.value.length != 0 && macros.value[0]?.length > 0) {
+    opts.push({
+      label: t('main_tabs_macro'),
+      key: 'MacroPanel',
+    });
+  }
+
+  // 6. 脚本面板 
+  if (f.script_level != ekc.ScriptLevel.Disable) {
+    opts.push({
+      label: t('main_tabs_script'),
+      key: 'ScriptPanel',
+    });
+  }
+
+  // 7. 调试面板 (通常总是显示，或者仅在开发模式显示)
+  if (f.advanced_key_flag) {
+    opts.push({
+      label: t('main_tabs_debug'),
+      key: 'DebugPanel',
+    });
+  }
+
+  // 8. 关于面板 (总是显示)
+  opts.push({
     label: t('main_tabs_about'),
     key: 'AboutPanel',
-  },
-]);
+  });
+
+  return opts;
+});
+
+watch(menuOptions, (newOpts) => {
+  // 检查当前选中的 tab 是否还在新的菜单列表中
+  const currentTabExists = newOpts.some(opt => opt.key === tabSelection.value);
+
+  if (!currentTabExists && newOpts.length > 0) {
+    // 如果当前 Tab 不存在了，默认跳到列表里的第一项
+    tabSelection.value = newOpts[0].key as string;
+  }
+});
 
 function handleAdvancedMenu(key: string | number) {
   if (isConnected.value) {
@@ -798,85 +849,73 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
         </n-grid>
       </n-layout-header>
       <div class="container">
-        <n-layout-sider :width="200" style="flex-shrink: 0;">
-          <div style="margin-left: 8px; margin-top: 8px; margin-right: 8px;">
-            <n-select style="font-size: 14px;" size="large" :placeholder="t('main_tabs_profile')"
-              @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex"
-              v-model:options="files"></n-select>
-          </div>
-          <n-space vertical>
-            <n-grid :cols="3" style=" margin-top: 8px; margin-bottom: -8px;" justify="space-between">
+        <n-layout-sider :width="200" style="flex-shrink: 0;"
+          content-style="display: flex; flex-direction: column; height: 100%;">
+
+          <div style="flex-shrink: 0; padding: 8px;">
+            <n-select style="font-size: 14px; margin-bottom: 8px;" size="large" :placeholder="t('main_tabs_profile')"
+              @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex" v-model:options="files" />
+
+            <n-grid :cols="3" :x-gap="4" style="">
               <n-gi>
-                <div style="margin-left: 8px;margin-right: 4px;">
-                  <n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button>
-                </div>
+                <n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button>
               </n-gi>
               <n-gi>
-                <div style="margin-left: 4px;margin-right: 4px;">
-                  <n-button size="tiny" block @click="importConfig">{{ t('import') }}</n-button>
-                </div>
+                <n-button size="tiny" block @click="importConfig">{{ t('import') }}</n-button>
               </n-gi>
               <n-gi>
-                <div style="margin-left: 4px;margin-right: 8px;">
-                  <n-button size="tiny" block @click="exportConfig">{{ t('export') }}</n-button>
-                </div>
+                <n-button size="tiny" block @click="exportConfig">{{ t('export') }}</n-button>
               </n-gi>
             </n-grid>
-            <n-menu :indent="20" :options="menuOptions" v-model:value="tabSelection">
-            </n-menu>
-          </n-space>
+          </div>
+
+          <n-scrollbar style="flex: 1; min-height: 0; margin-top: -6px;" content-style="padding-bottom: 12px">
+            <div class="menu-list-container">
+              <TransitionGroup name="menu-list">
+                <n-button v-for="option in menuOptions" :key="option.key" class="menu-item-btn"
+                  :type="tabSelection === option.key ? 'primary' : 'default'" :secondary="tabSelection === option.key"
+                  :quaternary="tabSelection !== option.key" @click="tabSelection = option.key as string" size="large">
+                  <div class="menu-label">
+                    {{ option.label }}
+                  </div>
+                </n-button>
+              </TransitionGroup>
+            </div>
+          </n-scrollbar>
         </n-layout-sider>
         <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
 
-        <n-split 
-            direction="vertical" 
-            v-model:size="splitSize" 
-            :min="0" 
-            :max="maxSplitSize"
-            
-            :pane1-style="{ 
-              overflow: 'hidden',
-              /* 【核心修改】只有在 !isDragging 且 enableTransition 为 true 时才应用动画 */
-              transition: (!isDragging && enableTransition) ? 'flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none' 
-            }"
-            
-            @drag-start="handleDragStart" 
-            @drag-end="handleDragEnd" 
-            :resize-trigger-size="36"
-          >
-<template #1>
-      <div style="height: 100%; position: relative; display: flex; flex-direction: column;">
-        
-        <div v-show="isDragging" style="position: absolute; inset: 0; z-index: 100; cursor: ns-resize;"></div>
+          <n-split direction="vertical" v-model:size="splitSize" :min="0" :max="maxSplitSize" :pane1-style="{
+            overflow: 'hidden',
+            /* 【核心修改】只有在 !isDragging 且 enableTransition 为 true 时才应用动画 */
+            transition: (!isDragging && enableTransition) ? 'flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+          }" @drag-start="handleDragStart" @drag-end="handleDragEnd" :resize-trigger-size="36">
+            <template #1>
+              <div style="height: 100%; position: relative; display: flex; flex-direction: column;">
 
-        <n-scrollbar 
-          style="flex: 1; min-height: 0;"
-          :style="{ pointerEvents: isDragging ? 'none' : 'auto' }"
-          trigger="hover"
-        >
-          <div ref="keyboardContentRef" style="padding-bottom: 4px;">
-             <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
-          </div>
-        </n-scrollbar>
+                <div v-show="isDragging" style="position: absolute; inset: 0; z-index: 100; cursor: ns-resize;"></div>
 
-      </div>
-    </template>
+                <n-scrollbar style="flex: 1; min-height: 0;" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }"
+                  trigger="hover">
+                  <div ref="keyboardContentRef" style="padding-bottom: 4px;">
+                    <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels"
+                      @select="applyToSelectedKey" />
+                  </div>
+                </n-scrollbar>
 
-    <template #resize-trigger><div 
-        class="custom-resize-trigger" 
-        :class="{ 'dark': themeName === 'dark' }" 
-      ><div 
-                  style="position: absolute; inset: 0; z-index: 0; pointer-events: auto;"
-                  @dblclick="resetToAuto"
-                ></div>
+              </div>
+            </template>
+
+            <template #resize-trigger>
+              <div class="custom-resize-trigger" :class="{ 'dark': themeName === 'dark' }">
+                <div style="position: absolute; inset: 0; z-index: 0; pointer-events: auto;" @dblclick="resetToAuto">
+                </div>
 
                 <div class="trigger-left" style="z-index: 1;">
                   <Transition name="fade">
-                    <div 
-                      v-if="tabSelection == 'PerformancePanel'||tabSelection == 'KeymapPanel'||tabSelection == 'RGBPanel'"
-                      @mousedown.stop
-                      style="pointer-events: auto;"
-                    >
+                    <div
+                      v-if="tabSelection == 'PerformancePanel' || tabSelection == 'KeymapPanel' || tabSelection == 'RGBPanel'"
+                      @mousedown.stop style="pointer-events: auto;">
                       <n-button size="tiny" secondary @click="applyToAllKeys">
                         {{ t('apply_to_all') }}
                       </n-button>
@@ -886,37 +925,32 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
 
                 <div class="trigger-center" style="z-index: 1;">
                   <Transition name="fade" mode="out-in">
-                    <div 
-                      v-if="tabSelection == 'KeymapPanel' || tabSelection == 'DynamicKeyPanel'"
-                      key="layer-selector" 
+                    <div v-if="tabSelection == 'KeymapPanel' || tabSelection == 'DynamicKeyPanel'" key="layer-selector"
                       @mousedown.stop
-                      style="display: flex; align-items: center; justify-content: center; pointer-events: auto;"
-                    >
-                      <n-radio-group 
-                        v-if="layers && layers.length > 0"
-                        :key="selectedDevice + '-' + layers.length"
-                        v-model:value="currentLayerIndex" 
-                        size="tiny" 
-                      > 
-                        <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />
+                      style="display: flex; align-items: center; justify-content: center; pointer-events: auto;">
+                      <n-radio-group v-if="layers && layers.length > 0" :key="selectedDevice + '-' + layers.length"
+                        v-model:value="currentLayerIndex" size="tiny">
+                        <n-radio-button v-for="item in layers" :key="item.value" :value="item.value"
+                          :label="item.label" />
                       </n-radio-group>
                     </div>
-                    
-                    <div 
-                      v-else 
-                      key="handle-bar"
-                      style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;"
-                    >
-                       <div class="handle-bar" :class="{ 'active': isAutoHeight }"></div>
+
+                    <div v-else key="handle-bar"
+                      style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                      <div class="handle-bar" :class="{ 'active': isAutoHeight }"></div>
                     </div>
                   </Transition>
                 </div>
 
                 <div class="trigger-right" style="z-index: 1;">
-                   <div class="toggle-btn" @click="toggleCollapse" @mousedown.stop style="pointer-events: auto;">
+                  <div class="toggle-btn" @click="toggleCollapse" @mousedown.stop style="pointer-events: auto;">
                     <n-icon size="16">
-                      <svg v-if="parseFloat(splitSize) < 50" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z"/></svg>
-                      <svg v-else viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6l-6 6l1.41 1.41z"/></svg>
+                      <svg v-if="parseFloat(splitSize) < 50" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z" />
+                      </svg>
+                      <svg v-else viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6l-6 6l1.41 1.41z" />
+                      </svg>
                     </n-icon>
                   </div>
                 </div>
@@ -1027,22 +1061,25 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   display: flex;
   align-items: center;
 }
+
 .custom-resize-trigger {
   /* 增加高度以容纳按钮，32px-36px 是比较舒适的工具栏高度 */
-  height: 36px; 
+  height: 36px;
   background-color: #f5f5f5;
   border-top: 1px solid #eee;
   border-bottom: 1px solid #eee;
-  
+
   /* Flex 布局 */
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 左右两端对齐，中间居中 */
-  padding: 0 12px; /* 左右内边距 */
-  
+  justify-content: space-between;
+  /* 左右两端对齐，中间居中 */
+  padding: 0 12px;
+  /* 左右内边距 */
+
   position: relative;
   transition: background-color 0.2s;
-  
+
   /* 鼠标样式：在空白处是调整大小，在按钮上是默认 */
   cursor: ns-resize;
 }
@@ -1052,12 +1089,15 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   background-color: #26262a;
   border-color: #333;
 }
+
 .trigger-left {
   flex: 1;
   display: flex;
   justify-content: flex-start;
-  align-items: center; /* 确保垂直居中 */
-  pointer-events: none; /* 【关键】让空白区域允许鼠标穿透，从而触发拖拽 */
+  align-items: center;
+  /* 确保垂直居中 */
+  pointer-events: none;
+  /* 【关键】让空白区域允许鼠标穿透，从而触发拖拽 */
 }
 
 .trigger-center {
@@ -1072,8 +1112,10 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   flex: 1;
   display: flex;
   justify-content: flex-end;
-  align-items: center; /* 确保垂直居中 */
-  pointer-events: none; /* 【关键】让空白区域允许鼠标穿透 */
+  align-items: center;
+  /* 确保垂直居中 */
+  pointer-events: none;
+  /* 【关键】让空白区域允许鼠标穿透 */
 }
 
 .handle-bar {
@@ -1096,7 +1138,76 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   padding: 4px;
   border-radius: 4px;
 }
+
 .toggle-btn:hover {
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 自定义菜单容器 */
+.menu-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* 菜单项之间的间距 */
+  padding: 6px 8px;
+  /* 整体内边距，根据需要调整 */
+  position: relative;
+  /* 为 absolute 定位提供基准 */
+}
+
+/* 按钮样式微调 */
+.menu-item-btn {
+  width: 100%;
+  justify-content: flex-start;
+  /* 让文字左对齐 */
+  text-align: left;
+  transition: all 0.5s;
+  /* 自身样式的过渡 */
+}
+
+.menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- 核心动画代码 --- */
+.menu-list-move {
+  /* 明确指定只过渡 transform，且时长稍微慢一点，显得更平滑 */
+  /* 使用 !important 并不是必须的，但在这种混合了 n-button 自身样式的场景下，
+     它可以确保列表排序动画的优先级最高，防止被按钮自带的 transition: all 覆盖 */
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  
+  /* 确保移动中的元素盖过正在淡出的元素 */
+  z-index: 1; 
+  position: relative;
+}
+
+/* 2. 进场/离场 动画状态 */
+.menu-list-enter-active,
+.menu-list-leave-active {
+  /* 分离属性：透明度用于淡入淡出，transform 用于位置调整 */
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* 3. 进场初始态 & 离场结束态 */
+.menu-list-enter-from,
+.menu-list-leave-to {
+  opacity: 0;
+  /* 可选：让进场/离场带一点位移感，效果更生动 */
+  /* transform: translateX(-10px); */ 
+}
+
+/* 4. 离场元素定位 (关键修复) */
+.menu-list-leave-active {
+  position: absolute;
+  
+  /* 【核心修复】锁定位置和宽度 */
+  /* 对应父容器 padding: 6px 8px; 中的 8px */
+  left: 8px; 
+  right: 8px; /* 使用 left+right 组合比 width: calc() 更抗打，能自动适应 padding */
+  
+  /* 确保它不遮挡正在交互的元素 */
+  z-index: 0; 
 }
 </style>

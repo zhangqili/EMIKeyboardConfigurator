@@ -64,6 +64,7 @@ const labels = computed(() => {
       break;
     }
     case "KeymapPanel":
+    case "MacroPanel":
     case "DynamicKeyPanel": {
       labels = labels.map(() => "");
       if (keymap.value != undefined) {

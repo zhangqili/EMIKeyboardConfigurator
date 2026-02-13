@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode, ScriptLevel, MacroAction } from '../../interface';
 
 import layout from './keyboard_layout.json?raw';
 
@@ -11,6 +11,9 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
         super();
         this.device = undefined;
         this.reset_to_default();
+
+        this.feature.rgb_flag = true;
+        this.feature.script_level = ScriptLevel.CodeOnly;
     }
 
     async detect(): Promise<HIDDevice[]> {
@@ -83,6 +86,7 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
                 Array(71).fill(Keycode.KeyTransparent)
         ];
         this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
+        this.macros = Array(4).fill(Array(128).fill(new MacroAction()));
     }
     get_layout_labels(): string[][] {
         return [["Spilt backspace"],["Spilt spacebar"]];

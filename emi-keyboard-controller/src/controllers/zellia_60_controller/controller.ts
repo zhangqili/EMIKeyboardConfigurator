@@ -11,7 +11,6 @@ export class Zellia60Controller extends LibampKeyboardController {
         super();
         this.device = undefined;
         this.reset_to_default();
-
     }
 
     async detect(): Promise<HIDDevice[]> {

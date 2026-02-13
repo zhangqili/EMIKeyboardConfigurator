@@ -1,4 +1,4 @@
-import { AdvancedKey, DynamicKey, DynamicKeyType, FirmwareVersion, IAdvancedKey, IDynamicKey, IMacroAction, IRGBBaseConfig, IRGBConfig, RGBBaseConfig, RGBConfig } from 'emi-keyboard-controller'
+import { AdvancedKey, DynamicKey, DynamicKeyType, Feature, FirmwareVersion, IAdvancedKey, IDynamicKey, IMacroAction, IRGBBaseConfig, IRGBConfig, RGBBaseConfig, RGBConfig } from 'emi-keyboard-controller'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { DebugDataItem, KeyConfig } from '../apis/utils';
@@ -97,6 +97,7 @@ export const useMainStore = defineStore('main',
         });
         const firmwareVersion = ref<FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
         const readmeMarkdown = ref("");
+        const firmwareFeature = ref(new Feature());
 
         //keymap: [][] as number[][],
         //hasChanged: true,
@@ -130,7 +131,8 @@ export const useMainStore = defineStore('main',
             debugValueChartOption,
             debugSwitch,
             firmwareVersion,
-            readmeMarkdown
+            readmeMarkdown,
+            firmwareFeature
         }
     }
   );
