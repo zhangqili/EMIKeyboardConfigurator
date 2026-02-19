@@ -1,7 +1,7 @@
 import { AdvancedKey, DynamicKey, DynamicKeyType, Feature, FirmwareVersion, IAdvancedKey, IDynamicKey, IMacroAction, IRGBBaseConfig, IRGBConfig, RGBBaseConfig, RGBConfig } from 'emi-keyboard-controller'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { DebugDataItem, KeyConfig } from '../apis/utils';
+import { DebugDataItem, demoScriptSource, KeyConfig } from '../apis/utils';
 import { LineSeriesOption, SeriesOption } from 'echarts';
 
 export const useMainStore = defineStore('main', 
@@ -25,6 +25,8 @@ export const useMainStore = defineStore('main',
         const keymap = ref<number[][]>([new Array<number>]);
         const dynamicKeys = ref<IDynamicKey[]>([]);
         const macros = ref<IMacroAction[][]>([new Array<IMacroAction>]);
+        const scriptSource = ref<string>(demoScriptSource);
+        const scriptBytecode = ref<Uint8Array>(new Uint8Array());
 
         const keyBinding = ref<number>(0);
         const currentLayerIndex = ref<number>(0);
@@ -119,6 +121,8 @@ export const useMainStore = defineStore('main',
             keymap,
             dynamicKeys,
             macros,
+            scriptSource,
+            scriptBytecode,
 
             tabSelection,
             profiles,

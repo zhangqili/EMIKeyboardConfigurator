@@ -824,3 +824,35 @@ export class KeyConfig extends kle.Key {
   declare id: number;
   declare layoutGroup: LayoutGroup | undefined;
 }
+
+
+export const demoScriptSource = 
+`// Code outside functions runs once at startup/boot.
+// Register keys to monitor (e.g., Key ID 2)
+keyboard.watch(2);
+
+// Runs per tick.
+function loop() 
+{
+
+}
+
+// Triggered when a watched key is pressed.
+function onKeyDown(key)
+{
+    // Check if Key 2 was pressed
+    if (key.id == 2)
+    {
+        // Tap 'A' for 100ms
+        keyboard.tap(0x0004, 100);
+        // Print something
+        console.log("Key " + key.id + " pressed");
+    }
+}
+
+// Triggered when a watched key is released.
+function onKeyUp(key)
+{
+
+}
+`;

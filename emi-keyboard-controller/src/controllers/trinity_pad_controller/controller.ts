@@ -5,13 +5,13 @@ const layout = `[["0","1","2","3"]]`;
 
 export class TrinityPadController  extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 4;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();
         this.reset_to_default();
         this.feature.rgb_flag = true;
-        this.feature.script_level = ScriptLevel.CodeOnly;
+        this.feature.script_level = ScriptLevel.JIT;
     }
 
     async detect(): Promise<HIDDevice[]> {

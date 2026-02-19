@@ -5,6 +5,9 @@ enum PacketCode {
   PacketCodeAction = 0x00,
   PacketCodeSet = 0x01,
   PacketCodeGet = 0x02,
+  PacketCodeLog = 0x03,
+  PacketCodeLargeSet = 0x04,
+  PacketCodeLargeGet = 0x05,
   PacketCodeUser = 0xFF,
 };
 
@@ -21,7 +24,15 @@ enum PacketData {
   PacketDataVersion = 0x09,
   PacketDataMacro = 0x0A,
   PacketDataFeature = 0x0B,
+  PacketDataScriptSource = 0x0C,
+  PacketDataScriptBytecode = 0x0D,
 };
+enum LargeDataCmd {
+    Start = 0x00,
+    Payload = 0x01,
+    End = 0x02,
+    Abort = 0x03,
+}
 interface PendingRequest {
     resolve: (data: Uint8Array) => void;
     reject: (reason: any) => void;
@@ -79,8 +90,8 @@ export class RequestQueue {
 export class LibampKeyboardController extends KeyboardController {
     device: HIDDevice | undefined;
     private handleInputReport: (event: HIDInputReportEvent) => void;
-    config_file_number:number = 4;
-    config_file_index:number = 0;
+    profile_number:number = 4;
+    profile_index:number = 0;
     private pendingRequest: PendingRequest | null = null;
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
     private requestQueue = new RequestQueue();
@@ -91,6 +102,8 @@ export class LibampKeyboardController extends KeyboardController {
         advanced_key_flag: true,
         rgb_flag: false,
     };
+    script_source : string = "";
+    script_bytecode : Uint8Array = new Uint8Array();
 
     constructor() {
         super();
@@ -161,6 +174,14 @@ export class LibampKeyboardController extends KeyboardController {
         });
     }
 
+    private handleDeviceDisconnect = (event: HIDConnectionEvent) => {
+        if (this.device && event.device === this.device) {
+            console.warn("[Controller] Device physically disconnected.");
+            this.disconnect();
+            this.dispatchEvent(new Event('deviceDisconnected'));
+        }
+    };
+
     write(buf: Uint8Array): number {
         this.device?.sendReport(0, buf as BufferSource);
         return (buf.byteLength + 1);
@@ -171,23 +192,180 @@ export class LibampKeyboardController extends KeyboardController {
     read_timeout(buf: Uint8Array, timeout: number): number {
         throw new Error('Method not implemented.');
     }
+    
     async connect(device: HIDDevice): Promise<boolean> {
         this.device = device;
         var result : boolean = false;
         if (! this.device.opened) {
             result = (await this.device.open()) == undefined
+        } else {
+            result = true;
         }
         if (result) {
             this.request_config();
             this.device.addEventListener("inputreport", this.handleInputReport);
+            navigator.hid.addEventListener('disconnect', this.handleDeviceDisconnect);
         }
         return result;
     }
     disconnect(): void {
-        this.device?.close();
-        this.device?.removeEventListener("inputreport",this.handleInputReport);
+        if (this.device) {
+            // 移除所有的事件监听
+            this.device.removeEventListener("inputreport", this.handleInputReport);
+            navigator.hid.removeEventListener('disconnect', this.handleDeviceDisconnect);
+            
+            // 关闭设备
+            if (this.device.opened) {
+                this.device.close();
+            }
+            this.device = undefined;
+        }
+
+        // 【新增】如果有正在等待底层返回的请求，立刻拒绝掉，防止队列卡死
+        if (this.pendingRequest) {
+            window.clearTimeout(this.pendingRequest.timer);
+            this.pendingRequest.reject(new Error("Device disconnected abruptly"));
+            this.pendingRequest = null;
+        }
     }
 
+    private async _set_large_data(dataType: number, data: Uint8Array): Promise<void> {
+        const totalSize = data.length;
+        // 头部大小: Code(1)+Type(1)+Sub(1)+Header(8) = 11 (Start包)
+        // 载荷包头部: Code(1)+Type(1)+Sub(1)+Offset(4)+Len(2) = 9
+        const headerSize = 9;
+        const maxPayloadSize = 63 - headerSize;
+
+        // 1. 发送 START 包
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeLargeSet;
+        this.txBuffer[1] = dataType;
+        this.txBuffer[2] = LargeDataCmd.Start;
+        
+        const view = new DataView(this.txBuffer.buffer);
+        view.setUint32(3, totalSize, true); // Total Size (Little Endian)
+        // view.setUint32(7, checksum, true); // 如果需要校验和
+
+        console.log(`[LargeData] Upload Start. Type: ${dataType}, Size: ${totalSize}`);
+        
+        // 这里的 timeout 稍微设长一点，因为下位机可能要擦除 Flash
+        await this.enqueueCommand(this.txBuffer, 2000); 
+
+        // 2. 循环发送 PAYLOAD
+        let offset = 0;
+        while (offset < totalSize) {
+            const chunkSize = Math.min(maxPayloadSize, totalSize - offset);
+            const chunk = data.subarray(offset, offset + chunkSize);
+
+            this.txBuffer.fill(0);
+            this.txBuffer[0] = PacketCode.PacketCodeLargeSet;
+            this.txBuffer[1] = dataType;
+            this.txBuffer[2] = LargeDataCmd.Payload;
+
+            const payloadView = new DataView(this.txBuffer.buffer);
+            payloadView.setUint32(3, offset, true); // Offset
+            payloadView.setUint16(7, chunkSize, true); // Length
+            this.txBuffer.set(chunk, 9); // Data starts at index 9
+
+            // 发送数据包
+            await this.enqueueCommand(this.txBuffer, 500); // 500ms 超时足够了
+            
+            offset += chunkSize;
+        }
+
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeLargeSet;
+        this.txBuffer[1] = dataType;
+        this.txBuffer[2] = LargeDataCmd.End;
+        await this.enqueueCommand(this.txBuffer);
+       
+        console.log(`[LargeData] Upload Complete.`);
+    }
+
+    // ==========================================
+    // 通用长数据接收逻辑 (Device -> Host)
+    // ==========================================
+    private async _get_large_data(dataType: number): Promise<Uint8Array | null> {
+        // 1. 发送 START 包查询大小
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeLargeGet;
+        this.txBuffer[1] = dataType;
+        this.txBuffer[2] = LargeDataCmd.Start;
+        
+        // 发送查询并等待回复
+        // 注意：enqueueCommand 需要返回下位机的回复包
+        const startResp = await this.enqueueCommand(this.txBuffer, 1000);
+        
+        // 解析回复头部
+        // PacketLargeDataHeader: Code(0), Type(1), Sub(2), TotalSize(3-6), Checksum(7-10)
+        const view = new DataView(startResp.buffer);
+        const totalSize = view.getUint32(3, true);
+        const checksum = view.getUint32(7, true);
+
+        console.log(`[LargeData] Download Start. Type: ${dataType}, Size: ${totalSize}`);
+
+        if (totalSize === 0) {
+            return new Uint8Array(0);
+        }
+
+        const resultBuffer = new Uint8Array(totalSize);
+        let receivedSize = 0;
+        const maxPayloadSize = 63 - 9; // 55 bytes
+
+        // 2. 循环拉取 PAYLOAD
+        while (receivedSize < totalSize) {
+            const chunkSize = Math.min(maxPayloadSize, totalSize - receivedSize);
+
+            this.txBuffer.fill(0);
+            this.txBuffer[0] = PacketCode.PacketCodeLargeGet;
+            this.txBuffer[1] = dataType;
+            this.txBuffer[2] = LargeDataCmd.Payload;
+            
+            const reqView = new DataView(this.txBuffer.buffer);
+            reqView.setUint32(3, receivedSize, true); // Offset
+            reqView.setUint16(7, chunkSize, true);    // Length to read
+
+            // 发送请求并等待数据
+            const payloadResp = await this.enqueueCommand(this.txBuffer, 500);
+
+            // 解析回复载荷
+            // PacketLargeDataPayload: Code(0), Type(1), Sub(2), Offset(3-6), Length(7-8), Data(9...)
+            const respView = new DataView(payloadResp.buffer);
+            const actualLen = respView.getUint16(7, true);
+            const actualOffset = respView.getUint32(3, true);
+
+            // 安全检查
+            if (actualOffset !== receivedSize) {
+                console.error(`[LargeData] Offset mismatch! Expected ${receivedSize}, got ${actualOffset}`);
+                throw new Error("Large Data Transfer Offset Mismatch");
+            }
+            
+            if (actualLen === 0) {
+                 console.warn("[LargeData] Received 0 bytes, aborting.");
+                 break;
+            }
+
+            // 拷贝数据
+            const dataChunk = payloadResp.subarray(9, 9 + actualLen);
+            resultBuffer.set(dataChunk, receivedSize);
+
+            receivedSize += actualLen;
+        }
+
+        // 3. 校验 (可选)
+        // const calcChecksum = crc32(resultBuffer);
+        // if (calcChecksum !== checksum) { ... }
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeLargeGet;
+        this.txBuffer[1] = dataType;
+        this.txBuffer[2] = LargeDataCmd.End;
+        await this.enqueueCommand(this.txBuffer, 200);
+
+        console.log(`[LargeData] Download Complete.`);
+        return resultBuffer;
+    }
+
+    
     packet_process(buf: Uint8Array)
     {
         switch (buf[0])
@@ -479,7 +657,7 @@ export class LibampKeyboardController extends KeyboardController {
     {
       let dataView = new DataView(buf.buffer);  
       if (buf[0] == PacketCode.PacketCodeGet) {
-        this.config_file_index = buf[2];
+        this.profile_index = buf[2];
       }
     }
 
@@ -615,11 +793,17 @@ export class LibampKeyboardController extends KeyboardController {
 
     async save_config() {
         console.log("Starting save config...");
-        await this.send_advanced_keys();
-        await this.send_rgb_configs();
-        await this.send_keymap();
-        await this.send_dynamic_keys();
-        await this.send_macros();
+        await this.write_advanced_keys();
+        await this.write_rgb_configs();
+        await this.write_keymap();
+        await this.write_dynamic_keys();
+        await this.write_macros();
+        if (this.feature.script_level != ScriptLevel.Disable) {
+            await this.write_script_source(this.script_source);
+            if (this.feature.script_level == ScriptLevel.AOT) {
+                await this.write_script_bytecode(this.script_bytecode);
+            }
+        }
     }
     flash_config(): void {
         let send_buf = new Uint8Array(63);
@@ -651,13 +835,27 @@ export class LibampKeyboardController extends KeyboardController {
     }
     async request_config(): Promise<void> {
       try {
-          await this.read_advanced_keys();
-          await this.read_rgb_configs();
-          await this.read_keymap();
-          await this.read_dynamic_keys();
-          await this.read_macros();
-          await this.read_config_index();
           await this.request_version();
+          if (this.feature.advanced_key_flag) {
+            await this.read_advanced_keys();
+          }
+          if (this.feature.rgb_flag) {
+            await this.read_rgb_configs();
+          }
+          await this.read_keymap();
+          if (this.dynamic_keys.length > 0) {
+            await this.read_dynamic_keys();
+          }
+          if (this.macros.length > 0) {
+            await this.read_macros();
+          }
+          if (this.profile_number > 1) {
+            await this.read_config_index();
+          }
+          if (this.feature.script_level != ScriptLevel.Disable) {
+            await this.read_script_source();
+            await this.read_script_bytecode();
+          }
           console.log("Config loaded successfully");
           this.dispatchEvent(new Event('updateData'));
       } catch (e) {
@@ -721,7 +919,7 @@ export class LibampKeyboardController extends KeyboardController {
         this.write(send_buf);
     }
     
-    async send_advanced_keys() {
+    async write_advanced_keys() {
         this.txBuffer.fill(0);
         this.txBuffer[0] = PacketCode.PacketCodeSet;
         this.txBuffer[1] = PacketData.PacketDataAdvancedKey;
@@ -756,7 +954,7 @@ export class LibampKeyboardController extends KeyboardController {
         }
     }
 
-    async send_rgb_configs() {
+    async write_rgb_configs() {
         this.txBuffer[0] = PacketCode.PacketCodeSet;
         this.txBuffer[1] = PacketData.PacketDataRgbBaseConfig;
         
@@ -832,7 +1030,7 @@ export class LibampKeyboardController extends KeyboardController {
             }
         }
     }
-    async send_keymap() {const layer_page_length = 16;
+    async write_keymap() {const layer_page_length = 16;
         this.txBuffer.fill(0);
         this.txBuffer[0] = PacketCode.PacketCodeSet;
         this.txBuffer[1] = PacketData.PacketDataKeymap;
@@ -885,7 +1083,7 @@ export class LibampKeyboardController extends KeyboardController {
         }
     }
 
-    async send_dynamic_keys() {
+    async write_dynamic_keys() {
         this.txBuffer.fill(0);
         this.txBuffer[0] = PacketCode.PacketCodeSet;
         this.txBuffer[1] = PacketData.PacketDataDynamicKey;
@@ -932,7 +1130,7 @@ export class LibampKeyboardController extends KeyboardController {
         }
     }
 
-    async send_macros() {
+    async write_macros() {
         const MAX_ACTIONS_PER_PACKET = 4; // (64-5)/12 = 4.9
         const ACTION_SIZE = 12;
 
@@ -1026,16 +1224,16 @@ export class LibampKeyboardController extends KeyboardController {
     }
 
     get_config_file_num(): number {
-        return this.config_file_number;
+        return this.profile_number;
     }
 
     get_config_file_index(): number {
-        return this.config_file_index;
+        return this.profile_index;
     }
 
     async set_config_file_index(index: number) {
-        this.config_file_number = index;
-        const commandId = this.config_file_number + 0x10;
+        this.profile_number = index;
+        const commandId = this.profile_number + 0x10;
 
         // 1. 准备指令
         this.txBuffer.fill(0);
@@ -1087,5 +1285,69 @@ export class LibampKeyboardController extends KeyboardController {
     
     get_feature(): IFeature {
         return this.feature;
+    }
+
+    async write_script_source(sourceCode: string): Promise<void> {
+        // 将字符串编码为 UTF-8 字节流
+        const encoder = new TextEncoder();
+        const data = encoder.encode(sourceCode);
+        console.log("script source",data);
+        
+        // 假设 PacketData.PacketDataScriptSource = 0x0C
+        await this._set_large_data(0x0C, data); 
+    }
+
+    // 获取脚本源码
+    async read_script_source() {
+        // 假设 PacketData.PacketDataScriptSource = 0x0C
+        const data = await this._get_large_data(0x0C);
+        console.log(data);
+        
+        if (!data)
+        {
+            this.script_source = "";
+            return;
+        };
+        let validLength = data.length;
+        for (let i = 0; i < data.length; i++) {
+            if (data[i] === 0x00 || data[i] === 0xFF) {
+                validLength = i;
+                break;
+            }
+        }
+        
+        // 只提取有效长度的字节进行解码
+        const validData = data.subarray(0, validLength);
+        
+        const decoder = new TextDecoder();
+        this.script_source = decoder.decode(validData);
+        console.log(this.script_source);
+    }
+    // 设置脚本字节码
+    async write_script_bytecode(bytecode: Uint8Array): Promise<void> {
+        await this._set_large_data(0x0D, bytecode);
+    }
+
+    // 获取脚本字节码
+    async read_script_bytecode(){
+        var bytecode = await this._get_large_data(0x0D);
+        console.log(bytecode);
+        if (bytecode)
+        {
+            this.script_bytecode = bytecode;
+        }
+    }
+
+    get_script_source(): string {
+        return this.script_source;
+    }
+    set_script_source(script: string): void {
+        this.script_source = script;
+    }
+    get_script_bytecode(): Uint8Array {
+        return this.script_bytecode;
+    }
+    set_script_bytecode(bytecode: Uint8Array): void {
+        this.script_bytecode = bytecode;
     }
 }

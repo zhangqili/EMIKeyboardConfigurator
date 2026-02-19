@@ -199,3 +199,19 @@ export async function get_readme_markdown(){
 export async function get_feature(){
     return CONTROLLER.get_feature();
 }
+
+export async function get_script_source(){
+    return CONTROLLER.get_script_source();
+}
+
+export async function set_script_source(source : string){
+    return CONTROLLER.set_script_source(source);
+}
+
+export async function get_script_bytecode(){
+    return CONTROLLER.get_script_bytecode();
+}
+
+export async function set_script_bytecode(bytecode : Uint8Array ){
+    return CONTROLLER.set_script_bytecode(bytecode);
+}

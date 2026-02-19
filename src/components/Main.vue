@@ -50,6 +50,8 @@ const {
   debugValueChartOption,
   dynamicKeys,
   macros,
+  scriptSource,
+  scriptBytecode,
   keyboardKeys,
   themeName,
   firmwareVersion,
@@ -106,7 +108,7 @@ const keyboardContentRef = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 const footerRef = ref<HTMLElement | null>(null);
 const splitBuffer = 4;
-onMounted(() => {
+onMounted(async () => {
   if (keyboardContentRef.value) {
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -131,6 +133,16 @@ onMounted(() => {
     });
     resizeObserver.observe(keyboardContentRef.value.firstElementChild as Element || keyboardContentRef.value);
   }
+  const result: string[] = await apis.get_devices();
+  devices.value = result.map((label: string, index: number) => ({
+    label,
+    value: index,
+  }));
+
+  apis.addEventListener('deviceDisconnected', async () => {
+    isConnected.value = false;
+    message.error(t('device_disconnected') || '设备已断开连接');
+  });
 });
 
 onBeforeUnmount(() => {
@@ -253,7 +265,7 @@ async function connectCommand() {
   }
 }
 
-async function saveCommand() {
+async function applyCommand() {
   if (isConnected.value) {
     await apis.set_advanced_keys(advancedKeys.value);
     await apis.set_rgb_base_config(rgbBaseConfig.value);
@@ -263,6 +275,8 @@ async function saveCommand() {
     await apis.set_rgb_configs(rgbConfigs.value);
     await apis.set_dynamic_keys(dynamicKeys.value);
     await apis.set_macros(macros.value);
+    await apis.set_script_source(scriptSource.value);
+    await apis.set_script_bytecode(scriptBytecode.value);
     var result = await apis.save_config();
     console.debug(result);
 
@@ -311,10 +325,8 @@ async function updateData() {
   }
   console.log("update data");
   selectedProfileIndex.value = await apis.get_config_file_index();
-  console.log(await apis.get_macros());
-  console.log("d",macros.value);
   macros.value = await apis.get_macros();
-  console.log("a",macros.value);
+  scriptSource.value = await apis.get_script_source();
   triggerRef(advancedKeys);
   triggerRef(keymap);
   triggerRef(rgbBaseConfig);
@@ -603,7 +615,7 @@ const menuOptions = computed(() => {
   });
 
   // 3. RGB 面板
-  if (rgbBaseConfig.value || rgbConfigs.value.length > 0) {
+  if ((rgbBaseConfig.value || rgbConfigs.value.length > 0)&&f.rgb_flag == true) {
     opts.push({
       label: t('main_tabs_rgb'),
       key: 'RGBPanel',
@@ -827,7 +839,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
               <n-button @click="connectCommand" :disabled="selectedDevice == undefined">{{ isConnected ?
                 t('toolbar_disconnect') :
                 t('toolbar_connect') }}</n-button>
-              <n-button @click="saveCommand" :disabled="!isReady">{{ t('toolbar_apply') }}</n-button>
+              <n-button @click="applyCommand" :disabled="!isReady">{{ t('toolbar_apply') }}</n-button>
               <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
                 :options="advanced_options">
                 <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>
@@ -853,7 +865,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
           content-style="display: flex; flex-direction: column; height: 100%;">
 
           <div style="flex-shrink: 0; padding: 8px;">
-            <n-select style="font-size: 14px; margin-bottom: 8px;" size="large" :placeholder="t('main_tabs_profile')"
+            <n-select v-if="files.length != 0" style="font-size: 14px; margin-bottom: 8px;" size="large" :placeholder="t('main_tabs_profile')"
               @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex" v-model:options="files" />
 
             <n-grid :cols="3" :x-gap="4" style="">

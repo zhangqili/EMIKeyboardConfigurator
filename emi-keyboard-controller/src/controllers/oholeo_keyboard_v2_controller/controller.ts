@@ -5,7 +5,7 @@ import layout from './keyboard_layout.json?raw';
 
 export class OholeoKeyboardV2Controller extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 69;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();
@@ -13,7 +13,7 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
         this.reset_to_default();
 
         this.feature.rgb_flag = true;
-        this.feature.script_level = ScriptLevel.CodeOnly;
+        this.feature.script_level = ScriptLevel.JIT;
     }
 
     async detect(): Promise<HIDDevice[]> {

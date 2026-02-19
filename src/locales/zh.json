@@ -163,6 +163,12 @@
     "macro_panel_binding" : "绑定",
     "macro_panel_action" : "动作",
 
+    "script_panel_title" : "脚本",
+    "demo_js" : "例程",
+    "download_js" : "下载",
+    "upload_js" : "上传",
+    "demo_js_cource" : "",
+
     "debug_panel_enable_debug" : "启用调试",
     "debug_panel_state" : "状态",
     "debug_panel_raw" : "原始值",

@@ -1,51 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue'
-import { NSpace } from 'naive-ui'
+import { NSpace, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "../apis/utils";
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, demoScriptSource } from "../apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 
 const { t } = useI18n();
 
+const message = useMessage();
 const store = useMainStore();
-const { themeName } = storeToRefs(store); // 获取全局主题状态
-
-const code = ref(
-`// Code outside functions runs once at startup/boot.
-// Register keys to monitor (e.g., Key ID 2)
-keyboard.watch(2);
-
-// Runs per tick.
-function loop() 
-{
-
-}
-
-// Triggered when a watched key is pressed.
-function onKeyDown(key)
-{
-    // Check if Key 2 was pressed
-    if (key.id == 2)
-    {
-        // Tap 'A' for 100ms
-        keyboard.tap(0x0004, 100);
-        // Print something
-        console.log("Key " + key.id + " pressed");
-    }
-}
-
-// Triggered when a watched key is released.
-function onKeyUp(key)
-{
-
-}
-`)
+const { themeName, scriptSource } = storeToRefs(store); // 获取全局主题状态
 
 const editorRef = shallowRef()
 
@@ -80,12 +50,73 @@ const editorOptions = {
 
 }
 
+const downloadScript = async () => {
+  try {
+    // 唤起原生保存文件对话框
+    const handle = await (window as any).showSaveFilePicker({
+      suggestedName: 'keyboard_script.js',
+      types: [
+        {
+          description: 'JavaScript Files',
+          accept: { 'text/javascript': ['.js'] },
+        },
+      ],
+    });
+
+    // 创建可写流并写入数据
+    const writable = await handle.createWritable();
+    await writable.write(scriptSource.value);
+    await writable.close();
+
+  } catch (error: any) {
+    // 用户主动取消保存时会抛出 AbortError，不需要提示错误
+    if (error.name !== 'AbortError') {
+      console.error("Save failed:", error);
+    }
+  }
+};
+
+const uploadScript = async () => {
+  // 检查浏览器是否支持该 API
+  if (!('showOpenFilePicker' in window)) {
+    return;
+  }
+
+  try {
+    // 唤起原生打开文件对话框
+    const [fileHandle] = await (window as any).showOpenFilePicker({
+      types: [
+        {
+          description: 'JavaScript & Text Files',
+          accept: { 
+            'text/javascript': ['.js'],
+            'text/plain': ['.txt']
+          },
+        },
+      ],
+      multiple: false, // 仅允许单选
+    });
+
+    // 获取 File 对象并读取文本
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    
+    // 赋值给编辑器
+    scriptSource.value = text;
+  } catch (error: any) {
+    // 用户主动取消选择时会抛出 AbortError，不需要提示错误
+    if (error.name !== 'AbortError') {
+      console.error("Load failed:", error);
+    }
+  }
+};
+
 </script>
 <template>
   <n-card style="height: 100%; flex:400px;" :title="t('script_panel_title')" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
     <div class="editor-container">
       <VueMonacoEditor
-        v-model:value="code"
+        v-model:value="scriptSource"
         :theme="editorTheme"
         language="javascript"
         :options="editorOptions"
@@ -93,6 +124,15 @@ const editorOptions = {
       />
     </div>
     <template #header-extra>
+      <n-button style="margin-left: 12px;" @click="scriptSource = demoScriptSource">
+          {{ t('demo_js') }}
+      </n-button>
+      <n-button style="margin-left: 12px;" @click="downloadScript">
+          {{ t('download_js') }}
+      </n-button>
+      <n-button style="margin-left: 12px;" @click="uploadScript">
+          {{ t('upload_js') }}
+      </n-button>
     </template>
   </n-card>
   

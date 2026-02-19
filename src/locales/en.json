@@ -168,6 +168,11 @@
     "macro_panel_binding" : "Binding",
     "macro_panel_action" : "Actions",
 
+    "script_panel_title" : "Script",
+    "demo_js" : "Demo",
+    "download_js" : "Download",
+    "upload_js" : "Upload",
+
     "key" : "Key",
     "apply" : "Apply",
     "apply_to_all" : "Apply to all",

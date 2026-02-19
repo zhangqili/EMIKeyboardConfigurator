@@ -6,7 +6,7 @@ import markdown from './README.md?raw';
 
 export class OholeoKeyboardController extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 64;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();

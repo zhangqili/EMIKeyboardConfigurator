@@ -5,7 +5,7 @@ const layout = `[[{"w":1.75},"BackSpace","+\\n=","_\\n-","(\\n0",")\\n9","*\\n8"
 
 export class DestrezAsuralLeftController extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 34;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();

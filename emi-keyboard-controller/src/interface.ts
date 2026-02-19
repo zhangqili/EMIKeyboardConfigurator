@@ -739,10 +739,10 @@ export interface Srgb {
 
 export enum ScriptLevel {
     Disable = 0x00,
-    BytecodeOnly = 0x01,
-    AdditionalCodeWithBytecode = 0x02,
-    CodeOnly = 0x03
+    AOT = 0x01,
+    JIT = 0x02,
 }
+
 export interface IFeature {
     advanced_key_flag : boolean;
     rgb_flag : boolean;
@@ -852,6 +852,10 @@ export interface IKeyboardController{
     get_firmware_version() : FirmwareVersion;
     get_macros(): IMacroAction[][];
     set_macros(macros : IMacroAction[][]) : void;
+    get_script_source(): string;
+    set_script_source(script : string) : void;
+    get_script_bytecode(): Uint8Array;
+    set_script_bytecode(bytecode : Uint8Array) : void;
     get_readme_markdown() : string;
     get_feature() : IFeature;
 }
@@ -888,6 +892,18 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.device = undefined;
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    get_script_source(): string {
+        return "";
+    }
+    set_script_source(script: string): void {
+        
+    }
+    get_script_bytecode(): Uint8Array {
+        return new Uint8Array();
+    }
+    set_script_bytecode(bytecode: Uint8Array): void {
+        
     }
     get_readme_markdown(): string {
         return "KeyboardController";
