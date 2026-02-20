@@ -1,5 +1,7 @@
 import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
+import createMqjsCompiler from '../wasm/mqjs_wasm';
+import wasmBinaryUrl from '../wasm/mqjs_wasm.wasm?url';
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键
@@ -856,3 +858,57 @@ function onKeyUp(key)
 
 }
 `;
+
+export async function mqjsCompile(source: string, args: string = ""): Promise<Uint8Array> {
+    return new Promise(async (resolve, reject) => {
+        let errorOutput = "";
+
+        try {
+          const wasmModule = await createMqjsCompiler({
+                // 3. 【关键修复】拦截 .wasm 请求，强制返回正确的 URL
+                locateFile: (path: string) => {
+                    if (path.endsWith('.wasm')) {
+                        return wasmBinaryUrl;
+                    }
+                    return path;
+                },
+                print: (text: string) => console.log("[mqjs compiler]", text),
+                printErr: (text: string) => {
+                    console.error("[mqjs error]", text);
+                    errorOutput += text + "\n";
+                }
+            });
+
+            // 2. 解析传入的字符串参数 (按空格拆分为数组，并过滤掉多余的空格)
+            // 例如: "--no-column -m32" -> ["--no-column", "-m32"]
+            const userArgs = args.trim().split(/\s+/).filter(Boolean);
+
+            // 3. 定义虚拟文件系统的输入输出路径
+            const inPath = '/main.js';
+            const outPath = '/out.bin';
+
+            // 4. 将源码写入虚拟文件系统
+            wasmModule.FS.writeFile(inPath, source);
+
+            // 5. 组装最终的命令行参数数组
+            // 对应命令: mqjs [args] -o /out.bin /main.js
+            const cliArgs = [...userArgs, '-o', outPath, inPath];
+
+            try {
+                // 6. 运行原版 mqjs.c 的 main 函数
+                wasmModule.callMain(cliArgs);
+            } catch (e) {
+                // 原版 mqjs 遇到错误会抛出 exit(1) 异常
+                reject(new Error(errorOutput || "编译中断"));
+                return;
+            }
+
+            // 7. 从虚拟文件系统中读取生成的二进制字节码
+            const bytecode = wasmModule.FS.readFile(outPath);
+            resolve(bytecode);
+
+        } catch (globalError) {
+            reject(globalError);
+        }
+    });
+}

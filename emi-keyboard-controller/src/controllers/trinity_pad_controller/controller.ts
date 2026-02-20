@@ -11,7 +11,7 @@ export class TrinityPadController  extends LibampKeyboardController {
         super();
         this.reset_to_default();
         this.feature.rgb_flag = true;
-        this.feature.script_level = ScriptLevel.JIT;
+        this.feature.script_level = ScriptLevel.AOT;
     }
 
     async detect(): Promise<HIDDevice[]> {

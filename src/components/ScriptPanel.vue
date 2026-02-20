@@ -7,7 +7,7 @@ import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, demoScriptSource } from "../apis/utils";
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, demoScriptSource, mqjsCompile } from "../apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 
@@ -15,7 +15,7 @@ const { t } = useI18n();
 
 const message = useMessage();
 const store = useMainStore();
-const { themeName, scriptSource } = storeToRefs(store); // 获取全局主题状态
+const { themeName, scriptSource, scriptBytecode } = storeToRefs(store); // 获取全局主题状态
 
 const editorRef = shallowRef()
 
@@ -111,6 +111,19 @@ const uploadScript = async () => {
   }
 };
 
+const compileAndUpload = async () => {
+  if (!scriptSource.value) {
+    return;
+  }
+
+  try {
+
+    console.log(scriptBytecode.value)
+  } catch (error: any) {
+    message.error(`编译失败: ${error.message}`);
+  }
+};
+
 </script>
 <template>
   <n-card style="height: 100%; flex:400px;" :title="t('script_panel_title')" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
@@ -131,6 +144,9 @@ const uploadScript = async () => {
           {{ t('download_js') }}
       </n-button>
       <n-button style="margin-left: 12px;" @click="uploadScript">
+          {{ t('upload_js') }}
+      </n-button>
+      <n-button style="margin-left: 12px;" @click="compileAndUpload">
           {{ t('upload_js') }}
       </n-button>
     </template>

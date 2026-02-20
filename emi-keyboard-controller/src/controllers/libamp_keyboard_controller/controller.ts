@@ -1280,7 +1280,7 @@ export class LibampKeyboardController extends KeyboardController {
     }
 
     get_readme_markdown(): string {
-        return "LibampKeyboardController";
+        return "Powered by libamp";
     }
     
     get_feature(): IFeature {

@@ -8,7 +8,7 @@ import * as ekc from "emi-keyboard-controller";
 import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup } from "../apis/utils";
 import { useMainStore } from "../store/main"
 import { storeToRefs } from "pinia";
-import { DebugDataItem } from '../apis/utils';
+import { DebugDataItem, mqjsCompile } from '../apis/utils';
 import type { MenuOption, NotificationType } from 'naive-ui'
 import { useNotification } from 'naive-ui'
 import DynamicKeyPanel from "./DynamicKeyPanel.vue";
@@ -138,11 +138,6 @@ onMounted(async () => {
     label,
     value: index,
   }));
-
-  apis.addEventListener('deviceDisconnected', async () => {
-    isConnected.value = false;
-    message.error(t('device_disconnected') || '设备已断开连接');
-  });
 });
 
 onBeforeUnmount(() => {
@@ -260,13 +255,16 @@ async function connectCommand() {
       else {
         message.error(t('main_device_not_found'));
       }
-      //await apis.receive_data_in_background();
     }
   }
 }
 
 async function applyCommand() {
   if (isConnected.value) {
+
+    const argsString = "--no-column -m32";
+    scriptBytecode.value = await mqjsCompile(scriptSource.value, argsString);
+    console.log(scriptBytecode.value);
     await apis.set_advanced_keys(advancedKeys.value);
     await apis.set_rgb_base_config(rgbBaseConfig.value);
     if (keymap.value != undefined) {
@@ -316,6 +314,11 @@ async function getController() {
   }
   currentLayerIndex.value = 0;
   triggerRef(keymap);
+
+  apis.addEventListener('deviceDisconnected', async () => {
+    isConnected.value = false;
+    message.error(t('device_disconnected') || '设备已断开连接');
+  });
   //console.debug(rgbConfigs.value);
 }
 
