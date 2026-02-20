@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const store = useMainStore();
-const {key_binding, current_layer} = storeToRefs(store);
+const {keyBinding, currentLayerIndex} = storeToRefs(store);
 
 const modifierKeys = ref<string[]>([]);
 const regularKey = ref<string>();

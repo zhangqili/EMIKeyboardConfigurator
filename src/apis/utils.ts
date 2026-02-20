@@ -1,5 +1,7 @@
 import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
+import createMqjsCompiler from '../wasm/mqjs_wasm';
+import wasmBinaryUrl from '../wasm/mqjs_wasm.wasm?url';
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键
@@ -385,10 +387,10 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardResetToDefault]: 'Reset to Default',
   [KeyboardKeycode.KeyboardRgbBrightnessUp]: 'Brightness Up',
   [KeyboardKeycode.KeyboardRgbBrightnessDown]: 'Brightness Down',
-  [KeyboardKeycode.KeyboardConfig0]: 'Config 0',
-  [KeyboardKeycode.KeyboardConfig1]: 'Config 1',
-  [KeyboardKeycode.KeyboardConfig2]: 'Config 2',
-  [KeyboardKeycode.KeyboardConfig3]: 'Config 3',
+  [KeyboardKeycode.KeyboardConfig0]: 'Profile 0',
+  [KeyboardKeycode.KeyboardConfig1]: 'Profile 1',
+  [KeyboardKeycode.KeyboardConfig2]: 'Profile 2',
+  [KeyboardKeycode.KeyboardConfig3]: 'Profile 3',
   [KeyboardKeycode.KeyboardConfigBase]: 'Config Base',
 };
 
@@ -779,7 +781,7 @@ export interface DebugDataItem {
     value: [number, number];
 }
 
-export function mapDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey[]) : void{
+export function mapDynamicKey(keymap : number[][],dynamicKeys : IDynamicKey[]) : void{
   keymap.forEach((layer,layer_index)=>{
     layer.forEach((item,item_index)=>{
       if ((item & 0xFF) == Keycode.DynamicKey) {
@@ -787,7 +789,7 @@ export function mapDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey[]) 
       }
     })
   })
-  dynamic_keys.forEach((item,index)=>{
+  dynamicKeys.forEach((item,index)=>{
     if (item.type != DynamicKeyType.DynamicKeyNone) {
       item.target_keys_location.forEach((location)=>{
         keymap[location.layer][location.id] = (Keycode.DynamicKey & 0xFF | ((index & 0xFF) << 8));
@@ -796,18 +798,18 @@ export function mapDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey[]) 
   });
 };
 
-export function mapBackDynamicKey(keymap : number[][],dynamic_keys : IDynamicKey[]) : void{
+export function mapBackDynamicKey(keymap : number[][],dynamicKeys : IDynamicKey[]) : void{
   keymap.forEach((layer,layer_index)=>{
     layer.forEach((item,item_index)=>{
       if ((item & 0xFF) == Keycode.DynamicKey) {
         const index = ((item >> 8) & 0xFF);
-        if (dynamic_keys[index].type == DynamicKeyType.DynamicKeyMutex) {
-          dynamic_keys[index].target_keys_location[(dynamic_keys[index] as DynamicKeyMutex).is_key2_primary ? 1 : 0]={layer: layer_index, id: item_index};
-          (dynamic_keys[index] as DynamicKeyMutex).is_key2_primary = !(dynamic_keys[index] as DynamicKeyMutex).is_key2_primary;
+        if (dynamicKeys[index].type == DynamicKeyType.DynamicKeyMutex) {
+          dynamicKeys[index].target_keys_location[(dynamicKeys[index] as DynamicKeyMutex).is_key2_primary ? 1 : 0]={layer: layer_index, id: item_index};
+          (dynamicKeys[index] as DynamicKeyMutex).is_key2_primary = !(dynamicKeys[index] as DynamicKeyMutex).is_key2_primary;
         }
         else
         {
-          dynamic_keys[index].target_keys_location[0]={layer: layer_index, id: item_index};
+          dynamicKeys[index].target_keys_location[0]={layer: layer_index, id: item_index};
         }
       }
     })
@@ -823,4 +825,82 @@ export class KeyConfig extends kle.Key {
   declare color: string;
   declare id: number;
   declare layoutGroup: LayoutGroup | undefined;
+}
+
+
+export const demoScriptSource = 
+`// Code outside functions runs once at startup/boot.
+// Register keys to monitor (e.g., Key ID 2)
+keyboard.watch(2);
+
+// Runs per tick.
+function loop() 
+{
+
+}
+
+// Triggered when a watched key is pressed.
+function onKeyDown(key)
+{
+    // Check if Key 2 was pressed
+    if (key.id == 2)
+    {
+        // Tap 'A' for 100ms
+        keyboard.tap(0x0004, 100);
+        // Print something
+        console.log("Key " + key.id + " pressed");
+    }
+}
+
+// Triggered when a watched key is released.
+function onKeyUp(key)
+{
+
+}
+`;
+export async function mqjsCompile(source: string, args: string = ""): Promise<{ 
+    bytecode: Uint8Array, 
+    stdout: string, 
+    stderr: string 
+}> {
+    return new Promise(async (resolve, reject) => {
+        let stdout = "";
+        let stderr = "";
+
+        try {
+            const wasmModule = await createMqjsCompiler({
+                locateFile: (path: string) => path.endsWith('.wasm') ? wasmBinaryUrl : path,
+                // 捕获标准输出
+                print: (text: string) => {
+                    stdout += text + "\n";
+                },
+                // 捕获错误输出
+                printErr: (text: string) => {
+                    stderr += text + "\n";
+                }
+            });
+
+            const userArgs = args.trim().split(/\s+/).filter(Boolean);
+            const inPath = '/main.js';
+            const outPath = '/out.bin';
+
+            wasmModule.FS.writeFile(inPath, source);
+            const cliArgs = [...userArgs, '-o', outPath, inPath];
+
+            try {
+                wasmModule.callMain(cliArgs);
+            } catch (e) {
+                // 编译失败时，依然返回已捕获的流
+                reject({ message: "编译中断", stdout, stderr });
+                return;
+            }
+
+            const bytecode = wasmModule.FS.readFile(outPath);
+            resolve({ bytecode, stdout, stderr });
+
+        } catch (globalError: any) {
+            // 确保 globalError 结构一致
+            reject({ message: globalError.message || "未知错误", stdout, stderr });
+        }
+    });
 }

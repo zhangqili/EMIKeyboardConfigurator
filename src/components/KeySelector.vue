@@ -72,7 +72,7 @@ function handleMIDINoteNumber(n: number | null) {
 }
 
 function handleMacroIndex(n: number | null) {
-    binding.value = (binding.value & 0xf0ff) | (macro_index.value & 0x0f) << 8 | Keycode.MacroCollection;
+    binding.value = (binding.value & 0xf0ff) | ((n as number) & 0x0f) << 8 | Keycode.MacroCollection;
 }
 
 function handleKeyboardConfigControl(value: string, option: SelectOption) {
@@ -507,10 +507,10 @@ const keyboard_config_value = ref((KeyboardConfig.KeyboardConfigDebug as number)
                     </n-thing>
                 </n-list-item>
                 <n-list-item>
-                    <n-thing :title="t('key_selector_keyboard_config')">
+                    <n-thing :title="t('key_selector_keyboard_profile')">
                         <n-button :type="(((binding & 0xFF) == Keycode.KeyboardOperation) && (((binding >> 8) & 0x3F) >= KeyboardKeycode.KeyboardConfigBase)) ? 'primary' : ''"
                             @click="{handleFullKeycodeClick((keyboard_config_control_value << 14) | (Number(keyboard_config_value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation); console.log(keyboard_config_control_value, keyboard_config_value)}">
-                            {{ "Keyboard Config" }}</n-button>
+                            {{ "Keyboard Profile" }}</n-button>
                         <n-flex>
                             <n-grid :cols="4">
                                 <n-gi :span="1">

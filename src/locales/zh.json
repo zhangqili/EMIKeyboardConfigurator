@@ -1,7 +1,7 @@
 {
     "toolbar_connect": "连接",
     "toolbar_disconnect": "断开连接",
-    "toolbar_save": "保存",
+    "toolbar_apply": "应用",
     "toolbar_advance": "高级",
     "toolbar_device_flash_configuration": "保存配置至Flash",
     "toolbar_device_reset": "重启设备",
@@ -9,11 +9,13 @@
     "toolbar_settings": "设置",
     "toolbar_select_device": "选择设备",
 
-    "main_tabs_config_file": "配置文件",
+    "main_tabs_profile": "配置文件",
     "main_tabs_performance": "性能",
     "main_tabs_keymap": "映射",
     "main_tabs_rgb": "灯效",
     "main_tabs_dynamic_key": "动态按键",
+    "main_tabs_macro": "宏",
+    "main_tabs_script": "脚本",
     "main_tabs_debug": "调试",
     "main_tabs_about": "关于",
     
@@ -153,6 +155,19 @@
     "dynamic_key_mutex_panel_priority_mode" : "优先级模式",
     "dynamic_key_mutex_panel_always" : "按压至底部死区时触发，忽略互斥条件",
     "dynamic_key_mutex_panel_key_bindings" : "按键绑定",
+
+    "macro_panel_tick" : "时刻",
+    "macro_panel_is_virtual" : "虚拟按键",
+    "macro_panel_key_id" : "按键编号",
+    "macro_panel_event" : "事件",
+    "macro_panel_binding" : "绑定",
+    "macro_panel_action" : "动作",
+
+    "script_panel_title" : "脚本",
+    "demo_js" : "例程",
+    "download_js" : "下载",
+    "upload_js" : "上传",
+    "demo_js_cource" : "",
 
     "debug_panel_enable_debug" : "启用调试",
     "debug_panel_state" : "状态",

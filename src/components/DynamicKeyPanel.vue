@@ -16,6 +16,7 @@ import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import PlainKey from "./PlainKey.vue";
 import { cloneDeep } from 'lodash';
+import KeyEditCell from './KeyEditCell.vue';
 
 const { t } = useI18n();
 
@@ -23,7 +24,7 @@ const message = useMessage();
 
 
 const store = useMainStore();
-const { key_binding, dynamic_keys, current_layer, keymap, advanced_keys, dynamic_key, dynamic_key_index} = storeToRefs(store);
+const { keyBinding, dynamicKeys, currentLayerIndex, keymap, advancedKeys, dynamicKey, dynamicKeyIndex} = storeToRefs(store);
 
 const dynamic_key_types =
   [
@@ -61,23 +62,23 @@ var edit_mode : boolean = false;
 var dynamic_key_cache : ekc.IDynamicKey;
 function deleteDynamicKey(index : number)
 {
-  dynamic_key.value.target_keys_location.forEach((item,index)=>{
+  dynamicKey.value.target_keys_location.forEach((item,index)=>{
     if (keymap.value != undefined) {
-      keymap.value[item.layer][item.id] = dynamic_key.value.bindings[index];
+      keymap.value[item.layer][item.id] = dynamicKey.value.bindings[index];
     }
   });
-  dynamic_keys.value[index] = new ekc.DynamicKey();
+  dynamicKeys.value[index] = new ekc.DynamicKey();
   if (keymap.value != undefined) {
-    mapDynamicKey(keymap.value, dynamic_keys.value);
+    mapDynamicKey(keymap.value, dynamicKeys.value);
   }
 }
 
 function editDynamicKey(index : number)
 {
   edit_mode = true;
-  dynamic_key_cache = cloneDeep(dynamic_keys.value[index]);
-  dynamic_key.value = dynamic_keys.value[index];
-  dynamic_key_index.value = index;
+  dynamic_key_cache = cloneDeep(dynamicKeys.value[index]);
+  dynamicKey.value = dynamicKeys.value[index];
+  dynamicKeyIndex.value = index;
 }
 
 function createColumns({
@@ -150,65 +151,65 @@ const columns = computed(()=> createColumns({
 function handleDynamicTypeSelection(key: string, item: MenuOption) 
 {
   edit_mode = false;
-  dynamic_key_index.value = dynamic_keys.value.findIndex(item => item.type == ekc.DynamicKeyType.DynamicKeyNone);
+  dynamicKeyIndex.value = dynamicKeys.value.findIndex(item => item.type == ekc.DynamicKeyType.DynamicKeyNone);
   switch (item.key) {
     case ekc.DynamicKeyType.DynamicKeyStroke:
-      dynamic_key.value = new ekc.DynamicKeyStroke4x4();
+      dynamicKey.value = new ekc.DynamicKeyStroke4x4();
       break;
     case ekc.DynamicKeyType.DynamicKeyModTap:
-      dynamic_key.value = new ekc.DynamicKeyModTap();
+      dynamicKey.value = new ekc.DynamicKeyModTap();
       break;
     case ekc.DynamicKeyType.DynamicKeyToggleKey:
-      dynamic_key.value = new ekc.DynamicKeyToggleKey();
+      dynamicKey.value = new ekc.DynamicKeyToggleKey();
       break;
     case ekc.DynamicKeyType.DynamicKeyMutex:
-      dynamic_key.value = new ekc.DynamicKeyMutex();
+      dynamicKey.value = new ekc.DynamicKeyMutex();
       break;
     default:
       break;
   }
-  dynamic_keys.value[dynamic_key_index.value] = dynamic_key.value;
+  dynamicKeys.value[dynamicKeyIndex.value] = dynamicKey.value;
 }
 
 function cancelDynamicKey() 
 {
   if (edit_mode) {
-    dynamic_keys.value[dynamic_key_index.value] = dynamic_key_cache;
+    dynamicKeys.value[dynamicKeyIndex.value] = dynamic_key_cache;
   }
   else
   {
-    deleteDynamicKey(dynamic_key_index.value);
+    deleteDynamicKey(dynamicKeyIndex.value);
   }
-  dynamic_key.value = new ekc.DynamicKey();
-  console.debug(dynamic_key);
+  dynamicKey.value = new ekc.DynamicKey();
+  console.debug(dynamicKey);
   if (keymap.value != undefined) {
-    mapDynamicKey(keymap.value, dynamic_keys.value);
+    mapDynamicKey(keymap.value, dynamicKeys.value);
   }
 }
 
 function confirmDynamicKey() 
 {
-  dynamic_keys.value[dynamic_key_index.value] = dynamic_key.value;
-  dynamic_key.value = new ekc.DynamicKey();
+  dynamicKeys.value[dynamicKeyIndex.value] = dynamicKey.value;
+  dynamicKey.value = new ekc.DynamicKey();
 }
 
 const data = computed<DynamicKeyRow[]>(
   ()=>{
     var dynamic_key_rows = new Array<DynamicKeyRow>();
-    dynamic_keys.value.forEach((item,index)=>
+    dynamicKeys.value.forEach((item,index)=>
     {
       switch (item.type) {
         case ekc.DynamicKeyType.DynamicKeyStroke:
-          dynamic_key_rows.push({index: index,type: 'Dynamic Key Stroke', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_dks'), bindings: item.bindings});
           break;
         case ekc.DynamicKeyType.DynamicKeyModTap:
-          dynamic_key_rows.push({index: index,type: 'Mod Tap', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_mt'), bindings: item.bindings});
           break;
         case ekc.DynamicKeyType.DynamicKeyToggleKey:
-          dynamic_key_rows.push({index: index,type: 'Toggle Key', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_tk'), bindings: item.bindings});
           break;
         case ekc.DynamicKeyType.DynamicKeyMutex:
-          dynamic_key_rows.push({index: index,type: 'Mutex', bindings: item.bindings});
+          dynamic_key_rows.push({index: index,type: t('dynamic_key_panel_mutex'), bindings: item.bindings});
           break;
         default:
           break;
@@ -219,26 +220,26 @@ const data = computed<DynamicKeyRow[]>(
 );
 
 const dynamic_key_mt = computed({
-  get: () => dynamic_key.value as ekc.DynamicKeyModTap,
-  set: (value) => dynamic_key.value = value
+  get: () => dynamicKey.value as ekc.DynamicKeyModTap,
+  set: (value) => dynamicKey.value = value
 });
 const dynamic_key_stroke = computed({
-  get: () => dynamic_key.value as ekc.DynamicKeyStroke4x4,
-  set: (value) => dynamic_key.value = value
+  get: () => dynamicKey.value as ekc.DynamicKeyStroke4x4,
+  set: (value) => dynamicKey.value = value
 });
 const dynamic_key_tk = computed({
-  get: () => dynamic_key.value as ekc.DynamicKeyToggleKey,
-  set: (value) => dynamic_key.value = value
+  get: () => dynamicKey.value as ekc.DynamicKeyToggleKey,
+  set: (value) => dynamicKey.value = value
 });
 const dynamic_key_mutex= computed({
-  get: () => dynamic_key.value as ekc.DynamicKeyMutex,
-  set: (value) => dynamic_key.value = value
+  get: () => dynamicKey.value as ekc.DynamicKeyMutex,
+  set: (value) => dynamicKey.value = value
 });
 
 </script>
 <template>
   <div style="flex: 1; display: flex; height: 100%;">
-    <div style="flex: 1; display: flex; height: 100%;" v-if="dynamic_key?.type == ekc.DynamicKeyType.DynamicKeyNone">
+    <div style="flex: 1; display: flex; height: 100%;" v-if="dynamicKey?.type == ekc.DynamicKeyType.DynamicKeyNone">
       <n-card style="height: 100%; flex:400px;" :title="t('dynamic_key_panel_main_title')">
         <n-menu
           :options="dynamic_key_types" @update:value="handleDynamicTypeSelection">
@@ -253,19 +254,12 @@ const dynamic_key_mutex= computed({
         </n-scrollbar>
       </n-card>
     </div>
-      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyStroke"
+      <n-card v-if="dynamicKey.type === ekc.DynamicKeyType.DynamicKeyStroke"
         style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_dks')">
           <div style="flex: 1; display: flex; height: 100%;">
             <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <DynamicKeyStrokePanel v-model:dynamic_key="dynamic_key_stroke"></DynamicKeyStrokePanel>
+            <DynamicKeyStrokePanel v-model:dynamicKey="dynamic_key_stroke"></DynamicKeyStrokePanel>
             </n-scrollbar>
-            <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <div>
-              <KeyTracker v-model:binding="key_binding"></KeyTracker>
-              <n-divider></n-divider>
-              <KeySelector v-model:binding="key_binding"></KeySelector>
-            </div>
-          </n-scrollbar>
           </div>
         <template #header-extra>
           <n-button style="margin-left: 12px;" @click="cancelDynamicKey">
@@ -276,19 +270,12 @@ const dynamic_key_mutex= computed({
           </n-button>
         </template>
       </n-card>
-      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyModTap"
+      <n-card v-if="dynamicKey.type === ekc.DynamicKeyType.DynamicKeyModTap"
         style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_mt')">
 
         <div style="flex: 1; display: flex; height: 100%;">
           <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <DynamicKeyModTapPanel v-model:dynamic_key="dynamic_key_mt"></DynamicKeyModTapPanel>
-          </n-scrollbar>
-          <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <div>
-              <KeyTracker v-model:binding="key_binding"></KeyTracker>
-              <n-divider></n-divider>
-              <KeySelector v-model:binding="key_binding"></KeySelector>
-            </div>
+            <DynamicKeyModTapPanel v-model:dynamicKey="dynamic_key_mt"></DynamicKeyModTapPanel>
           </n-scrollbar>
         </div>
         <template #header-extra>
@@ -300,19 +287,12 @@ const dynamic_key_mutex= computed({
           </n-button>
         </template>
       </n-card>
-      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyToggleKey"
+      <n-card v-if="dynamicKey.type === ekc.DynamicKeyType.DynamicKeyToggleKey"
         style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_tk')">
 
         <div style="flex: 1; display: flex; height: 100%;">
           <n-scrollbar style="flex: 1; overflow-y: auto;">
-            <DynamicKeyToggleKeyPanel v-model:dynamic_key="dynamic_key_tk"></DynamicKeyToggleKeyPanel>
-          </n-scrollbar>
-          <n-scrollbar style="flex: 1; overflow-y: auto;">
-          <div style="flex: 1; overflow-y: auto;">
-            <KeyTracker v-model:binding="key_binding"></KeyTracker>
-            <n-divider></n-divider>
-            <KeySelector v-model:binding="key_binding"></KeySelector>
-          </div>
+            <DynamicKeyToggleKeyPanel v-model:dynamicKey="dynamic_key_tk"></DynamicKeyToggleKeyPanel>
           </n-scrollbar>
         </div>
         <template #header-extra>
@@ -324,19 +304,11 @@ const dynamic_key_mutex= computed({
           </n-button>
         </template>
       </n-card>
-      <n-card v-if="dynamic_key.type === ekc.DynamicKeyType.DynamicKeyMutex"
+      <n-card v-if="dynamicKey.type === ekc.DynamicKeyType.DynamicKeyMutex"
       style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;" :title="t('dynamic_key_panel_mutex')">
       <div style="flex: 1; display: flex; height: 100%;">
         <n-scrollbar style="flex: 1; overflow-y: auto;">
-          <DynamicKeyMutexPanel v-model:dynamic_key="dynamic_key_mutex"></DynamicKeyMutexPanel>
-        </n-scrollbar>
-        <n-scrollbar style="flex: 1; overflow-y: auto;">
-          <div>
-            <KeyTracker v-model:binding="key_binding"></KeyTracker>
-            <n-divider></n-divider>
-            <KeySelector v-model:binding="key_binding"></KeySelector>
-          </div>
-
+          <DynamicKeyMutexPanel v-model:dynamicKey="dynamic_key_mutex"></DynamicKeyMutexPanel>
         </n-scrollbar>
         </div>
         <template #header-extra>

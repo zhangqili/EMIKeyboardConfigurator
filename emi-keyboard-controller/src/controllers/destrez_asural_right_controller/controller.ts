@@ -5,12 +5,13 @@ const layout = `[["^\\n6","%\\n5","$\\n4","#\\n3","@\\n2","!\\n1",{"w":1.75},"~\
 
 export class DestrezAsuralRightController extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 34;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();
         this.device = undefined;
         this.reset_to_default();
+        this.feature.rgb_flag = true;
     }
 
     async detect(): Promise<HIDDevice[]> {

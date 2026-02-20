@@ -5,12 +5,13 @@ const layout = `[["Esc",{"x":0.25},"F1","F2","F3","F4",{"x":0.25},"F5","F6","F7"
 
 export class Zellia80Controller extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 87;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();
         this.device = undefined;
         this.reset_to_default();
+        this.feature.rgb_flag = true;
 
     }
 

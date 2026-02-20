@@ -11,24 +11,25 @@ import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, key
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import PlainKey from "./PlainKey.vue";
+import KeyEditCell from './KeyEditCell.vue';
 
 const { t } = useI18n();
 
 const message = useMessage();
 
 const store = useMainStore();
-const { key_binding, current_layer, keymap, advanced_keys } = storeToRefs(store);
+const { keyBinding, currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
 
-const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamic_key",{ 
+const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamicKey",{ 
   default: {
-    key_binding: 0,
+    keyBinding: 0,
   }
 });
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_tk.value != undefined) {
-      dynamic_key_tk.value.bindings[0] = key_binding.value;
+      dynamic_key_tk.value.bindings[0] = keyBinding.value;
       triggerRef(dynamic_key_tk);
       }
   } else {
@@ -39,7 +40,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
     if (dynamic_key_tk.value != undefined) {
-      dynamic_key_tk.value.bindings[0] = key_binding.value;
+      dynamic_key_tk.value.bindings[0] = keyBinding.value;
       triggerRef(dynamic_key_tk);
       }
   } else {
@@ -57,10 +58,8 @@ function handleMouseEnter(event : MouseEvent, index: number) {
     </n-form-item>
     <n-form-item :label="t('dynamic_key_tk_panel_key_bindings')">
       <div class="keyboard no-select" style="height: 54px;">
-        <PlainKey :width="1" :height="1" :x=0
-      :labels="keyCodeToStringLabels(dynamic_key_tk.bindings[0])"
-      @mousedown="(event : MouseEvent) => handleMouseDown(event, 0)"
-      @mouseenter="(event : MouseEvent) => handleMouseEnter(event, 0)"></PlainKey>
+        <KeyEditCell v-for="(item,index) in dynamic_key_tk.bindings" :width="1" :height="1" :x=index
+          v-model:value="dynamic_key_tk.bindings[index]"></KeyEditCell>
       </div>
     </n-form-item>
   </n-form>

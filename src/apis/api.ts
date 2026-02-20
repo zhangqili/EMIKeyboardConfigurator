@@ -102,8 +102,8 @@ export async function get_layout_json(){
 export async function get_dynamic_keys(){
     return CONTROLLER.get_dynamic_keys() as ekc.IDynamicKey[];
 }
-export async function set_dynamic_keys(dynamic_keys: ekc.IDynamicKey[]){
-    return CONTROLLER.set_dynamic_keys(dynamic_keys);
+export async function set_dynamic_keys(dynamicKeys: ekc.IDynamicKey[]){
+    return CONTROLLER.set_dynamic_keys(dynamicKeys);
 }
 
 export async function reset_to_default(){
@@ -161,8 +161,12 @@ export async function get_config_file_num(){
     return CONTROLLER.get_config_file_num();
 }
 
-export async function set_config_file_num(index : number){
+export async function set_config_file_index(index : number){
     return CONTROLLER.set_config_file_index(index);
+}
+
+export async function get_config_file_index(){
+    return CONTROLLER.get_config_file_index();
 }
 
 export async function addEventListener(type: string, listener: EventListener){
@@ -174,4 +178,40 @@ export async function removeEventListener(type: string, listener: EventListener)
 
 export async function get_layout_labels(){
     return CONTROLLER.get_layout_labels();
+}
+
+export async function get_firmware_version(){
+    return CONTROLLER.get_firmware_version();
+}
+
+export async function get_macros(){
+    return CONTROLLER.get_macros();
+}
+
+export async function set_macros(macros : ekc.IMacroAction[][] ){
+    return CONTROLLER.set_macros(macros);
+}
+
+export async function get_readme_markdown(){
+    return CONTROLLER.get_readme_markdown();
+}
+
+export async function get_feature(){
+    return CONTROLLER.get_feature();
+}
+
+export async function get_script_source(){
+    return CONTROLLER.get_script_source();
+}
+
+export async function set_script_source(source : string){
+    return CONTROLLER.set_script_source(source);
+}
+
+export async function get_script_bytecode(){
+    return CONTROLLER.get_script_bytecode();
+}
+
+export async function set_script_bytecode(bytecode : Uint8Array ){
+    return CONTROLLER.set_script_bytecode(bytecode);
 }

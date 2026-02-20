@@ -37,12 +37,12 @@ use([
 provide(THEME_KEY, 'dark');
 const { t } = useI18n();
 const store = useMainStore();
-// 只取 switch 和 advanced_keys 用于显示
+// 只取 switch 和 advancedKeys 用于显示
 // 移除 chart_option 的响应式解构，我们只在初始化时用它
-const { advanced_keys, debug_switch } = storeToRefs(store);
+const { advancedKeys, debugSwitch } = storeToRefs(store);
 // 手动非响应式获取初始配置，避免 watch 开销
-const rawOptionInitial = shallowRef(store.debug_raw_chart_option);
-const valueOptionInitial = shallowRef(store.debug_value_chart_option);
+const rawOptionInitial = shallowRef(store.debugRawChartOption);
+const valueOptionInitial = shallowRef(store.debugValueChartOption);
 const isPolling = ref(false);
 
 async function startAdaptivePolling() {
@@ -55,7 +55,7 @@ async function startAdaptivePolling() {
             // 1. 发起全量请求
             // 因为我们在 controller 里用了 Promise.all，这行代码会等到 16 个包全部回来才继续
             await apis.request_debug();
-            triggerRef(advanced_keys);
+            triggerRef(advancedKeys);
             
             // 2. 数据全部到位，只更新一次 UI
             // 使用 requestAnimationFrame 避免在不可见时浪费资源
@@ -101,10 +101,10 @@ const localValueSeries: { [key: number]: DebugDataItem[] } = {};
 
 // 初始化本地数据缓存
 const initLocalData = () => {
-    store.debug_raw_chart_option.series.forEach((s: any) => {
+    store.debugRawChartOption.series.forEach((s: any) => {
         if (!localRawSeries[s.id]) localRawSeries[s.id] = [];
     });
-    store.debug_value_chart_option.series.forEach((s: any) => {
+    store.debugValueChartOption.series.forEach((s: any) => {
         if (!localValueSeries[s.id]) localValueSeries[s.id] = [];
     });
 }
@@ -115,7 +115,7 @@ const rawChartRef = ref<any>(null);
 const valueChartRef = ref<any>(null);
 
 watch(
-    () => store.debug_raw_chart_option.series.length, 
+    () => store.debugRawChartOption.series.length, 
     () => {
         // 1. 为新加入的 ID 初始化本地数组缓存
         initLocalData();
@@ -123,10 +123,10 @@ watch(
         // 2. 必须告诉 ECharts 有新的 Series 定义加入了 (比如颜色、名字等配置)
         // 注意：这里只同步配置，数据会在定时器中通过 setOption 更新
         rawChartRef.value?.chart?.setOption({
-            series: store.debug_raw_chart_option.series
+            series: store.debugRawChartOption.series
         });
         valueChartRef.value?.chart?.setOption({
-            series: store.debug_value_chart_option.series
+            series: store.debugValueChartOption.series
         });
     }
 );
@@ -134,14 +134,14 @@ watch(
 function updateCharts() {
     const nowStr = Date.now().toString();
     const timestamp = Date.now();
-    const keys = advanced_keys.value;
+    const keys = advancedKeys.value;
 
     // 辅助函数：只处理数据，不触碰 Vue 响应式对象
     const processData = (localBuffer: any, keyName: 'raw' | 'value') => {
         const newSeriesData: any[] = [];
         
         // 遍历所有需要显示的系列
-        store.debug_raw_chart_option.series.forEach((seriesConfig: any, index: number) => {
+        store.debugRawChartOption.series.forEach((seriesConfig: any, index: number) => {
             const keyId = seriesConfig.id as number;
             
             // 确保该 key 存在
@@ -183,17 +183,17 @@ onBeforeUnmount(() => {
 });
 
 function clearCommand() {
-    store.debug_raw_chart_option.series.length = 0;
-    store.debug_value_chart_option.series.length = 0;
+    store.debugRawChartOption.series.length = 0;
+    store.debugValueChartOption.series.length = 0;
 
     for (const key in localRawSeries) delete localRawSeries[key];
     for (const key in localValueSeries) delete localValueSeries[key];
     
     if (rawChartRef.value?.chart) {
-        rawChartRef.value.chart.setOption(store.debug_raw_chart_option, true);
+        rawChartRef.value.chart.setOption(store.debugRawChartOption, true);
     }
     if (valueChartRef.value?.chart) {
-        valueChartRef.value.chart.setOption(store.debug_value_chart_option, true);
+        valueChartRef.value.chart.setOption(store.debugValueChartOption, true);
     }
 }
 
@@ -205,7 +205,7 @@ function clearCommand() {
         <n-flex vertical>
             <n-flex>
                 <div>{{ t('debug_panel_enable_debug') }}</div>
-                <n-switch v-model:value="debug_switch" @update:value="handleChange"></n-switch>
+                <n-switch v-model:value="debugSwitch" @update:value="handleChange"></n-switch>
                 <n-button @click="clearCommand">{{ t('clear') }}</n-button>
             </n-flex>
             
@@ -219,7 +219,7 @@ function clearCommand() {
             </n-tabs>
 
             <div style="flex: 1; min-height: 0;">
-                <n-data-table :data="advanced_keys" :columns="columns" :bordered="false" />
+                <n-data-table :data="advancedKeys" :columns="columns" :bordered="false" />
             </div>
         </n-flex>
 

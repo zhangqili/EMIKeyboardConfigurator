@@ -5,13 +5,12 @@ const layout = `[[{"x":2.25},"~\\n\`","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^
 
 export class Zellia60Controller extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 68;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();
         this.device = undefined;
         this.reset_to_default();
-
     }
 
     async detect(): Promise<HIDDevice[]> {

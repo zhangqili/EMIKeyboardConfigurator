@@ -1,7 +1,7 @@
 {
     "toolbar_connect": "Connect",
     "toolbar_disconnect": "Disconnect",
-    "toolbar_save": "Save",
+    "toolbar_apply": "Apply",
     "toolbar_advance": "Advance",
     "toolbar_device_flash_configuration": "Flash configuration",
     "toolbar_device_reset": "Reset device",
@@ -9,11 +9,13 @@
     "toolbar_settings": "Settings",
     "toolbar_select_device": "Select device",
 
-    "main_tabs_config_file": "Config file",
+    "main_tabs_profile": "Profile",
     "main_tabs_performance": "Performance",
     "main_tabs_keymap": "Keymap",
     "main_tabs_rgb": "RGB",
     "main_tabs_dynamic_key": "Dynamic Key",
+    "main_tabs_macro": "Macro",
+    "main_tabs_script": "Script",
     "main_tabs_debug": "Debug",
     "main_tabs_about": "About",
 
@@ -21,8 +23,8 @@
     "main_device_not_found": "Device not found",
 
     "main_device_mistatch": "Device mismatch",
-    "main_import_success": "Config file imported",
-    "main_import_failed": "Config file import failed",
+    "main_import_success": "Profile imported",
+    "main_import_failed": "Profile import failed",
 
     "main_linux_detect_title" : "Linux system detected",
     "main_linux_detect_content" : "You may modifiy udev rules to access your device.",
@@ -158,6 +160,18 @@
     "dynamic_key_mutex_panel_priority_mode" : "Priority mode",
     "dynamic_key_mutex_panel_always" : "Always trigger when fully pressed",
     "dynamic_key_mutex_panel_key_bindings" : "Key bindings",
+
+    "macro_panel_tick" : "Tick",
+    "macro_panel_is_virtual" : "Virtual",
+    "macro_panel_key_id" : "Key ID",
+    "macro_panel_event" : "Event",
+    "macro_panel_binding" : "Binding",
+    "macro_panel_action" : "Actions",
+
+    "script_panel_title" : "Script",
+    "demo_js" : "Demo",
+    "download_js" : "Download",
+    "upload_js" : "Upload",
 
     "key" : "Key",
     "apply" : "Apply",

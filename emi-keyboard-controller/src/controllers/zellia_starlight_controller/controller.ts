@@ -5,12 +5,13 @@ const layout = `[["0","1","2","3","4","5","6","7","8","9","10","11","12",{"w":2}
 
 export class ZelliaStarlightController extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 70;
-    config_file_number:number = 4;
+    profile_number:number = 4;
 
     constructor() {
         super();
         this.device = undefined;
         this.reset_to_default();
+        this.feature.rgb_flag = true;
     }
 
     async detect(): Promise<HIDDevice[]> {

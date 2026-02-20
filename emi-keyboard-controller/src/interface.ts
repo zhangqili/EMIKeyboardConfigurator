@@ -126,6 +126,12 @@ export interface IDynamicKeyMutex extends IDynamicKey {
     mode : (DynamicKeyMutexMode | number);
 }
 
+export interface FirmwareVersion {
+    major: number;
+    minor: number;
+    patch: number;
+    info: string;
+}
 // Interface for AdvancedKey
 export interface IAdvancedKey {
     state: boolean;
@@ -731,6 +737,25 @@ export interface Srgb {
     blue: number;
 }
 
+export enum ScriptLevel {
+    Disable = 0x00,
+    AOT = 0x01,
+    JIT = 0x02,
+}
+
+export interface IFeature {
+    advanced_key_flag : boolean;
+    rgb_flag : boolean;
+    script_level : ScriptLevel;
+}
+
+export class Feature implements IFeature {
+    script_level: ScriptLevel = ScriptLevel.Disable;
+    advanced_key_flag: boolean = false;
+    rgb_flag: boolean = false;
+}
+
+
 // Interface for RGBConfig
 export interface IRGBConfig {
     mode: RGBMode;
@@ -824,6 +849,32 @@ export interface IKeyboardController{
     get_config_file_index(): number;
     set_config_file_index(index: number) : void;
     get_layout_labels(): string[][];
+    get_firmware_version() : FirmwareVersion;
+    get_macros(): IMacroAction[][];
+    set_macros(macros : IMacroAction[][]) : void;
+    get_script_source(): string;
+    set_script_source(script : string) : void;
+    get_script_bytecode(): Uint8Array;
+    set_script_bytecode(bytecode : Uint8Array) : void;
+    get_readme_markdown() : string;
+    get_feature() : IFeature;
+}
+
+export interface IMacroAction {
+    delay: number;
+    keycode: number;
+    event: number;
+    is_virtual : boolean;
+    key_id : number;
+}
+
+export class MacroAction implements IMacroAction {
+    delay: number = 0;
+    keycode: number = 0;
+    event: number = 0;
+    is_virtual: boolean = false;
+    key_id: number = 0;
+
 }
 
 export abstract class KeyboardController implements IKeyboardController, EventTarget{
@@ -841,6 +892,27 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.device = undefined;
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    get_script_source(): string {
+        return "";
+    }
+    set_script_source(script: string): void {
+        
+    }
+    get_script_bytecode(): Uint8Array {
+        return new Uint8Array();
+    }
+    set_script_bytecode(bytecode: Uint8Array): void {
+        
+    }
+    get_readme_markdown(): string {
+        return "KeyboardController";
+    }
+    get_macros(): IMacroAction[][] {
+        return [new Array<MacroAction>];
+    }
+    set_macros(macros: IMacroAction[][]): void {
+        
     }
     // 添加事件监听
     addEventListener(type: string, listener: EventListener): void {
@@ -945,7 +1017,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.rgb_base_config = new RGBBaseConfig();
         this.rgb_configs = new Array<IRGBConfig>();
         this.keymap = new Array<Array<number>>();
-        this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
+        this.dynamic_keys = new Array<IDynamicKey>();
         this.config_index = 0;
     }
     fetch_config() : void
@@ -1001,6 +1073,12 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     get_layout_labels(): string[][] {
         return [[]];
+    }
+    get_firmware_version(): FirmwareVersion {
+        return { major: 0, minor: 0, patch: 0, info: "" }
+    }
+    get_feature(): IFeature {
+        return new Feature();
     }
 }
 
