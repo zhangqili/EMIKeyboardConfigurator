@@ -60,7 +60,6 @@ export const useMainStore = defineStore('main',
               splitLine: {
                 show: true
               },
-              max: 4096
             },
             series: Array<SeriesOption>()
         

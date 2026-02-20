@@ -263,8 +263,9 @@ async function applyCommand() {
   if (isConnected.value) {
 
     const argsString = "--no-column -m32";
-    scriptBytecode.value = await mqjsCompile(scriptSource.value, argsString);
-    console.log(scriptBytecode.value);
+    const { bytecode, stdout, stderr }  = await mqjsCompile(scriptSource.value, argsString);
+    scriptBytecode.value = bytecode;
+    triggerRef(scriptBytecode);
     await apis.set_advanced_keys(advancedKeys.value);
     await apis.set_rgb_base_config(rgbBaseConfig.value);
     if (keymap.value != undefined) {
@@ -298,7 +299,6 @@ async function getController() {
   firmwareVersion.value = await apis.get_firmware_version();
   macros.value = await apis.get_macros();
 
-  console.log("d",macros.value);
   selectedProfileIndex.value = await apis.get_config_file_index();
   const cnofig_file_num = await apis.get_config_file_num();
   layout_labels.value = await apis.get_layout_labels();

@@ -858,57 +858,49 @@ function onKeyUp(key)
 
 }
 `;
-
-export async function mqjsCompile(source: string, args: string = ""): Promise<Uint8Array> {
+export async function mqjsCompile(source: string, args: string = ""): Promise<{ 
+    bytecode: Uint8Array, 
+    stdout: string, 
+    stderr: string 
+}> {
     return new Promise(async (resolve, reject) => {
-        let errorOutput = "";
+        let stdout = "";
+        let stderr = "";
 
         try {
-          const wasmModule = await createMqjsCompiler({
-                // 3. 【关键修复】拦截 .wasm 请求，强制返回正确的 URL
-                locateFile: (path: string) => {
-                    if (path.endsWith('.wasm')) {
-                        return wasmBinaryUrl;
-                    }
-                    return path;
+            const wasmModule = await createMqjsCompiler({
+                locateFile: (path: string) => path.endsWith('.wasm') ? wasmBinaryUrl : path,
+                // 捕获标准输出
+                print: (text: string) => {
+                    stdout += text + "\n";
                 },
-                print: (text: string) => console.log("[mqjs compiler]", text),
+                // 捕获错误输出
                 printErr: (text: string) => {
-                    console.error("[mqjs error]", text);
-                    errorOutput += text + "\n";
+                    stderr += text + "\n";
                 }
             });
 
-            // 2. 解析传入的字符串参数 (按空格拆分为数组，并过滤掉多余的空格)
-            // 例如: "--no-column -m32" -> ["--no-column", "-m32"]
             const userArgs = args.trim().split(/\s+/).filter(Boolean);
-
-            // 3. 定义虚拟文件系统的输入输出路径
             const inPath = '/main.js';
             const outPath = '/out.bin';
 
-            // 4. 将源码写入虚拟文件系统
             wasmModule.FS.writeFile(inPath, source);
-
-            // 5. 组装最终的命令行参数数组
-            // 对应命令: mqjs [args] -o /out.bin /main.js
             const cliArgs = [...userArgs, '-o', outPath, inPath];
 
             try {
-                // 6. 运行原版 mqjs.c 的 main 函数
                 wasmModule.callMain(cliArgs);
             } catch (e) {
-                // 原版 mqjs 遇到错误会抛出 exit(1) 异常
-                reject(new Error(errorOutput || "编译中断"));
+                // 编译失败时，依然返回已捕获的流
+                reject({ message: "编译中断", stdout, stderr });
                 return;
             }
 
-            // 7. 从虚拟文件系统中读取生成的二进制字节码
             const bytecode = wasmModule.FS.readFile(outPath);
-            resolve(bytecode);
+            resolve({ bytecode, stdout, stderr });
 
-        } catch (globalError) {
-            reject(globalError);
+        } catch (globalError: any) {
+            // 确保 globalError 结构一致
+            reject({ message: globalError.message || "未知错误", stdout, stderr });
         }
     });
 }

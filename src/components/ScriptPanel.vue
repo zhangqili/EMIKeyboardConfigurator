@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, triggerRef, watch } from 'vue'
 import { NSpace, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -10,6 +10,7 @@ import { useMainStore } from '../store/main';
 import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, demoScriptSource, mqjsCompile } from "../apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
+import HexViewer from './HexViewer.vue';
 
 const { t } = useI18n();
 
@@ -18,7 +19,9 @@ const store = useMainStore();
 const { themeName, scriptSource, scriptBytecode } = storeToRefs(store); // 获取全局主题状态
 
 const editorRef = shallowRef()
-
+const noColumn = ref(false);
+const compileStdout = ref('');
+const compileStderr = ref('');
 const handleMount = (editor: any, monaco: any) => {
   editorRef.value = editor
   
@@ -111,32 +114,76 @@ const uploadScript = async () => {
   }
 };
 
-const compileAndUpload = async () => {
-  if (!scriptSource.value) {
-    return;
-  }
+let compileTimer: ReturnType<typeof setTimeout> | null = null;
 
-  try {
+// 监听源码变化，实现自动编译预览
+watch(
+  [scriptSource, noColumn], 
+  ([newSource, isNoColumn]) => {
+    // 1. 如果有还没执行的编译任务，先取消掉
+    if (compileTimer) {
+      clearTimeout(compileTimer);
+    }
 
-    console.log(scriptBytecode.value)
-  } catch (error: any) {
-    message.error(`编译失败: ${error.message}`);
-  }
-};
+    // 2. 如果代码被清空了，直接清空字节码
+    if (!newSource) {
+      scriptBytecode.value = new Uint8Array();
+      triggerRef(scriptBytecode);
+      return;
+    }
+
+    // 3. 防抖处理
+    compileTimer = setTimeout(async () => {
+      try {
+        // 构建编译参数
+        const options = `-m32 ${isNoColumn ? "--no-column" : ""}`;
+        const { bytecode, stdout, stderr } = await mqjsCompile(newSource, options);
+
+        compileStdout.value = stdout;
+        compileStderr.value = stderr;
+        scriptBytecode.value = bytecode;
+        triggerRef(scriptBytecode); 
+        
+      } catch (error: any) {
+        console.warn("编译失败 ->", error.message);
+      }
+    }, 500);
+  }, 
+  { immediate: true } // 【关键】：确保组件挂载后立即执行一次编译
+);
 
 </script>
 <template>
   <n-card style="height: 100%; flex:400px;" :title="t('script_panel_title')" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
-    <div class="editor-container">
-      <VueMonacoEditor
-        v-model:value="scriptSource"
-        :theme="editorTheme"
-        language="javascript"
-        :options="editorOptions"
-        @mount="handleMount"
-      />
-    </div>
+    <n-split direction="vertical" :default-size="1">
+      <template #1>
+        <n-split direction="horizontal">
+        <template #1>        
+          <div class="editor-container">
+            <VueMonacoEditor
+              v-model:value="scriptSource"
+              :theme="editorTheme"
+              language="javascript"
+              :options="editorOptions"
+              @mount="handleMount"
+            />
+          </div>
+        </template>
+        <template #2>
+          <div style="width: 100%; height: 100%; display: flex; overflow: hidden;">
+            <HexViewer :data="scriptBytecode" style="flex: 1;"/>
+          </div>
+        </template>
+        </n-split>
+      </template>
+      <template #2>
+          <n-log :log="compileStderr + compileStdout"/>
+      </template>
+    </n-split>
     <template #header-extra>
+      <!-- <n-checkbox v-model:checked="noColumn">
+          --no-column
+      </n-checkbox> -->
       <n-button style="margin-left: 12px;" @click="scriptSource = demoScriptSource">
           {{ t('demo_js') }}
       </n-button>
@@ -144,9 +191,6 @@ const compileAndUpload = async () => {
           {{ t('download_js') }}
       </n-button>
       <n-button style="margin-left: 12px;" @click="uploadScript">
-          {{ t('upload_js') }}
-      </n-button>
-      <n-button style="margin-left: 12px;" @click="compileAndUpload">
           {{ t('upload_js') }}
       </n-button>
     </template>
