@@ -157,16 +157,16 @@ export async function request_debug(){
     return CONTROLLER.request_debug();
 }
 
-export async function get_config_file_num(){
-    return CONTROLLER.get_config_file_num();
+export async function get_profile_num(){
+    return CONTROLLER.get_profile_num();
 }
 
-export async function set_config_file_index(index : number){
-    return CONTROLLER.set_config_file_index(index);
+export async function set_profile_index(index : number){
+    return CONTROLLER.set_profile_index(index);
 }
 
-export async function get_config_file_index(){
-    return CONTROLLER.get_config_file_index();
+export async function get_profile_index(){
+    return CONTROLLER.get_profile_index();
 }
 
 export async function addEventListener(type: string, listener: EventListener){

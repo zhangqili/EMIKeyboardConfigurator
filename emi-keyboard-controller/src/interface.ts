@@ -845,9 +845,9 @@ export interface IKeyboardController{
     stop_debug() : void;
     request_debug() : void;
     get_layout_json() : string;
-    get_config_file_num() : number;
-    get_config_file_index(): number;
-    set_config_file_index(index: number) : void;
+    get_profile_num() : number;
+    get_profile_index(): number;
+    set_profile_index(index: number) : void;
     get_layout_labels(): string[][];
     get_firmware_version() : FirmwareVersion;
     get_macros(): IMacroAction[][];
@@ -1060,15 +1060,15 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     {
         return "[]";
     }
-    get_config_file_num() : number
+    get_profile_num() : number
     {
         return 0;
     }
-    get_config_file_index(): number
+    get_profile_index(): number
     {
         return 0;
     }
-    set_config_file_index(index: number) : void {
+    set_profile_index(index: number) : void {
         this.config_index = index;
     }
     get_layout_labels(): string[][] {

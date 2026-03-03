@@ -299,8 +299,8 @@ async function getController() {
   firmwareVersion.value = await apis.get_firmware_version();
   macros.value = await apis.get_macros();
 
-  selectedProfileIndex.value = await apis.get_config_file_index();
-  const cnofig_file_num = await apis.get_config_file_num();
+  selectedProfileIndex.value = await apis.get_profile_index();
+  const cnofig_file_num = await apis.get_profile_num();
   layout_labels.value = await apis.get_layout_labels();
   readmeMarkdown.value = await apis.get_readme_markdown();
   firmwareFeature.value = await apis.get_feature();
@@ -327,9 +327,10 @@ async function updateData() {
     mapBackDynamicKey(keymap.value, dynamicKeys.value);
   }
   console.log("update data");
-  selectedProfileIndex.value = await apis.get_config_file_index();
+  selectedProfileIndex.value = await apis.get_profile_index();
   macros.value = await apis.get_macros();
   scriptSource.value = await apis.get_script_source();
+  console.log(keymap.value)
   triggerRef(advancedKeys);
   triggerRef(keymap);
   triggerRef(rgbBaseConfig);
@@ -350,7 +351,7 @@ async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
-  await apis.set_config_file_index(option.value as number);
+  await apis.set_profile_index(option.value as number);
 }
 
 function applyToAllKeys() {

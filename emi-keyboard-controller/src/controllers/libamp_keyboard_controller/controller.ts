@@ -655,7 +655,7 @@ export class LibampKeyboardController extends KeyboardController {
 
     packet_process_config_index(buf : Uint8Array)
     {
-      let dataView = new DataView(buf.buffer);  
+      let dataView = new DataView(buf.buffer);
       if (buf[0] == PacketCode.PacketCodeGet) {
         this.profile_index = buf[2];
       }
@@ -1223,17 +1223,17 @@ export class LibampKeyboardController extends KeyboardController {
         console.log("Macros read complete");
     }
 
-    get_config_file_num(): number {
+    get_profile_num(): number {
         return this.profile_number;
     }
 
-    get_config_file_index(): number {
+    get_profile_index(): number {
         return this.profile_index;
     }
 
-    async set_config_file_index(index: number) {
-        this.profile_number = index;
-        const commandId = this.profile_number + 0x10;
+    async set_profile_index(index: number) {
+        this.profile_index = index;
+        const commandId = this.profile_index + 0x10;
 
         // 1. 准备指令
         this.txBuffer.fill(0);
