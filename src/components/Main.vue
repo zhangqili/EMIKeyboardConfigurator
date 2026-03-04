@@ -20,6 +20,7 @@ import KeyboardRender from "./KeyboardRender.vue";
 import AboutPanel from "./AboutPanel.vue";
 import ScriptPanel from "./ScriptPanel.vue";
 import MacroPanel from "./MacroPanel.vue";
+import OscilloscopePanel from "./OscilloscopePanel.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "../locales/i18n";
 
@@ -657,6 +658,12 @@ const menuOptions = computed(() => {
       key: 'DebugPanel',
     });
   }
+  if (f.advanced_key_flag) {
+    opts.push({
+      label: t('main_tabs_oscilloscope'),
+      key: 'OscilloscopePanel',
+    });
+  }
 
   // 8. 关于面板 (总是显示)
   opts.push({
@@ -809,6 +816,7 @@ const currentPanel = computed(() => {
     case 'RGBPanel': return RGBPanel;
     case 'DynamicKeyPanel': return DynamicKeyPanel;
     case 'DebugPanel': return DebugPanel;
+    case 'OscilloscopePanel': return OscilloscopePanel;
     case 'MacroPanel': return MacroPanel;
     case 'ScriptPanel': return ScriptPanel;
     case 'AboutPanel': return AboutPanel;

@@ -670,9 +670,12 @@ export class LibampKeyboardController extends KeyboardController {
       let dataView = new DataView(buf.buffer);  
       if (buf[0] == PacketCode.PacketCodeGet) {
         const dataLength = buf[2];
+        const tick = dataView.getUint32(3, true);
+        const updated_keys: number[] = [];
         for (var i = 0; i < dataLength; i++)
         {
             const key_index = dataView.getUint16(7 + 0 + 12 * i, true);
+            updated_keys.push(key_index);
             if (key_index<this.advanced_keys.length)
             {
                 this.advanced_keys[key_index].state  = buf[7 + 12 * i + 2] > 0;
@@ -681,6 +684,12 @@ export class LibampKeyboardController extends KeyboardController {
                 this.advanced_keys[key_index].value = dataView.getFloat32(7 + 12 * i + 8, true);
             }
         }
+        this.dispatchEvent(new CustomEvent('updateDebugData', {
+            detail: {
+                tick: tick,
+                updated_keys: updated_keys,
+            }
+        }));
       }
     }
     packet_process_version(buf: Uint8Array) {

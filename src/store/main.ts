@@ -49,9 +49,10 @@ export const useMainStore = defineStore('main',
                 left: 'left',
             },
             xAxis: {
-              type: 'time',
+              type: 'value',
+              scale: true,
               splitLine: {
-                show: true
+                show: false
               },
               //maxInterval: 1000 * 3600 * 24
             },
@@ -78,9 +79,10 @@ export const useMainStore = defineStore('main',
                 left: 'left',
             },
             xAxis: {
-              type: 'time',
+              type: 'value',
+              scale: true,
               splitLine: {
-                show: true
+                show: false
               },
               //maxInterval: 1000 * 3600 * 24
             },

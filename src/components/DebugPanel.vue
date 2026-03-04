@@ -20,7 +20,7 @@ import {
     SingleAxisComponent,
     GridComponent,
 } from 'echarts/components';
-import VChart, { THEME_KEY } from 'vue-echarts';
+import VChart from 'vue-echarts';
 import { EChartsType, SeriesOption, LegendComponentOption } from 'echarts';
 import { DebugDataItem } from '../apis/utils';
 
@@ -34,57 +34,49 @@ use([
     GridComponent
 ]);
 
-provide(THEME_KEY, 'dark');
 const { t } = useI18n();
 const store = useMainStore();
 // 只取 switch 和 advancedKeys 用于显示
 // 移除 chart_option 的响应式解构，我们只在初始化时用它
-const { advancedKeys, debugSwitch } = storeToRefs(store);
+const { advancedKeys, debugSwitch, themeName } = storeToRefs(store);
 // 手动非响应式获取初始配置，避免 watch 开销
 const rawOptionInitial = shallowRef(store.debugRawChartOption);
 const valueOptionInitial = shallowRef(store.debugValueChartOption);
 const isPolling = ref(false);
+const TICK_WINDOW_SIZE = 40000;
+let latestTick = 0;
 
-async function startAdaptivePolling() {
+function stopPolling() {
+    isPolling.value = false;
+}
+
+async function startRequestLoop() {
     isPolling.value = true;
-    console.log("start pollinh");
     while (isPolling.value) {
-        const start = performance.now();
-        
         try {
-            // 1. 发起全量请求
-            // 因为我们在 controller 里用了 Promise.all，这行代码会等到 16 个包全部回来才继续
+            // 只管发请求，不需要在这里等待返回值处理 UI
             await apis.request_debug();
-            triggerRef(advancedKeys);
-            
-            // 2. 数据全部到位，只更新一次 UI
-            // 使用 requestAnimationFrame 避免在不可见时浪费资源
-            requestAnimationFrame(() => {
-                updateCharts();
-            });
-
-            // 3. 性能监控 (可选)
-            const cost = performance.now() - start;
-            console.log(`Frame cost: ${cost.toFixed(2)}ms, FPS: ${(1000/cost).toFixed(0)}`);
-            
         } catch (e) {
-            console.error("Polling disrupted:", e);
-            // 出错时稍微缓一缓，避免死循环卡死浏览器
-            await new Promise(resolve => setTimeout(resolve, 100));
+            console.error("Request disrupted:", e);
+            await new Promise(resolve => setTimeout(resolve, 100)); // 错误退避
         }
+        // 控制请求频率，可根据下位机性能调整
+        await new Promise(resolve => requestAnimationFrame(resolve));
     }
 }
-function stopPolling() {
+
+function stopRequestLoop() {
     isPolling.value = false;
 }
 
 function handleChange(value: boolean) {
     if (value) {
-        startAdaptivePolling();
+        startRequestLoop();
     } else {
-        stopPolling();
+        stopRequestLoop();
     }
 }
+
 let timer = 0;
 
 // 表格列定义
@@ -131,55 +123,107 @@ watch(
     }
 );
 
-function updateCharts() {
-    const nowStr = Date.now().toString();
-    const timestamp = Date.now();
+let isRenderPending = false;
+
+// 独立的数据处理函数（同步执行，捕获即时状态）
+function processDataSync(currentTick: number, updatedKeys: number[]) {
+    const numericTick = Number(currentTick); 
+    const tickStr = numericTick.toString();
+    latestTick = numericTick; // 更新最新 tick 供渲染时使用
+    const minTick = numericTick - TICK_WINDOW_SIZE; // 计算允许存在的最小 tick
     const keys = advancedKeys.value;
 
-    // 辅助函数：只处理数据，不触碰 Vue 响应式对象
-    const processData = (localBuffer: any, keyName: 'raw' | 'value') => {
-        const newSeriesData: any[] = [];
-        
-        // 遍历所有需要显示的系列
-        store.debugRawChartOption.series.forEach((seriesConfig: any, index: number) => {
-            const keyId = seriesConfig.id as number;
-            
-            // 确保该 key 存在
-            if (keys[keyId]) {
-                const buffer = localBuffer[keyId];
-                if (!buffer) return;
-
-                // 纯数组操作，极快
-                if (buffer.length > 500) buffer.shift();
-                
+    updatedKeys.forEach(keyId => {
+        // 判断当前按键是否存在于需要绘制的 raw 图表中
+        const isRawTracking = store.debugRawChartOption.series.some((s: any) => s.id === keyId);
+        if (isRawTracking && keys[keyId]) {
+            const buffer = localRawSeries[keyId];
+            if (buffer) {
                 buffer.push({
-                    name: nowStr,
-                    value: [timestamp, keys[keyId][keyName]]
+                    name: tickStr,
+                    value: [numericTick, keys[keyId].raw]
                 });
-
-                // 构造 ECharts 增量更新所需的 series 对象
-                // 注意：这里我们只更新 data 字段，复用 store 里的其他配置
-                newSeriesData.push({
-                    data: buffer 
-                });
+                while (buffer.length > 0 && buffer[0].value[0] < minTick) {
+                    buffer.shift();
+                }
             }
-        });
-        return newSeriesData;
-    };
+        }
 
-    const rawSeriesUpdate = processData(localRawSeries, 'raw');
-    const valueSeriesUpdate = processData(localValueSeries, 'value');
-
-    if (rawChartRef.value?.chart) {
-        rawChartRef.value.chart.setOption({ series: rawSeriesUpdate });
-    }
-    if (valueChartRef.value?.chart) {
-        valueChartRef.value.chart.setOption({ series: valueSeriesUpdate });
-    }
+        // 判断当前按键是否存在于需要绘制的 value 图表中
+        const isValTracking = store.debugValueChartOption.series.some((s: any) => s.id === keyId);
+        if (isValTracking && keys[keyId]) {
+            const buffer = localValueSeries[keyId];
+            if (buffer) {
+                buffer.push({
+                    name: tickStr,
+                    value: [numericTick, keys[keyId].value]
+                });
+                while (buffer.length > 0 && buffer[0].value[0] < minTick) {
+                    buffer.shift();
+                }
+            }
+        }
+    });
 }
 
+// 独立的图表渲染函数（异步执行，一帧只画一次）
+function renderCharts() {
+// 固定的横轴起止点
+    const maxTick = latestTick;
+    const minTick = latestTick - TICK_WINDOW_SIZE;
+
+    const rawSeriesUpdate = store.debugRawChartOption.series.map((s: any) => ({
+        id: s.id,
+        type: 'line',
+        data: localRawSeries[s.id]
+    }));
+
+    const valueSeriesUpdate = store.debugValueChartOption.series.map((s: any) => ({
+        id: s.id,
+        type: 'line',
+        data: localValueSeries[s.id]
+    }));
+
+    if (rawChartRef.value?.chart) {
+        rawChartRef.value.chart.setOption({ 
+            xAxis: { min: minTick, max: maxTick },
+            series: rawSeriesUpdate 
+        });
+    }
+    if (valueChartRef.value?.chart) {
+        valueChartRef.value.chart.setOption({ 
+            xAxis: { min: minTick, max: maxTick },
+            series: valueSeriesUpdate 
+        });
+    }
+    
+    isRenderPending = false;
+}
+
+const handleDebugDataUpdated = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const currentTick = customEvent.detail.tick;
+    // 解构出当前数据包实际更新的按键数组
+    const updatedKeys = customEvent.detail.updated_keys as number[];
+    
+    triggerRef(advancedKeys);
+    
+    // 把 updatedKeys 传进去，拒绝连坐
+    processDataSync(currentTick, updatedKeys);
+    
+    if (!isRenderPending) {
+        isRenderPending = true;
+        requestAnimationFrame(renderCharts); // renderCharts 保持之前的逻辑不变即可
+    }
+};
+
+onMounted(() => {
+    apis.addEventListener('updateDebugData', handleDebugDataUpdated);
+});
+
 onBeforeUnmount(() => {
-    stopPolling();
+    stopRequestLoop();
+    apis.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 function clearCommand() {
@@ -211,10 +255,10 @@ function clearCommand() {
             
             <n-tabs type="segment" animated style="flex-shrink: 0;">
                 <n-tab-pane name="raw_chart" :tab="t('debug_panel_raw')">
-                    <v-chart ref="rawChartRef" :option="rawOptionInitial" class="chart" autoresize />
+                    <v-chart ref="rawChartRef" :theme="themeName" :option="rawOptionInitial" class="chart" autoresize />
                 </n-tab-pane>
                 <n-tab-pane name="value_chart" :tab="t('debug_panel_value')">
-                    <v-chart ref="valueChartRef" :option="valueOptionInitial" class="chart" autoresize />
+                    <v-chart ref="valueChartRef" :theme="themeName" :option="valueOptionInitial" class="chart" autoresize />
                 </n-tab-pane>
             </n-tabs>
 
