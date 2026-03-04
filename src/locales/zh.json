@@ -171,7 +171,9 @@
     "demo_js_cource" : "",
 
     "debug_panel_enable_debug" : "启用调试",
+    "debug_panel_index" : "序号",
     "debug_panel_state" : "状态",
+    "debug_panel_report_state" : "回报状态",
     "debug_panel_raw" : "原始值",
     "debug_panel_value" : "归一化值",
     "debug_panel_is_virtual" : "虚拟按键",

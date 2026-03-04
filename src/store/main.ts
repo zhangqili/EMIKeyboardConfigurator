@@ -29,7 +29,7 @@ export const useMainStore = defineStore('main',
         const scriptBytecode = ref<Uint8Array>(new Uint8Array());
 
         const keyBinding = ref<number>(0);
-        const keyEvent = ref<number>(0);
+        const keyEvent = ref<number>(3);
         const isVirtual = ref<boolean>(false);
         const useKeymap = ref<boolean>(false);
         const currentLayerIndex = ref<number>(0);

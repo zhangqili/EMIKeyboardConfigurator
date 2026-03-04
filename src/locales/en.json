@@ -116,7 +116,9 @@
     "rgb_panel_rainbow_density" : "Density",
 
     "debug_panel_enable_debug" : "Enable debug",
+    "debug_panel_index" : "Index",
     "debug_panel_state" : "State",
+    "debug_panel_report_state" : "Report State",
     "debug_panel_raw" : "Raw Value",
     "debug_panel_value" : "Normalized Value",
     "debug_panel_is_virtual" : "Virtual Key",
