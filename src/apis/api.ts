@@ -157,6 +157,10 @@ export async function request_debug(){
     return CONTROLLER.request_debug();
 }
 
+export async function request_debug_at(ids : number[]){
+    return CONTROLLER.request_debug_at(ids);
+}
+
 export async function get_profile_num(){
     return CONTROLLER.get_profile_num();
 }

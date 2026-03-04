@@ -672,16 +672,13 @@ export class LibampKeyboardController extends KeyboardController {
         const dataLength = buf[2];
         for (var i = 0; i < dataLength; i++)
         {
-            const key_index = dataView.getUint16(3 + 0 + 12 * i, true);
+            const key_index = dataView.getUint16(7 + 0 + 12 * i, true);
             if (key_index<this.advanced_keys.length)
             {
-                this.advanced_keys[key_index].state  = buf[3 + 12 * i + 2] > 0;
-                this.advanced_keys[key_index].report_state = buf[3 + 12 * i + 3] > 0;
-                this.advanced_keys[key_index].raw = dataView.getFloat32(3 + 12 * i + 4, true);
-                this.advanced_keys[key_index].value = dataView.getFloat32(3 + 12 * i + 8, true);
-            }
-            if (key_index == 0) {
-                //console.log(key_index, this.advanced_keys[key_index].raw);
+                this.advanced_keys[key_index].state  = buf[7 + 12 * i + 2] > 0;
+                this.advanced_keys[key_index].report_state = buf[7 + 12 * i + 3] > 0;
+                this.advanced_keys[key_index].raw = dataView.getFloat32(7 + 12 * i + 4, true);
+                this.advanced_keys[key_index].value = dataView.getFloat32(7 + 12 * i + 8, true);
             }
         }
       }
@@ -863,7 +860,7 @@ export class LibampKeyboardController extends KeyboardController {
       }
     }
     async request_debug(): Promise<void> {
-        const KEYS_PER_PACKET = 5; // 固件限制每包 5 个
+        const KEYS_PER_PACKET = 4; // 固件限制每包 5 个
         // 假设你有 80 个键，这里 advanced_keys.length = 80
         const total_keys = this.advanced_keys.length;
         const page_num = Math.ceil(total_keys / KEYS_PER_PACKET);
@@ -890,7 +887,7 @@ export class LibampKeyboardController extends KeyboardController {
                 // item size = 12
                 // index offset inside item = 0
                 // 所以 offset = 3 + j * 12
-                dataView.setUint16(3 + j * 12, key_index, true);
+                dataView.setUint16(7 + j * 12, key_index, true);
             }
 
             // 关键：将发送任务加入数组，使用 enqueueCommand (记得你上一轮引入的队列方法)
@@ -905,7 +902,57 @@ export class LibampKeyboardController extends KeyboardController {
         // 处理回包数据 (虽然 enqueueCommand 内部可能处理了，但为了保险可以在这里统一再处理一次，或者依赖内部的 packet_process)
         results.forEach(res => this.packet_process_debug(res));
     }
-    
+    async request_debug_at(ids: number[]): Promise<void> {
+        // 如果传入的数组为空，直接返回，避免发送无用数据包
+        if (!ids || ids.length === 0) {
+            return;
+        }
+
+        const KEYS_PER_PACKET = 4; // 固件限制每包 5 个
+        const total_keys = ids.length; // 总请求数为传入数组的长度
+        const page_num = Math.ceil(total_keys / KEYS_PER_PACKET);
+        
+        // 创建一个任务数组
+        const tasks: Promise<Uint8Array>[] = [];
+
+        for (let i = 0; i < page_num; i++) {
+            let send_buf = new Uint8Array(64);
+            // 假设 PacketCode 和 PacketData 已经在作用域或类成员中定义
+            send_buf[0] = PacketCode.PacketCodeGet;
+            send_buf[1] = PacketData.PacketDataDebug;
+
+            // 计算当前包实际要请求几个按键
+            let page_length = (i + 1) * KEYS_PER_PACKET > total_keys ? total_keys % KEYS_PER_PACKET : KEYS_PER_PACKET;
+            send_buf[2] = page_length; // 告诉固件我要读几个
+
+            let dataView = new DataView(send_buf.buffer);
+            
+            // 填充我要读的那些按键的 Index
+            for (let j = 0; j < page_length; j++) {
+                // 从 ids 数组中读取当前循环对应的具体按键 ID
+                let key_index = ids[i * KEYS_PER_PACKET + j];
+                
+                // PacketDebug data offset = 3
+                // item size = 12
+                // index offset inside item = 0
+                // 所以 offset = 3 + j * 12
+                dataView.setUint16(7 + j * 12, key_index, true);
+            }
+
+            // 将发送任务加入数组，使用 enqueueCommand
+            tasks.push(this.enqueueCommand(send_buf));
+        }
+
+        // 等待所有包发送并接收完成
+        const results = await Promise.all(tasks);
+        
+        // 处理回包数据
+        results.forEach(res => {
+            if (res) {
+                this.packet_process_debug(res);
+            }
+        });
+    }
     start_debug(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeAction;

@@ -841,6 +841,7 @@ export interface IKeyboardController{
     system_reset() : void;
     factory_reset() : void;
     request_config() : void;
+    request_debug_at(ids: number[]) : void;
     start_debug() : void;
     stop_debug() : void;
     request_debug() : void;
@@ -1043,6 +1044,10 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     request_config() : void
     {
 
+    }
+    request_debug_at(ids: number[]): void
+    {
+    
     }
     start_debug() : void
     {
