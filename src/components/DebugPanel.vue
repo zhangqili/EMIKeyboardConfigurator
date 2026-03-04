@@ -71,10 +71,10 @@ function stopRequestLoop() {
 
 async function handleChange(value: boolean) {
     if (value) {
-        await apis.start_debug();
+        //await apis.start_debug();
         startRequestLoop();
     } else {
-        await apis.stop_debug();
+        //await apis.stop_debug();
         stopRequestLoop();
     }
 }

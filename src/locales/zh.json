@@ -176,7 +176,7 @@
     "debug_panel_value" : "归一化值",
 
     "oscilloscope_panel_enable_debug" : "启用调试",
-    "oscilloscope_panel_duration" : "时长",
+    "oscilloscope_panel_buffer_length" : "缓冲大小",
     
     "key" : "按键",
     "apply" : "应用",

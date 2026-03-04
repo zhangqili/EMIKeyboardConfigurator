@@ -121,7 +121,7 @@
     "debug_panel_value" : "Normalized Value",
 
     "oscilloscope_panel_enable_debug" : "Enable debug",
-    "oscilloscope_panel_duration" : "Duration",
+    "oscilloscope_panel_buffer_length" : "Buffer Length",
 
     "dynamic_key_panel_main_title" : "Create a new dynamic key",
     "dynamic_key_panel_sub_title" : "Existing dynamic key",

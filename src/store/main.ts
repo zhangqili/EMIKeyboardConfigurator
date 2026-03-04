@@ -41,6 +41,7 @@ export const useMainStore = defineStore('main',
             animation: false,
             tooltip: {
                 trigger: 'axis',
+                transitionDuration: 0, 
                 axisPointer: {
                     animation: false
                 }
@@ -49,6 +50,9 @@ export const useMainStore = defineStore('main',
                 type: 'scroll',
                 orient: 'horizontal',
                 left: 'left',
+            },
+            axisPointer: { 
+                animation: false,
             },
             xAxis: {
               type: 'value',
@@ -72,6 +76,7 @@ export const useMainStore = defineStore('main',
             animation: false,
             tooltip: {
                 trigger: 'axis',
+                transitionDuration: 0, 
                 axisPointer: {
                     animation: false
                 }

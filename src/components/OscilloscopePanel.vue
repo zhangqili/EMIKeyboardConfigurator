@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick } from 'vue';
 import { NCard, NFlex, NSpace, NSwitch, NSelect, NButton, NSlider } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import * as apis from '../apis/api';
 import { useMainStore } from '../store/main';
 import { storeToRefs } from 'pinia';
 
-import { use } from 'echarts/core';
+import { connect, use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
-import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent } from 'echarts/components';
+import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
 
 // 引入 LegendComponent 以便显示图例区分不同按键
-use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent]);
+use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent]);
 
 const { t } = useI18n();
 const store = useMainStore();
@@ -21,8 +21,21 @@ const { advancedKeys, themeName, oscilloscopeSelectedKeys, keymap } = storeToRef
 
 // --- 状态控制 ---
 const isPolling = ref(false);
-
-// 生成 0~120 的按键选项供下拉框使用
+const hiddenKeys = ref<number[]>([]);
+function toggleKeyVisibility(id: number) {
+    if (hiddenKeys.value.includes(id)) {
+        // 如果已被隐藏，则恢复显示
+        hiddenKeys.value = hiddenKeys.value.filter(k => k !== id);
+    } else {
+        // 否则加入隐藏列表
+        hiddenKeys.value.push(id);
+    }
+    // 强制触发一次图表重绘
+    if (!isRenderPending) {
+        isRenderPending = true;
+        requestAnimationFrame(renderCharts);
+    }
+}
 const keyOptions = computed(()=>{
     return Array.from({ length: keymap.value[0] != undefined ? keymap.value[0].length : 0}, (_, i) => ({ label: `Key ${i}`, value: i }));
 });
@@ -30,7 +43,6 @@ const keyOptions = computed(()=>{
 const windowSize = ref(8000); 
 let latestTick = 0;
 let isRenderPending = false;
-
 // --- 数据缓存字典 ---
 // 格式: { keyId: [[tick1, val1], [tick2, val2], ...] }
 const rawDataCache: Record<number, [number, number][]> = {};
@@ -40,51 +52,139 @@ const stateAreasCache: Record<number, { start: number, end: number | null }[]> =
 const lastStateCache: Record<number, boolean> = {};
 
 // --- 图表配置 ---
-const rawChartRef = ref<any>(null);
-const valueChartRef = ref<any>(null);
 
-// 提取公共配置项
-const commonChartOptions = {
+const chartRef = ref<any>(null);
+const chartOption = shallowRef({
     backgroundColor: 'transparent',
     animation: false,
+    axisPointer: {
+        link: [{ xAxisIndex: 'all' }]
+    },
     tooltip: {
         trigger: 'axis',
-        axisPointer: { animation: false }
-    },
-    legend: { 
-        show: true,
-    },
-    grid: { left: 60, right: 40, top: 40, bottom: 30 },
-    xAxis: {
-        type: 'value',
-        scale: true,
-        splitLine: { show: false },
-        axisLabel: { formatter: (val: number) => val.toString() }
-    }
-};
+        transitionDuration: 0, // 取消跟随鼠标的延迟动画
+        axisPointer: { 
+            type: 'line', 
+            animation: false,
+            lineStyle: { type: 'dashed', color: '#999' } // 鼠标虚线样式
+        },
+        formatter: (params: any[]) => {
+            if (!params.length) return '';
+            
+            // 获取当前鼠标所在位置的 tick (X轴数值) 和数据索引
+            const tick = params[0].value[0];
+            const dataIndex = params[0].dataIndex;
 
-const rawChartOption = shallowRef({
-    ...commonChartOptions,
-    yAxis: {
-        type: 'value',
-        name: 'Raw',
-        splitLine: { show: true,}
+            // 构建精美的提示框表格，新增 State 列
+            let html = `<div style="font-size: 12px; color: #999; margin-bottom: 6px;">Tick: ${tick}</div>`;
+            html += `<table style="width:100%; border-collapse: collapse; font-size: 13px; text-align: left;">`;
+            html += `<tr>
+                        <td style="padding-right:16px;"></td>
+                        <td style="padding-right:16px; color:#888;">State</td> <td style="padding-right:16px; color:#888;">Raw</td>
+                        <td style="color:#888;">Value</td>
+                     </tr>`;
+
+            // 遍历所有选中的按键，提取当前 tick 下的 State, Raw 和 Value
+            oscilloscopeSelectedKeys.value.forEach((id, index) => {
+                if (hiddenKeys.value.includes(id)) return;
+                
+                const color = lineColors[index % lineColors.length];
+                let rawVal = '-';
+                let valVal = '-';
+                let isPressed = false; // 🚨 记录当前状态
+
+                const rawCache = rawDataCache[id];
+                const valCache = valueDataCache[id];
+                const stateCache = stateAreasCache[id];
+
+                // --- 1. 获取 Raw 和 Value 数据 ---
+                // 极速匹配：利用 ECharts 给出的 dataIndex 直接从缓存中取值
+                if (rawCache && rawCache[dataIndex] && rawCache[dataIndex][0] === tick) {
+                    rawVal = rawCache[dataIndex][1].toString();
+                } else if (rawCache) {
+                    // 降级策略：如果索引错位，则回退到数组查找
+                    const r = rawCache.find(d => d[0] === tick);
+                    if (r) rawVal = r[1].toString();
+                }
+
+                if (valCache && valCache[dataIndex] && valCache[dataIndex][0] === tick) {
+                    valVal = valCache[dataIndex][1].toFixed(4);
+                } else if (valCache) {
+                    const v = valCache.find(d => d[0] === tick);
+                    if (v) valVal = v[1].toFixed(4);
+                }
+
+                // --- 2. 🚨 获取 State 状态 ---
+                if (stateCache) {
+                    // 判断当前的 tick 是否落在任何一个高亮区间内
+                    isPressed = stateCache.some(area => 
+                        tick >= area.start && (area.end === null || tick <= area.end)
+                    );
+                }
+
+                // 状态的视觉样式：按下时显示绿色加粗的 ON，松开时显示灰色的 OFF
+                const stateHtml = isPressed 
+                    ? `<span style="color: #18a058; font-weight: bold;">ON</span>` 
+                    : `<span style="color: #777;">OFF</span>`;
+
+                html += `<tr>
+                    <td style="padding-right:16px;">
+                        <span style="display:inline-block; margin-right:6px; border-radius:50%; width:10px; height:10px; background-color:${color};"></span>
+                        Key ${id}
+                    </td>
+                    <td style="padding-right:16px;">${stateHtml}</td> <td style="padding-right:16px; font-weight:bold;">${rawVal}</td>
+                    <td style="font-weight:bold;">${valVal}</td>
+                </tr>`;
+            });
+
+            html += `</table>`;
+            return html;
+        }
     },
+    grid: [
+        { left: 60, right: 40, top: '4%', height: '36%' },   // 上半部分 Raw
+        { left: 60, right: 40, top: '44%', height: '36%' }   // 下半部分 Value
+    ],
+    xAxis: [
+        {
+            gridIndex: 0, // 绑定到上半部分
+            type: 'value',
+            scale: true,
+            splitLine: { show: false },
+            axisLabel: { show: false } // 隐藏上半部分的刻度数字，显得更简洁
+        },
+        {
+            gridIndex: 1, // 绑定到下半部分
+            type: 'value',
+            scale: true,
+            splitLine: { show: false },
+            axisLabel: { formatter: (val: number) => val.toString() }
+        }
+    ],
+    yAxis: [
+        {
+            gridIndex: 0,
+            type: 'value',
+            name: 'Raw',
+            splitLine: { show: true }
+        },
+        {
+            gridIndex: 1,
+            type: 'value',
+            name: 'Value',
+            min: -0.1,
+            max: 1.1,
+            inverse: true,
+            splitLine: { show: true }
+        }
+    ],
+    dataZoom: [
+        { id: 'dz-inside', type: 'inside', xAxisIndex: [0, 1] },
+        { id: 'dz-slider', type: 'slider', xAxisIndex: [0, 1], bottom: 15, height: 24 } 
+    ],
     series: []
 });
-
-const valueChartOption = shallowRef({
-    ...commonChartOptions,
-    yAxis: {
-        type: 'value',
-        name: 'Value',
-        min: -0.1,
-        max: 1.1,
-        inverse: true, // 保持原有的反转逻辑
-        splitLine: { show: true, }
-    },
-    series: []
-});
+const lineColors = ['#ff2291', '#ffd700', '#38538a', '#ff4637'];
 
 // 当选择的按键发生变化时，清理被移除按键的缓存数据
 watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
@@ -108,8 +208,7 @@ async function startRequestLoop() {
         } catch (e) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
-        await new Promise(resolve => setTimeout(resolve, 1));
-        //await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => requestAnimationFrame(resolve));
     }
 }
 
@@ -121,14 +220,26 @@ async function togglePolling(val: boolean) {
     else {
         await apis.stop_debug();
         isPolling.value = false;
+        if (!isRenderPending) {
+            isRenderPending = true;
+            requestAnimationFrame(renderCharts);
+        }
     } 
 }
-
+watch(themeName, () => {
+    // nextTick 确保 Vue-ECharts 已经完成了旧图表的销毁和新图表的挂载
+    nextTick(() => {
+        if (!isRenderPending) {
+            isRenderPending = true;
+            requestAnimationFrame(renderCharts);
+        }
+    });
+});
 // --- 数据同步与节流渲染 ---
 function processDataSync(currentTick: number, updatedKeys: number[]) {
     const numericTick = Number(currentTick);
     latestTick = numericTick;
-    const minTick = numericTick - windowSize.value;
+    const minHistoryTick = numericTick - windowSize.value;
 
     updatedKeys.forEach(keyId => {
         if (!oscilloscopeSelectedKeys.value.includes(keyId)) return;
@@ -161,16 +272,15 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
             lastStateCache[keyId] = !!isPressed;
 
             // --- 滑动窗口清理旧数据 ---
-            while (rawDataCache[keyId].length > 0 && rawDataCache[keyId][0][0] < minTick) {
+            while (rawDataCache[keyId].length > 0 && rawDataCache[keyId][0][0] < minHistoryTick) {
                 rawDataCache[keyId].shift();
             }
-            while (valueDataCache[keyId].length > 0 && valueDataCache[keyId][0][0] < minTick) {
+            while (valueDataCache[keyId].length > 0 && valueDataCache[keyId][0][0] < minHistoryTick) {
                 valueDataCache[keyId].shift();
             }
-            // 清理已完全移出窗口左侧的高亮区间
             while (stateAreasCache[keyId].length > 0) {
                 const firstArea = stateAreasCache[keyId][0];
-                if (firstArea.end !== null && firstArea.end < minTick) {
+                if (firstArea.end !== null && firstArea.end < minHistoryTick) {
                     stateAreasCache[keyId].shift();
                 } else {
                     break;
@@ -187,19 +297,22 @@ function renderCharts() {
     const currentLegendData = oscilloscopeSelectedKeys.value.map(id => `Key ${id}`);
     // 动态生成包含 markArea 的 Series (Raw)
     const rawSeries = oscilloscopeSelectedKeys.value.map((id, index) => {
+        const color = lineColors[index % lineColors.length];
+        const isHidden = hiddenKeys.value.includes(id);
         return {
             id: `raw_${id}`,
             name: `Key ${id}`,
             type: 'line',
+            xAxisIndex: 0,
+            yAxisIndex: 0,
             showSymbol: false,
-            data: rawDataCache[id] || [],
-            // 添加高亮标域
-            markArea: {
-                silent: true, // 忽略鼠标交互
+            itemStyle: { color: color },
+            data: isHidden ? [] : (rawDataCache[id] || []),
+            markArea: isHidden ? undefined : {
+                silent: true,
                 itemStyle: { opacity: 0.25 },
                 data: (stateAreasCache[id] || []).map(area => [
                     { xAxis: area.start },
-                    // 如果按键还没松开，就高亮到画面的最右边
                     { xAxis: area.end !== null ? area.end : maxTick } 
                 ])
             }
@@ -208,14 +321,18 @@ function renderCharts() {
 
     // 动态生成包含 markArea 的 Series (Value)
     const valueSeries = oscilloscopeSelectedKeys.value.map((id, index) => {
+        const color = lineColors[index % lineColors.length];
+        const isHidden = hiddenKeys.value.includes(id);
         return {
             id: `val_${id}`,
             name: `Key ${id}`,
             type: 'line',
+            xAxisIndex: 1,
+            yAxisIndex: 1,
             showSymbol: false,
-            data: valueDataCache[id] || [],
-            // 下方图表也同步高亮
-            markArea: {
+            itemStyle: { color: color },
+            data: isHidden ? [] : (valueDataCache[id] || []),
+            markArea: isHidden ? undefined : {
                 silent: true,
                 itemStyle: { opacity: 0.25 },
                 data: (stateAreasCache[id] || []).map(area => [
@@ -226,22 +343,35 @@ function renderCharts() {
         };
     });
 
-    const rawChart = rawChartRef.value?.chart || rawChartRef.value;
-    if (rawChart && typeof rawChart.setOption === 'function') {
-        rawChart.setOption({
-            legend: { ...rawChartOption.value.legend, data: currentLegendData },
-            xAxis: { min: minTick, max: maxTick },
-            series: rawSeries
-        });
-    }
+    const updateOption: any = {
+        series: [...rawSeries, ...valueSeries],
+        tooltip: {
+            backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.7)' : 'rgba(255, 255, 255, 0.85)',
 
-    const valueChart = valueChartRef.value?.chart || valueChartRef.value;
-    if (valueChart && typeof valueChart.setOption === 'function') {
-        valueChart.setOption({
-            legend: { ...valueChartOption.value.legend, data: currentLegendData },
-            xAxis: { min: minTick, max: maxTick },
-            series: valueSeries
-        });
+            borderColor: themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 1,
+        }
+    };
+
+if (isPolling.value) {
+        updateOption.dataZoom = [
+            { id: 'dz-inside', startValue: minTick, endValue: maxTick },
+            { id: 'dz-slider', startValue: minTick, endValue: maxTick, bottom: 15, height: 24 }
+        ];
+        updateOption.xAxis = [
+            { min: minTick, max: maxTick },
+            { min: minTick, max: maxTick }
+        ];
+    } else {
+        updateOption.xAxis = [
+            { min: 'dataMin', max: 'dataMax' },
+            { min: 'dataMin', max: 'dataMax' }
+        ];
+    }
+    
+    const chart = chartRef.value?.chart || chartRef.value;
+    if (chart && typeof chart.setOption === 'function') {
+        chart.setOption(updateOption); 
     }
     
     isRenderPending = false;
@@ -262,6 +392,7 @@ const handleDebugDataUpdated = (event: Event) => {
 };
 
 onMounted(() => {
+    connect('osc_group');
     apis.addEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
@@ -279,15 +410,12 @@ function clearWaveform() {
     });
     
     // 强制清理视图
-    if (rawChartRef.value?.chart) {
-        rawChartRef.value.chart.setOption({ 
-            series: oscilloscopeSelectedKeys.value.map(id => ({ id: `raw_${id}`, data: [] })) 
-        });
-    }
-    if (valueChartRef.value?.chart) {
-        valueChartRef.value.chart.setOption({ 
-            series: oscilloscopeSelectedKeys.value.map(id => ({ id: `val_${id}`, data: [] })) 
-        });
+if (chartRef.value?.chart) {
+        const emptySeries = oscilloscopeSelectedKeys.value.flatMap(id => [
+            { id: `raw_${id}`, data: [] },
+            { id: `val_${id}`, data: [] }
+        ]);
+        chartRef.value.chart.setOption({ series: emptySeries });
     }
 }
 </script>
@@ -296,7 +424,7 @@ function clearWaveform() {
     <n-card style="height: 100%; display: flex; flex-direction: column;"
         content-style="flex: 1; display: flex; flex-direction: column;">
 
-        <n-flex align="center" :size="16" style="flex-shrink: 0;">
+        <n-flex :align="'center'" :size="16" style="flex-shrink: 0;">
             <div>{{ t('oscilloscope_panel_enable_debug') }}</div>
             <n-switch v-model:value="isPolling" @update:value="togglePolling">
 
@@ -305,19 +433,43 @@ function clearWaveform() {
             <n-select v-model:value="oscilloscopeSelectedKeys" multiple :max-selected-count="4" :options="keyOptions"
                 style="min-width: 260px; max-width: 400px; flex: 1;" placeholder="Select keys" />
 
-            <n-flex align="center" :size="8" :wrap="false">
-                <span style="white-space: nowrap;">{{ t('oscilloscope_panel_duration') }}</span>
-                <n-input-number  v-model:value="windowSize" :min="500" :step="500"/>
+            <n-flex :align="'center'" :size="8" :wrap="false">
+                <span style="white-space: nowrap;">{{ t('oscilloscope_panel_buffer_length') }}</span>
+                <n-input-number  v-model:value="windowSize" :min="8000" :step="8000"/>
             </n-flex>
 
             <n-button @click="clearWaveform">{{ t('clear') }}</n-button>
+            <div style="margin-left: auto; display: flex; gap: 16px; align-items: center; padding-right: 12px;">
+                <div v-for="(id, index) in oscilloscopeSelectedKeys" :key="id" 
+                     style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;"
+                     @click="toggleKeyVisibility(id)">
 
+                    <div :style="{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: hiddenKeys.includes(id) ? 'transparent' : lineColors[index % lineColors.length],
+                        border: `2px solid ${lineColors[index % lineColors.length]}`,
+                        transition: 'background-color 0.2s'
+                    }"></div>
+
+                    <span :style="{ 
+                        color: hiddenKeys.includes(id) ? '#777' : (themeName === 'dark' ? '#ccc' : '#333'), 
+                        fontSize: '13px',
+                        textDecoration: hiddenKeys.includes(id) ? 'line-through' : 'none',
+                        transition: 'color 0.2s'
+                    }">Key {{ id }}</span>
+                </div>
+            </div>
         </n-flex>
 
-        <v-chart ref="rawChartRef" :theme="themeName" :option="rawChartOption"
-            :update-options="{ replaceMerge: ['series'] }" autoresize style="width: 100%; height: 100%;  flex: 1" />
-
-        <v-chart ref="valueChartRef" :theme="themeName" :option="valueChartOption"
-            :update-options="{ replaceMerge: ['series'] }" autoresize style="width: 100%; height: 100%; flex: 1" />
+        <v-chart 
+            ref="chartRef" 
+            :theme="themeName" 
+            :option="chartOption"
+            :update-options="{ replaceMerge: ['series'] }" 
+            autoresize 
+            style="width: 100%; height: 100%; flex: 1" 
+        />
     </n-card>
 </template>
