@@ -17,6 +17,7 @@
     "main_tabs_macro": "Macro",
     "main_tabs_script": "Script",
     "main_tabs_debug": "Debug",
+    "main_tabs_oscilloscope": "Oscilloscope",
     "main_tabs_about": "About",
 
     "main_found_device": "Found device",
@@ -118,6 +119,9 @@
     "debug_panel_state" : "State",
     "debug_panel_raw" : "Raw Value",
     "debug_panel_value" : "Normalized Value",
+
+    "oscilloscope_panel_enable_debug" : "Enable debug",
+    "oscilloscope_panel_duration" : "Duration",
 
     "dynamic_key_panel_main_title" : "Create a new dynamic key",
     "dynamic_key_panel_sub_title" : "Existing dynamic key",

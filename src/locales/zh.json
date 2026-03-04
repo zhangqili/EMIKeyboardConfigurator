@@ -17,6 +17,7 @@
     "main_tabs_macro": "宏",
     "main_tabs_script": "脚本",
     "main_tabs_debug": "调试",
+    "main_tabs_oscilloscope": "示波器",
     "main_tabs_about": "关于",
     
     "main_found_device": "连接成功",
@@ -174,6 +175,9 @@
     "debug_panel_raw" : "原始值",
     "debug_panel_value" : "归一化值",
 
+    "oscilloscope_panel_enable_debug" : "启用调试",
+    "oscilloscope_panel_duration" : "时长",
+    
     "key" : "按键",
     "apply" : "应用",
     "apply_to_all" : "应用到所有按键",

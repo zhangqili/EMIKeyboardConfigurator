@@ -35,7 +35,9 @@ export const useMainStore = defineStore('main',
         const profiles = ref<string[]>([]);
         const selectedProfileIndex = ref<number | undefined>(undefined);
         const debugSwitch = ref(false);
+        const oscilloscopeSelectedKeys = ref<number[]>([]);
         const debugRawChartOption = ref({
+            backgroundColor: 'transparent',
             animation: false,
             tooltip: {
                 trigger: 'axis',
@@ -66,6 +68,7 @@ export const useMainStore = defineStore('main',
         
         });
         const debugValueChartOption = ref({
+            backgroundColor: 'transparent',
             animation: false,
             tooltip: {
                 trigger: 'axis',
@@ -135,6 +138,7 @@ export const useMainStore = defineStore('main',
             debugRawChartOption,
             debugValueChartOption,
             debugSwitch,
+            oscilloscopeSelectedKeys,
             firmwareVersion,
             readmeMarkdown,
             firmwareFeature

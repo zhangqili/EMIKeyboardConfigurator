@@ -1,8 +1,8 @@
-import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction, IFeature, Feature, ScriptLevel} from "./../../interface";
+import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction, IFeature, Feature, ScriptLevel, Keycode} from "./../../interface";
 import semver, { SemVer } from 'semver';
 
 enum PacketCode {
-  PacketCodeAction = 0x00,
+  PacketCodeEvent = 0x00,
   PacketCodeSet = 0x01,
   PacketCodeGet = 0x02,
   PacketCodeLog = 0x03,
@@ -124,7 +124,7 @@ export class LibampKeyboardController extends KeyboardController {
             }
 
             // 2. 如果不是我们在等待的包（或者是主动上报的 Debug/User 包），则走原有流程
-            this.dispatchEvent(new Event('updateData'));
+            //this.dispatchEvent(new Event('updateData'));
             this.packet_process(data);
         };
 
@@ -813,29 +813,42 @@ export class LibampKeyboardController extends KeyboardController {
     }
     flash_config(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = KeyboardKeycode.KeyboardSave;
+        let dataView = new DataView(send_buf.buffer);
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x03;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = KeyboardKeycode.KeyboardSave;
+        send_buf[6] = 1;
         let res = this.write(send_buf);
         console.debug("Wrote Save Command: {:?} byte(s)", res);
     }
     system_reset(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = KeyboardKeycode.KeyboardReboot;
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x03;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = KeyboardKeycode.KeyboardReboot;
+        send_buf[6] = 1;
         let res = this.write(send_buf);
         console.debug("Wrote System Reset Command: {:?} byte(s)", res);
     }
     factory_reset(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = KeyboardKeycode.KeyboardFactoryReset;
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x03;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = KeyboardKeycode.KeyboardFactoryReset;
+        send_buf[6] = 1;
         let res = this.write(send_buf);
         console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
     enter_bootloader(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = KeyboardKeycode.KeyboardBootloader;
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x03;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = KeyboardKeycode.KeyboardBootloader;
+        send_buf[6] = 1;
         let res = this.write(send_buf);
         console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
@@ -964,14 +977,20 @@ export class LibampKeyboardController extends KeyboardController {
     }
     start_debug(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = 0xFE | (((1<<6) | (0x20 + 0)) << 8);
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x03;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = 32 | (1<<6);
+        send_buf[6] = 1;
         this.write(send_buf);
     }
     stop_debug(): void {
         let send_buf = new Uint8Array(63);
-        send_buf[0] = PacketCode.PacketCodeAction;
-        send_buf[1] = 0xFE | (((0<<6) | (0x20 + 0)) << 8);
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x03;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = 32 | (0<<6);
+        send_buf[6] = 1;
         this.write(send_buf);
     }
     
@@ -1293,9 +1312,11 @@ export class LibampKeyboardController extends KeyboardController {
 
         // 1. 准备指令
         this.txBuffer.fill(0);
-        this.txBuffer[0] = PacketCode.PacketCodeAction;
-        this.txBuffer[1] = commandId;
-
+        this.txBuffer[0] = PacketCode.PacketCodeEvent;
+        this.txBuffer[1] = 0x03;
+        this.txBuffer[2] = Keycode.KeyboardOperation;
+        this.txBuffer[3] = commandId;
+        this.txBuffer[6] = 1;
         console.log(`Commanding switch to config ${index}...`);
 
         try {

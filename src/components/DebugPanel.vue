@@ -69,10 +69,12 @@ function stopRequestLoop() {
     isPolling.value = false;
 }
 
-function handleChange(value: boolean) {
+async function handleChange(value: boolean) {
     if (value) {
+        await apis.start_debug();
         startRequestLoop();
     } else {
+        await apis.stop_debug();
         stopRequestLoop();
     }
 }
@@ -247,7 +249,8 @@ function clearCommand() {
     <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
         <n-scrollbar>
         <n-flex vertical>
-            <n-flex>
+
+            <n-flex align="center" :size="16" style="margin-bottom: 12px; flex-shrink: 0;">
                 <div>{{ t('debug_panel_enable_debug') }}</div>
                 <n-switch v-model:value="debugSwitch" @update:value="handleChange"></n-switch>
                 <n-button @click="clearCommand">{{ t('clear') }}</n-button>

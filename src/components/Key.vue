@@ -25,8 +25,6 @@ const {
   tabSelection,
   profiles,
   selectedProfileIndex,
-  debugRawChartOption, 
-  debugValueChartOption,
   dynamicKeys,
   keyboardKeys,
   themeName

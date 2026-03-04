@@ -57,7 +57,8 @@ const {
   themeName,
   firmwareVersion,
   readmeMarkdown,
-  firmwareFeature
+  firmwareFeature,
+  oscilloscopeSelectedKeys
 } = storeToRefs(store);
 
 const message = useMessage();
@@ -345,6 +346,7 @@ async function updateData() {
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
   await apis.set_device(option.label as string);
   var layout_json: string = await apis.get_layout_json();
+  oscilloscopeSelectedKeys.value.length = 0;
   //console.debug(layout_json);
   getController();
   renderKeyboardFromJson(layout_json);
@@ -465,6 +467,20 @@ function applyToSelectedKey(index: number) {
           showSymbol: false,
           data: Array<DebugDataItem>()
         });
+      }
+      break;
+    }
+    case "OscilloscopePanel": {
+      const currentKeys = [...oscilloscopeSelectedKeys.value];
+      
+      if (!currentKeys.includes(id)) {
+        currentKeys.push(id);
+        
+        if (currentKeys.length > 4) {
+          currentKeys.shift(); 
+        }
+        
+        oscilloscopeSelectedKeys.value = currentKeys;
       }
       break;
     }

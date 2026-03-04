@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, shallowRef, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed } from 'vue';
 import { NCard, NFlex, NSpace, NSwitch, NSelect, NButton, NSlider } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import * as apis from '../apis/api';
@@ -17,17 +17,17 @@ use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent,
 
 const { t } = useI18n();
 const store = useMainStore();
-const { advancedKeys, themeName } = storeToRefs(store);
+const { advancedKeys, themeName, oscilloscopeSelectedKeys, keymap } = storeToRefs(store);
 
 // --- 状态控制 ---
 const isPolling = ref(false);
 
-// 多选按键配置，默认监视 Key 0
-const selectedKeys = ref<number[]>([0]);
 // 生成 0~120 的按键选项供下拉框使用
-const keyOptions = Array.from({ length: 121 }, (_, i) => ({ label: `Key ${i}`, value: i }));
+const keyOptions = computed(()=>{
+    return Array.from({ length: keymap.value[0] != undefined ? keymap.value[0].length : 0}, (_, i) => ({ label: `Key ${i}`, value: i }));
+});
 
-const windowSize = ref(2000); 
+const windowSize = ref(8000); 
 let latestTick = 0;
 let isRenderPending = false;
 
@@ -45,6 +45,7 @@ const valueChartRef = ref<any>(null);
 
 // 提取公共配置项
 const commonChartOptions = {
+    backgroundColor: 'transparent',
     animation: false,
     tooltip: {
         trigger: 'axis',
@@ -86,7 +87,7 @@ const valueChartOption = shallowRef({
 });
 
 // 当选择的按键发生变化时，清理被移除按键的缓存数据
-watch(selectedKeys, (newKeys, oldKeys) => {
+watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
     const removedKeys = oldKeys.filter(k => !newKeys.includes(k));
     removedKeys.forEach(k => {
         delete rawDataCache[k];
@@ -101,19 +102,26 @@ async function startRequestLoop() {
     isPolling.value = true;
     while (isPolling.value) {
         try {
-            if (selectedKeys.value.length > 0) {
-                apis.request_debug_at(selectedKeys.value);
+            if (oscilloscopeSelectedKeys.value.length > 0) {
+                apis.request_debug_at(oscilloscopeSelectedKeys.value);
             }
         } catch (e) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => setTimeout(resolve, 1));
+        //await new Promise(resolve => requestAnimationFrame(resolve));
     }
 }
 
-function togglePolling(val: boolean) {
-    if (val) startRequestLoop();
-    else isPolling.value = false;
+async function togglePolling(val: boolean) {
+    if (val){
+        await apis.start_debug();
+        startRequestLoop();
+    }
+    else {
+        await apis.stop_debug();
+        isPolling.value = false;
+    } 
 }
 
 // --- 数据同步与节流渲染 ---
@@ -123,7 +131,7 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
     const minTick = numericTick - windowSize.value;
 
     updatedKeys.forEach(keyId => {
-        if (!selectedKeys.value.includes(keyId)) return;
+        if (!oscilloscopeSelectedKeys.value.includes(keyId)) return;
 
         const targetKey = advancedKeys.value[keyId];
         if (targetKey) {
@@ -176,9 +184,9 @@ function renderCharts() {
     const maxTick = latestTick;
     const minTick = latestTick - windowSize.value;
 
-    const currentLegendData = selectedKeys.value.map(id => `Key ${id}`);
+    const currentLegendData = oscilloscopeSelectedKeys.value.map(id => `Key ${id}`);
     // 动态生成包含 markArea 的 Series (Raw)
-    const rawSeries = selectedKeys.value.map((id, index) => {
+    const rawSeries = oscilloscopeSelectedKeys.value.map((id, index) => {
         return {
             id: `raw_${id}`,
             name: `Key ${id}`,
@@ -199,7 +207,7 @@ function renderCharts() {
     });
 
     // 动态生成包含 markArea 的 Series (Value)
-    const valueSeries = selectedKeys.value.map((id, index) => {
+    const valueSeries = oscilloscopeSelectedKeys.value.map((id, index) => {
         return {
             id: `val_${id}`,
             name: `Key ${id}`,
@@ -263,7 +271,7 @@ onBeforeUnmount(() => {
 });
 
 function clearWaveform() {
-    selectedKeys.value.forEach(id => {
+    oscilloscopeSelectedKeys.value.forEach(id => {
         if (rawDataCache[id]) rawDataCache[id].length = 0;
         if (valueDataCache[id]) valueDataCache[id].length = 0;
         if (stateAreasCache[id]) stateAreasCache[id].length = 0; // 新增清理
@@ -273,58 +281,43 @@ function clearWaveform() {
     // 强制清理视图
     if (rawChartRef.value?.chart) {
         rawChartRef.value.chart.setOption({ 
-            series: selectedKeys.value.map(id => ({ id: `raw_${id}`, data: [] })) 
+            series: oscilloscopeSelectedKeys.value.map(id => ({ id: `raw_${id}`, data: [] })) 
         });
     }
     if (valueChartRef.value?.chart) {
         valueChartRef.value.chart.setOption({ 
-            series: selectedKeys.value.map(id => ({ id: `val_${id}`, data: [] })) 
+            series: oscilloscopeSelectedKeys.value.map(id => ({ id: `val_${id}`, data: [] })) 
         });
     }
 }
 </script>
 
 <template>
-    <n-card style="height: 100%; display: flex; flex-direction: column;" content-style="flex: 1; display: flex; flex-direction: column;">
-        
-        <n-space style="margin-bottom: 12px; flex-shrink: 0;">
+    <n-card style="height: 100%; display: flex; flex-direction: column;"
+        content-style="flex: 1; display: flex; flex-direction: column;">
+
+        <n-flex align="center" :size="16" style="flex-shrink: 0;">
+            <div>{{ t('oscilloscope_panel_enable_debug') }}</div>
             <n-switch v-model:value="isPolling" @update:value="togglePolling">
-                <template #checked>RUN</template>
-                <template #unchecked>STOP</template>
+
             </n-switch>
-            
-            <div style="margin-left: 10px;">Target Keys (Max 4):</div>
-            <n-select 
-                v-model:value="selectedKeys" 
-                multiple 
-                :max-selected-count="4" 
-                :options="keyOptions" 
-                style="width: 260px;" 
-                placeholder="Select keys"
-            />
-            
-            <div style="margin-left: 10px;">Time Base:</div>
-            <n-slider v-model:value="windowSize" :min="500" :max="10000" :step="500" style="width: 150px;" />
-            
-            <n-button @click="clearWaveform" style="margin-left: 10px;">Clear</n-button>
-        </n-space>
 
-                <v-chart 
-                    ref="rawChartRef" 
-                    :theme="themeName" 
-                    :option="rawChartOption" 
-                    :update-options="{ replaceMerge: ['series'] }" 
-                    autoresize 
-                    style="width: 100%; height: 100%;  flex: 1" 
-                />
+            <n-select v-model:value="oscilloscopeSelectedKeys" multiple :max-selected-count="4" :options="keyOptions"
+                style="min-width: 260px; max-width: 400px; flex: 1;" placeholder="Select keys" />
 
-                <v-chart 
-                    ref="valueChartRef" 
-                    :theme="themeName" 
-                    :option="valueChartOption" 
-                    :update-options="{ replaceMerge: ['series'] }" 
-                    autoresize 
-                    style="width: 100%; height: 100%; flex: 1" 
-                />
+            <n-flex align="center" :size="8" :wrap="false">
+                <span style="white-space: nowrap;">{{ t('oscilloscope_panel_duration') }}</span>
+                <n-input-number  v-model:value="windowSize" :min="500" :step="500"/>
+            </n-flex>
+
+            <n-button @click="clearWaveform">{{ t('clear') }}</n-button>
+
+        </n-flex>
+
+        <v-chart ref="rawChartRef" :theme="themeName" :option="rawChartOption"
+            :update-options="{ replaceMerge: ['series'] }" autoresize style="width: 100%; height: 100%;  flex: 1" />
+
+        <v-chart ref="valueChartRef" :theme="themeName" :option="valueChartOption"
+            :update-options="{ replaceMerge: ['series'] }" autoresize style="width: 100%; height: 100%; flex: 1" />
     </n-card>
 </template>
