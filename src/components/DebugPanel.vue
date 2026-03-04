@@ -24,6 +24,8 @@ import VChart from 'vue-echarts';
 import { EChartsType, SeriesOption, LegendComponentOption } from 'echarts';
 import { DebugDataItem } from '../apis/utils';
 import KeyEditCell from './KeyEditCell.vue';
+import ActiveKeysMonitor from './ActiveKeysMonitor.vue';
+import OsKeyMonitor from './OsKeyMonitor.vue';
 
 use([
     CanvasRenderer,
@@ -192,6 +194,8 @@ onBeforeUnmount(() => {
                     {{ t('debug_panel_use_keymap') }}
                 </n-checkbox>
             </n-flex>
+            <ActiveKeysMonitor :data="tableData" style="margin-bottom: 12px; flex-shrink: 0;" />
+            <OsKeyMonitor style="margin-bottom: 12px; flex-shrink: 0;" />
             <div style="flex: 1; min-height: 0;">
                 <n-data-table :data="tableData" :columns="columns" :bordered="false" />
             </div>

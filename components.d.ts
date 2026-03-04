@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AboutPanel: typeof import('./src/components/AboutPanel.vue')['default']
+    ActiveKeysMonitor: typeof import('./src/components/ActiveKeysMonitor.vue')['default']
     Application: typeof import('./src/components/Application.vue')['default']
     DebugPanel: typeof import('./src/components/DebugPanel.vue')['default']
     DynamicKeyModTapPanel: typeof import('./src/components/DynamicKeyModTapPanel.vue')['default']
@@ -65,6 +66,7 @@ declare module 'vue' {
     NTabs: typeof import('naive-ui')['NTabs']
     NThing: typeof import('naive-ui')['NThing']
     OscilloscopePanel: typeof import('./src/components/OscilloscopePanel.vue')['default']
+    OsKeyMonitor: typeof import('./src/components/OsKeyMonitor.vue')['default']
     PerformancePanel: typeof import('./src/components/PerformancePanel.vue')['default']
     PlainKey: typeof import('./src/components/PlainKey.vue')['default']
     RGBPanel: typeof import('./src/components/RGBPanel.vue')['default']
