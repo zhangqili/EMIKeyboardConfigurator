@@ -102,6 +102,7 @@ const labels = computed(() => {
     }
     default: {
       labels = labels.map(() => "");
+      labels[0] = props.id.toString();
       break;
     }
   }

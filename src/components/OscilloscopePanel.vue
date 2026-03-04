@@ -270,22 +270,28 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
             }
             // 更新上一帧状态
             lastStateCache[keyId] = !!isPressed;
+            let rawDrop = 0;
+            while (rawDataCache[keyId].length > rawDrop && rawDataCache[keyId][rawDrop][0] < minHistoryTick) {
+                rawDrop++;
+            }
+            if (rawDrop > 0) rawDataCache[keyId].splice(0, rawDrop);
 
-            // --- 滑动窗口清理旧数据 ---
-            while (rawDataCache[keyId].length > 0 && rawDataCache[keyId][0][0] < minHistoryTick) {
-                rawDataCache[keyId].shift();
+            let valDrop = 0;
+            while (valueDataCache[keyId].length > valDrop && valueDataCache[keyId][valDrop][0] < minHistoryTick) {
+                valDrop++;
             }
-            while (valueDataCache[keyId].length > 0 && valueDataCache[keyId][0][0] < minHistoryTick) {
-                valueDataCache[keyId].shift();
-            }
-            while (stateAreasCache[keyId].length > 0) {
-                const firstArea = stateAreasCache[keyId][0];
+            if (valDrop > 0) valueDataCache[keyId].splice(0, valDrop);
+
+            let stateDrop = 0;
+            while (stateAreasCache[keyId].length > stateDrop) {
+                const firstArea = stateAreasCache[keyId][stateDrop];
                 if (firstArea.end !== null && firstArea.end < minHistoryTick) {
-                    stateAreasCache[keyId].shift();
+                    stateDrop++;
                 } else {
                     break;
                 }
             }
+            if (stateDrop > 0) stateAreasCache[keyId].splice(0, stateDrop);
         }
     });
 }
@@ -303,6 +309,7 @@ function renderCharts() {
             id: `raw_${id}`,
             name: `Key ${id}`,
             type: 'line',
+            sampling: 'lttb',
             xAxisIndex: 0,
             yAxisIndex: 0,
             showSymbol: false,
@@ -327,6 +334,7 @@ function renderCharts() {
             id: `val_${id}`,
             name: `Key ${id}`,
             type: 'line',
+            sampling: 'lttb',
             xAxisIndex: 1,
             yAxisIndex: 1,
             showSymbol: false,
