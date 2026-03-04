@@ -29,6 +29,9 @@ export const useMainStore = defineStore('main',
         const scriptBytecode = ref<Uint8Array>(new Uint8Array());
 
         const keyBinding = ref<number>(0);
+        const keyEvent = ref<number>(0);
+        const isVirtual = ref<boolean>(false);
+        const useKeymap = ref<boolean>(false);
         const currentLayerIndex = ref<number>(0);
         
         const tabSelection = ref<string | null>("PerformancePanel");
@@ -36,76 +39,6 @@ export const useMainStore = defineStore('main',
         const selectedProfileIndex = ref<number | undefined>(undefined);
         const debugSwitch = ref(false);
         const oscilloscopeSelectedKeys = ref<number[]>([]);
-        const debugRawChartOption = ref({
-            backgroundColor: 'transparent',
-            animation: false,
-            tooltip: {
-                trigger: 'axis',
-                transitionDuration: 0, 
-                axisPointer: {
-                    animation: false
-                }
-            },
-            legend: {
-                type: 'scroll',
-                orient: 'horizontal',
-                left: 'left',
-            },
-            axisPointer: { 
-                animation: false,
-            },
-            xAxis: {
-              type: 'value',
-              scale: true,
-              splitLine: {
-                show: false
-              },
-              //maxInterval: 1000 * 3600 * 24
-            },
-            yAxis: {
-              type: 'value',
-              splitLine: {
-                show: true
-              },
-            },
-            series: Array<SeriesOption>()
-        
-        });
-        const debugValueChartOption = ref({
-            backgroundColor: 'transparent',
-            animation: false,
-            tooltip: {
-                trigger: 'axis',
-                transitionDuration: 0, 
-                axisPointer: {
-                    animation: false
-                }
-            },
-            legend: {
-                type: 'scroll',
-                orient: 'horizontal',
-                left: 'left',
-            },
-            xAxis: {
-              type: 'value',
-              scale: true,
-              splitLine: {
-                show: false
-              },
-              //maxInterval: 1000 * 3600 * 24
-            },
-            yAxis: {
-              type: 'value',
-              splitLine: {
-                show: true
-              },
-              max: 1.1,
-              min: -0.1,
-              inverse: true,
-            },
-            series: Array<SeriesOption>()
-        
-        });
         const firmwareVersion = ref<FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
         const readmeMarkdown = ref("");
         const firmwareFeature = ref(new Feature());
@@ -138,10 +71,11 @@ export const useMainStore = defineStore('main',
             selectedProfileIndex,
 
             keyBinding,
+            keyEvent,
+            useKeymap,
+            isVirtual,
             currentLayerIndex,
 
-            debugRawChartOption,
-            debugValueChartOption,
             debugSwitch,
             oscilloscopeSelectedKeys,
             firmwareVersion,

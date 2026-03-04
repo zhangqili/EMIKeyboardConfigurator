@@ -42,13 +42,14 @@ const {
   rgbBaseConfig,
   rgbConfigs,
   keymap,
+  useKeymap,
+  isVirtual,
+  keyEvent,
   keyBinding,
   currentLayerIndex,
   tabSelection,
   profiles,
   selectedProfileIndex,
-  debugRawChartOption,
-  debugValueChartOption,
   dynamicKeys,
   macros,
   scriptSource,
@@ -452,22 +453,8 @@ function applyToSelectedKey(index: number) {
       break;
     }
     case "DebugPanel": {
-      if (!debugRawChartOption.value.series.some(item => item.id == id)) {
-        debugRawChartOption.value.series.push({
-          id: id,
-          name: 'KEY' + id.toString(),
-          type: 'line',
-          showSymbol: false,
-          data: Array<DebugDataItem>()
-        });
-        debugValueChartOption.value.series.push({
-          id: id,
-          name: 'KEY' + id.toString(),
-          type: 'line',
-          showSymbol: false,
-          data: Array<DebugDataItem>()
-        });
-      }
+      apis.emit(keyEvent.value, keyBinding.value, id, isVirtual.value, useKeymap.value)
+      console.log(keyEvent.value, keyBinding.value, id, isVirtual.value, useKeymap.value);
       break;
     }
     case "OscilloscopePanel": {

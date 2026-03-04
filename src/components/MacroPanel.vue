@@ -327,7 +327,7 @@ function handleClear() {
                       <n-select 
                         v-model:value="row.event" 
                         size="small" 
-                        :options="[{ label: t('macro_panel_key_press') || 'Press', value: 3 }, { label: t('macro_panel_key_release') || 'Release', value: 1 }]"
+                        :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
                         :disabled="row.keycode === 0"
                       />
                     </div>

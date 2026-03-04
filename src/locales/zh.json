@@ -174,6 +174,8 @@
     "debug_panel_state" : "状态",
     "debug_panel_raw" : "原始值",
     "debug_panel_value" : "归一化值",
+    "debug_panel_is_virtual" : "虚拟按键",
+    "debug_panel_use_keymap" : "自动映射",
 
     "oscilloscope_panel_enable_debug" : "启用调试",
     "oscilloscope_panel_buffer_length" : "缓冲大小",
@@ -193,6 +195,8 @@
     "dont_show_again" : "不再显示",
     "about" : "关于",
     "layout" : "布局",
+    "key_press" : "按下",
+    "key_release" : "释放",
 
     "dark" : "深色",
     "light" : "浅色"

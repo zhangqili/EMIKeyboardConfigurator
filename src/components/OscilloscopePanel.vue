@@ -194,7 +194,12 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
         delete valueDataCache[k];
         delete stateAreasCache[k];
         delete lastStateCache[k];
+        hiddenKeys.value = hiddenKeys.value.filter(id => id !== k);
     });
+    if (!isRenderPending) {
+        isRenderPending = true;
+        requestAnimationFrame(renderCharts);
+    }
 });
 
 // --- 请求循环 ---
@@ -361,7 +366,7 @@ function renderCharts() {
         }
     };
 
-if (isPolling.value) {
+    if (isPolling.value) {
         updateOption.dataZoom = [
             { id: 'dz-inside', startValue: minTick, endValue: maxTick },
             { id: 'dz-slider', startValue: minTick, endValue: maxTick, bottom: 15, height: 24 }
@@ -379,7 +384,7 @@ if (isPolling.value) {
     
     const chart = chartRef.value?.chart || chartRef.value;
     if (chart && typeof chart.setOption === 'function') {
-        chart.setOption(updateOption); 
+        chart.setOption(updateOption, { replaceMerge: ['series'] }); 
     }
     
     isRenderPending = false;
@@ -418,12 +423,12 @@ function clearWaveform() {
     });
     
     // 强制清理视图
-if (chartRef.value?.chart) {
+    if (chartRef.value?.chart) {
         const emptySeries = oscilloscopeSelectedKeys.value.flatMap(id => [
             { id: `raw_${id}`, data: [] },
             { id: `val_${id}`, data: [] }
         ]);
-        chartRef.value.chart.setOption({ series: emptySeries });
+        chartRef.value.chart.setOption({ series: emptySeries }, { replaceMerge: ['series'] });
     }
 }
 </script>

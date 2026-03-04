@@ -119,6 +119,8 @@
     "debug_panel_state" : "State",
     "debug_panel_raw" : "Raw Value",
     "debug_panel_value" : "Normalized Value",
+    "debug_panel_is_virtual" : "Virtual Key",
+    "debug_panel_use_keymap" : "Use Keymap",
 
     "oscilloscope_panel_enable_debug" : "Enable debug",
     "oscilloscope_panel_buffer_length" : "Buffer Length",
@@ -191,6 +193,8 @@
     "dont_show_again" : "Don't show again",
     "about" : "About",
     "layout" : "Layout",
+    "key_press" : "Press",
+    "key_release" : "Release",
 
     "dark" : "Dark",
     "light" : "Light"

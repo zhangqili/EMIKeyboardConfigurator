@@ -859,6 +859,7 @@ export interface IKeyboardController{
     set_script_bytecode(bytecode : Uint8Array) : void;
     get_readme_markdown() : string;
     get_feature() : IFeature;
+    emit(event :number, keycode : number, id :number, is_virtual : boolean, use_keymap : boolean) : void;
 }
 
 export interface IMacroAction {
@@ -893,6 +894,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.device = undefined;
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    emit(event: number, keycode: number, id: number, is_virtual: boolean, use_keymap: boolean): void {
+        
     }
     get_script_source(): string {
         return "";

@@ -1427,4 +1427,22 @@ export class LibampKeyboardController extends KeyboardController {
     set_script_bytecode(bytecode: Uint8Array): void {
         this.script_bytecode = bytecode;
     }
+
+    async emit(event: number, keycode: number, id: number, is_virtual: boolean, use_keymap: boolean) {
+        this.txBuffer.fill(0);
+        const dataView = new DataView(this.txBuffer.buffer);
+        this.txBuffer[0] = PacketCode.PacketCodeEvent;
+        this.txBuffer[1] = event;
+        dataView.setUint16(2, keycode ,true);
+        dataView.setUint16(4, id ,true);
+        this.txBuffer[6] = is_virtual ? 1 : 0;
+        this.txBuffer[7] = use_keymap ? 1 : 0;
+
+        try {
+            await this.enqueueCommand(this.txBuffer, 1000);
+            
+        } catch (e) {
+            console.error("emit timed out:", e);
+        }
+    }
 }

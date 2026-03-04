@@ -219,3 +219,6 @@ export async function get_script_bytecode(){
 export async function set_script_bytecode(bytecode : Uint8Array ){
     return CONTROLLER.set_script_bytecode(bytecode);
 }
+export async function emit(event: number, keycode: number, id: number, is_virtual: boolean, use_keymap: boolean){
+    return CONTROLLER.emit(event , keycode, id, is_virtual, use_keymap);
+}
