@@ -816,7 +816,7 @@ export class RGBBaseConfig implements IRGBBaseConfig {
 }
 
 export interface IKeyboardController{
-    detect(): Promise<HIDDevice[]>;
+    detect(silent: boolean): Promise<HIDDevice[]>;
     write(buf: Uint8Array) : number;
     read(buf: Uint8Array) : number ;
     read_timeout( buf: Uint8Array, timeout: number) : number;
@@ -950,7 +950,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
       return false;
     }
     
-    async detect(): Promise<HIDDevice[]>
+    async detect(silent: boolean = false): Promise<HIDDevice[]>
     {        
         return await navigator.hid.requestDevice({
             filters: [{ vendorId: 0xFFFF, productId: 0xFFFF, usagePage:0xFFC0}]

@@ -13,10 +13,26 @@ export class Zellia60Controller extends LibampKeyboardController {
         this.reset_to_default();
     }
 
-    async detect(): Promise<HIDDevice[]> {
-        return await navigator.hid.requestDevice({
-            filters: [{ vendorId: 0xFEED, productId: 22319, usagePage: 0xFF60}]  // 使用示例，过滤器可以根据需求进行调整
-        });;
+    async detect(silent: boolean = false): Promise<HIDDevice[]> {
+        const targetVendorId = 0xFEED;
+        const targetProductId = 22319;
+        const targetUsagePage = 0xFF60;
+
+        if (silent) {
+            if (!(navigator as any).hid) return [];
+            const devices = await (navigator as any).hid.getDevices();
+            return devices.filter((d: any) => 
+                d.vendorId === targetVendorId && d.productId === targetProductId
+            );
+        } else {
+            return await (navigator as any).hid.requestDevice({
+                filters: [{ 
+                    vendorId: targetVendorId, 
+                    productId: targetProductId, 
+                    usagePage: targetUsagePage 
+                }]
+            });
+        }
     }
 
     get_layout_json(): string {

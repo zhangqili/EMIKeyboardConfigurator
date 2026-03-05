@@ -907,11 +907,6 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 filterable
                 :placeholder="t('toolbar_select_device')" 
               >
-                <template #action>
-                  <n-button size="small" type="primary" dashed block @click="pairNewDevice">
-                    + {{ t('pair_new_device', '寻找新键盘 (WebHID)') }}
-                  </n-button>
-                </template>
               </n-select>
             
               <n-button 

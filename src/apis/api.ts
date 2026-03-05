@@ -18,49 +18,23 @@ export async function get_devices() {
     return DEVICES;
 }
 
-export async function set_device(device: string) {
+function create_controller(device: string): ekc.KeyboardController {
     switch (device) {
-        case "Trinity Pad":{
-            CONTROLLER = new ekc.TrinityPadController();
-            break;
-        }
-        case "Oholeo Keyboard":{
-            CONTROLLER = new ekc.OholeoKeyboardController();
-            break;
-        }
-        case "Oholeo Keyboard v2":{
-            CONTROLLER = new ekc.OholeoKeyboardV2Controller();
-            break;
-        }
-        case "Zellia60 HE":{
-            CONTROLLER = new ekc.Zellia60Controller();
-            break;
-        }
-        case "Zellia80 HE":{
-            CONTROLLER = new ekc.Zellia80Controller();
-            break;
-        }
-        case "Zellia Starlight":{
-            CONTROLLER = new ekc.ZelliaStarlightController();
-            break;
-        }
-        case "Destrez Asural Left":{
-            CONTROLLER = new ekc.DestrezAsuralLeftController();
-            break;
-        }
-        case "Destrez Asural Right":{
-            CONTROLLER = new ekc.DestrezAsuralRightController();
-            break;
-        }
-        case "ANSI 104 Sample":{
-            CONTROLLER = new ekc.ANSI104SampleController();
-            break;
-        }
-        default:{
-            CONTROLLER = new ekc.ANSI104SampleController();
-            break;
-        }
+        case "Trinity Pad": return new ekc.TrinityPadController();
+        case "Oholeo Keyboard": return new ekc.OholeoKeyboardController();
+        case "Oholeo Keyboard v2": return new ekc.OholeoKeyboardV2Controller();
+        case "Zellia60 HE": return new ekc.Zellia60Controller();
+        case "Zellia80 HE": return new ekc.Zellia80Controller();
+        case "Zellia Starlight": return new ekc.ZelliaStarlightController();
+        case "Destrez Asural Left": return new ekc.DestrezAsuralLeftController();
+        case "Destrez Asural Right": return new ekc.DestrezAsuralRightController();
+        case "ANSI 104 Sample": return new ekc.ANSI104SampleController();
+        default: return new ekc.ANSI104SampleController();;
     }
+}
+
+export async function set_device(device: string) {
+    CONTROLLER = create_controller(device);
 }
 
 export async function get_advanced_keys() {

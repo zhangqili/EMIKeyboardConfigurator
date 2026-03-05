@@ -16,10 +16,26 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
         this.feature.script_level = ScriptLevel.JIT;
     }
 
-    async detect(): Promise<HIDDevice[]> {
-        return await navigator.hid.requestDevice({
-            filters: [{ vendorId: 0x0d00, productId: 0x0721, usagePage: 0xFF60}]  // 使用示例，过滤器可以根据需求进行调整
-        });;
+    async detect(silent: boolean = false): Promise<HIDDevice[]> {
+        const targetVendorId = 0x0d00;
+        const targetProductId = 0x0721;
+        const targetUsagePage = 0xFF60;
+
+        if (silent) {
+            if (!(navigator as any).hid) return [];
+            const devices = await (navigator as any).hid.getDevices();
+            return devices.filter((d: any) => 
+                d.vendorId === targetVendorId && d.productId === targetProductId
+            );
+        } else {
+            return await (navigator as any).hid.requestDevice({
+                filters: [{ 
+                    vendorId: targetVendorId, 
+                    productId: targetProductId, 
+                    usagePage: targetUsagePage 
+                }]
+            });
+        }
     }
 
     get_layout_json(): string {
