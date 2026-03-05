@@ -3,14 +3,14 @@ import { computed, ref, shallowRef, triggerRef, watch } from 'vue'
 import { NSpace, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyTracker from './KeyTracker.vue';
-import KeySelector from './KeySelector.vue';
+import KeyTracker from '@/components/KeyTracker.vue';
+import KeySelector from '@/components/KeySelector.vue';
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, demoScriptSource, mqjsCompile } from "../apis/utils";
+import { useMainStore } from '@/store/main';
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, demoScriptSource, mqjsCompile } from "@/apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
-import HexViewer from './HexViewer.vue';
+import HexViewer from '@/components/HexViewer.vue';
 
 const { t } = useI18n();
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName } from "../apis/utils"
+import { keyboardEventToHidCodeMap, keyCodeToKeyName } from "@/apis/utils"
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
+import { useMainStore } from '@/store/main';
 import { useI18n } from 'vue-i18n';
 import KeyBadgeList, { type DisplayKey } from './KeyBadgeList.vue';
 

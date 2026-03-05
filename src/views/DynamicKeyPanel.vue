@@ -3,20 +3,20 @@ import { computed, h, onMounted, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyTracker from './KeyTracker.vue';
-import KeySelector from './KeySelector.vue';
-import DynamicKeyStrokePanel from './DynamicKeyStrokePanel.vue';
-import DynamicKeyModTapPanel from './DynamicKeyModTapPanel.vue';
-import DynamicKeyMutexPanel from './DynamicKeyMutexPanel.vue';
-import DynamicKeyToggleKeyPanel from './DynamicKeyToggleKeyPanel.vue';
+import KeyTracker from '@/components/KeyTracker.vue';
+import KeySelector from '@/components/KeySelector.vue';
+import DynamicKeyStrokePanel from '@/views/DynamicKeyStrokePanel.vue';
+import DynamicKeyModTapPanel from '@/views/DynamicKeyModTapPanel.vue';
+import DynamicKeyMutexPanel from '@/views/DynamicKeyMutexPanel.vue';
+import DynamicKeyToggleKeyPanel from '@/views/DynamicKeyToggleKeyPanel.vue';
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, mapDynamicKey } from "../apis/utils";
+import { useMainStore } from '@/store/main';
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, mapDynamicKey } from "@/apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
-import PlainKey from "./PlainKey.vue";
+import PlainKey from "@/components/PlainKey.vue";
 import { cloneDeep } from 'lodash';
-import KeyEditCell from './KeyEditCell.vue';
+import KeyEditCell from '@/components/KeyEditCell.vue';
 
 const { t } = useI18n();
 

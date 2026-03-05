@@ -2,10 +2,10 @@
 import { computed, h, ref, nextTick, watch, onMounted } from 'vue'
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
+import { useMainStore } from '@/store/main';
 import * as ekc from 'emi-keyboard-controller';
 import { NButton, NInputNumber, NSelect, NCard, NScrollbar, NCheckbox, NList, NListItem, useMessage, NTooltip } from 'naive-ui'
-import KeyEditCell from './KeyEditCell.vue';
+import KeyEditCell from '@/components/KeyEditCell.vue';
 
 const { t } = useI18n();
 const message = useMessage();

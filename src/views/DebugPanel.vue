@@ -5,10 +5,10 @@ import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex, NTag
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import type { DataTableColumns } from 'naive-ui'
-import * as apis from '../apis/api';
+import * as apis from '@/apis/api';
 import * as ekc from 'emi-keyboard-controller';
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
+import { useMainStore } from '@/store/main';
 
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -22,10 +22,10 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { EChartsType, SeriesOption, LegendComponentOption } from 'echarts';
-import { DebugDataItem, keyCodeToStringLabels } from '../apis/utils';
-import KeyEditCell from './KeyEditCell.vue';
-import ActiveKeysMonitor from './ActiveKeysMonitor.vue';
-import OsKeyMonitor from './OsKeyMonitor.vue';
+import { DebugDataItem, keyCodeToStringLabels } from '@/apis/utils';
+import KeyEditCell from '@/components/KeyEditCell.vue';
+import ActiveKeysMonitor from '@/components/ActiveKeysMonitor.vue';
+import OsKeyMonitor from '@/components/OsKeyMonitor.vue';
 
 use([
     CanvasRenderer,

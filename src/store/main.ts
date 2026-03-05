@@ -1,7 +1,7 @@
 import { AdvancedKey, DynamicKey, DynamicKeyType, Feature, FirmwareVersion, IAdvancedKey, IDynamicKey, IMacroAction, IRGBBaseConfig, IRGBConfig, RGBBaseConfig, RGBConfig } from 'emi-keyboard-controller'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { DebugDataItem, demoScriptSource, KeyConfig } from '../apis/utils';
+import { DebugDataItem, demoScriptSource, KeyConfig } from '@/apis/utils';
 import { LineSeriesOption, SeriesOption } from 'echarts';
 
 export const useMainStore = defineStore('main', 

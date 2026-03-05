@@ -10,7 +10,7 @@ import 'github-markdown-css/github-markdown.css';
 // 使用 atom-one-dark，在浅色/深色背景下都像一个深色代码编辑器，视觉效果统一且清晰
 import 'highlight.js/styles/atom-one-dark.css';
 
-import { useMainStore } from '../store/main';
+import { useMainStore } from '@/store/main';
 import { storeToRefs } from 'pinia';
 
 const props = defineProps<{

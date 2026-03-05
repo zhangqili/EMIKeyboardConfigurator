@@ -2,8 +2,8 @@
 import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick } from 'vue';
 import { NCard, NFlex, NSpace, NSwitch, NSelect, NButton, NSlider } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
-import * as apis from '../apis/api';
-import { useMainStore } from '../store/main';
+import * as apis from '@/apis/api';
+import { useMainStore } from '@/store/main';
 import { storeToRefs } from 'pinia';
 
 import { connect, use } from 'echarts/core';

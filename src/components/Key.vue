@@ -2,11 +2,11 @@
 import { computed, reactive, ref, type CSSProperties  } from "vue";
 import * as kle from "@ijprest/kle-serial";
 import { Translation } from "vue-i18n";
-import {useMainStore} from "../store/main"
+import {useMainStore} from "@/store/main"
 import * as ekc from "emi-keyboard-controller";
 import { storeToRefs } from "pinia";
 import { NPopover, NButton} from 'naive-ui'
-import { DynamicKeyToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "../apis/utils";
+import { DynamicKeyToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "@/apis/utils";
 
 const store = useMainStore();
 const { 

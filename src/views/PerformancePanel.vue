@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import * as ekc from 'emi-keyboard-controller';
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
+import { useMainStore } from '@/store/main';
 
 const { t } = useI18n();
 

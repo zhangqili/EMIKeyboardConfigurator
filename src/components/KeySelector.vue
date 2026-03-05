@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, triggerRef } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName } from "../apis/utils"
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName } from "@/apis/utils"
 import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';

@@ -3,11 +3,11 @@ import { computed, ref } from 'vue'
 import { NSpace } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyTracker from './KeyTracker.vue';
-import KeySelector from './KeySelector.vue';
+import KeyTracker from '@/components/KeyTracker.vue';
+import KeySelector from '@/components/KeySelector.vue';
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "../apis/utils";
+import { useMainStore } from '@/store/main';
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "@/apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 
 const { t } = useI18n();

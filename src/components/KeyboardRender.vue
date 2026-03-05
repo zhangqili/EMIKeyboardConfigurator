@@ -2,7 +2,7 @@
 import { computed, reactive, ref, defineEmits, watch } from "vue";
 import Key from "./Key.vue";
 import * as kle from "@ijprest/kle-serial";
-import { KeyConfig } from "../apis/utils";
+import { KeyConfig } from "@/apis/utils";
 import LayoutSubSelector from "./LayoutSubSelector.vue";
 
 const emit = defineEmits<{

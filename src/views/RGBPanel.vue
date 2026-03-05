@@ -5,9 +5,9 @@ import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } fro
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import * as ekc from 'emi-keyboard-controller';
-import { rgbToHex } from '../apis/utils';
+import { rgbToHex } from '@/apis/utils';
 import tinycolor from "tinycolor2";
-import { useMainStore } from '../store/main';
+import { useMainStore } from '@/store/main';
 import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();

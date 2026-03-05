@@ -3,26 +3,26 @@ import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, getCurrentInsta
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar } from 'naive-ui'
-import * as apis from '../apis/api'
+import * as apis from '@/apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup } from "../apis/utils";
-import { useMainStore } from "../store/main"
+import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup } from "@/apis/utils";
+import { useMainStore } from "@/store/main"
 import { storeToRefs } from "pinia";
-import { DebugDataItem, mqjsCompile } from '../apis/utils';
+import { DebugDataItem, mqjsCompile } from '@/apis/utils';
 import type { MenuOption, NotificationType } from 'naive-ui'
 import { useNotification } from 'naive-ui'
-import DynamicKeyPanel from "./DynamicKeyPanel.vue";
-import RGBPanel from "./RGBPanel.vue";
-import PerformancePanel from "./PerformancePanel.vue";
-import KeymapPanel from "./KeymapPanel.vue";
-import DebugPanel from "./DebugPanel.vue";
-import KeyboardRender from "./KeyboardRender.vue";
-import AboutPanel from "./AboutPanel.vue";
-import ScriptPanel from "./ScriptPanel.vue";
-import MacroPanel from "./MacroPanel.vue";
-import OscilloscopePanel from "./OscilloscopePanel.vue";
+import DynamicKeyPanel from "@/views/DynamicKeyPanel.vue";
+import RGBPanel from "@/views/RGBPanel.vue";
+import PerformancePanel from "@/views/PerformancePanel.vue";
+import KeymapPanel from "@/views/KeymapPanel.vue";
+import DebugPanel from "@/views/DebugPanel.vue";
+import AboutPanel from "@/views/AboutPanel.vue";
+import ScriptPanel from "@/views/ScriptPanel.vue";
+import MacroPanel from "@/views/MacroPanel.vue";
+import OscilloscopePanel from "@/views/OscilloscopePanel.vue";
+import KeyboardRender from "@/components/KeyboardRender.vue";
 import cloneDeep from "lodash/cloneDeep";
-import { setI18nLanguage } from "../locales/i18n";
+import { setI18nLanguage } from "@/locales/i18n";
 import { useRegisterSW } from 'virtual:pwa-register/vue';
 
 interface Window {

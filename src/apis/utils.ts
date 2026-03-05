@@ -1,7 +1,7 @@
 import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
-import createMqjsCompiler from '../wasm/mqjs_wasm';
-import wasmBinaryUrl from '../wasm/mqjs_wasm.wasm?url';
+import createMqjsCompiler from '@/wasm/mqjs_wasm';
+import wasmBinaryUrl from '@/wasm/mqjs_wasm.wasm?url';
 
 export const keyboardEventToHidCodeMap: Record<string, number> = {
   // 字母键

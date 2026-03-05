@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeMount } from "vue";
 import { useOsTheme, darkTheme, NConfigProvider } from 'naive-ui'
-import Application from './components/Application.vue';
-import Main from './components/Main.vue';
+import Application from '@/layouts/Application.vue';
+import Main from '@/layouts/Main.vue';
 import * as controller from "emi-keyboard-controller"
-import { setI18nLanguage } from "./locales/i18n";
-import { useMainStore } from "./store/main";
+import { setI18nLanguage } from "@/locales/i18n";
+import { useMainStore } from "@/store/main";
 import { storeToRefs } from "pinia";
 const store = useMainStore();
 const { 

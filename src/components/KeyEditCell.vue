@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { NButton, NModal, NCard, NScrollbar } from 'naive-ui';
 import KeySelector from './KeySelector.vue';
-import { keyCodeToKeyName, keyCodeToStringLabels } from "../apis/utils"; // 假设你有这个工具
+import { keyCodeToKeyName, keyCodeToStringLabels } from "@/apis/utils"; // 假设你有这个工具
 
 const props = defineProps<{
   value: number,

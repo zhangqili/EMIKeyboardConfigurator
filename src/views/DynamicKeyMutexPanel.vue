@@ -6,12 +6,12 @@ import { useI18n } from "vue-i18n";
 import KeyTracker from './KeyTracker.vue';
 import KeySelector from './KeySelector.vue';
 import { storeToRefs } from 'pinia';
-import { useMainStore } from '../store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "../apis/utils";
+import { useMainStore } from '@/store/main';
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "@/apis/utils";
 import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
-import PlainKey from "./PlainKey.vue";
-import KeyEditCell from './KeyEditCell.vue';
+import PlainKey from "@/components/PlainKey.vue";
+import KeyEditCell from '@/components/KeyEditCell.vue';
 
 const { t } = useI18n();
 
