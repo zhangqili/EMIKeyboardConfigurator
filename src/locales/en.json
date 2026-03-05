@@ -127,6 +127,8 @@
     "debug_panel_value" : "Normalized Value",
     "debug_panel_is_virtual" : "Virtual Key",
     "debug_panel_use_keymap" : "Use Keymap",
+    "debug_panel_key_event" : "Key event",
+    "debug_panel_others" : "Others",
 
     "oscilloscope_panel_enable_debug" : "Enable debug",
     "oscilloscope_panel_buffer_length" : "Buffer Length",

@@ -182,6 +182,8 @@
     "debug_panel_value" : "归一化值",
     "debug_panel_is_virtual" : "虚拟按键",
     "debug_panel_use_keymap" : "自动映射",
+    "debug_panel_key_event" : "按键事件",
+    "debug_panel_others" : "杂项",
 
     "oscilloscope_panel_enable_debug" : "启用调试",
     "oscilloscope_panel_buffer_length" : "缓冲大小",

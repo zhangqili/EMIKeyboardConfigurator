@@ -188,52 +188,74 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 }
 
 </script>
-
 <template>
-    <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
-        <n-scrollbar>
-        <n-flex vertical>
-            <n-flex vertical  v-if="keymap != undefined && keymap.length>0 &&  keymap[0].length> advancedKeys.length">
-              <div class="keyboard no-select" style="height: 54px;">
-                <PlainKey v-for="(binding,index) in keymap[currentLayerIndex].slice(advancedKeys == undefined ? 0 : advancedKeys.length)"
-                  @mousedown="(event : MouseEvent) => handleMouseDown(event, index + advancedKeys.length)"
-                  @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index + advancedKeys.length)"
-                  :width="1" :height="1" :x=index
-                  :labels="[(index + advancedKeys.length).toString()]" />
-              </div>
-            </n-flex>
-            <n-flex :align="'center'" :size="16" style="margin-bottom: 12px; flex-shrink: 0; ">
-                <span>{{ t('debug_panel_enable_debug') }}</span>
-                <n-switch v-model:value="debugSwitch" @update:value="handleChange"></n-switch>
-                <n-divider vertical></n-divider>
-                <div class="keyboard no-select" style="height: 54px; width: 54px;">
-                    <KeyEditCell :width="1" :height="1" :x="0" :y="0" v-model:value="keyBinding"></KeyEditCell>
-                </div>
-                <n-input-number v-model:value="keyBinding"></n-input-number>
-                <n-select 
-                  v-model:value="keyEvent"
-                  :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
-                  style="width: 320px;"
-                />
-                <n-checkbox 
-                  v-model:checked="isVirtual" 
-                >
-                    {{ t('debug_panel_is_virtual') }}
-                </n-checkbox>
-                <n-checkbox 
-                  v-model:checked="useKeymap" 
-                >
-                    {{ t('debug_panel_use_keymap') }}
-                </n-checkbox>
-            </n-flex>
-            <ActiveKeysMonitor :data="tableData" style="margin-bottom: 12px; flex-shrink: 0;" />
-            <OsKeyMonitor style="margin-bottom: 12px; flex-shrink: 0;" />
-            <div style="flex: 1; min-height: 0;">
-                <n-data-table :data="tableData" :columns="columns" :bordered="false" />
-            </div>
+    <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column;">
+        
+        <n-flex vertical v-if="keymap != undefined && keymap.length>0 && keymap[0].length > advancedKeys.length" style="flex-shrink: 0; margin-bottom: 16px;">
+          <div class="keyboard no-select" style="height: 54px;">
+            <PlainKey v-for="(binding,index) in keymap[currentLayerIndex].slice(advancedKeys == undefined ? 0 : advancedKeys.length)"
+              @mousedown="(event : MouseEvent) => handleMouseDown(event, index + advancedKeys.length)"
+              @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index + advancedKeys.length)"
+              :width="1" :height="1" :x=index
+              :labels="[(index + advancedKeys.length).toString()]" />
+          </div>
         </n-flex>
-
-        </n-scrollbar>
+        
+        <n-split direction="horizontal" :default-size="0.3" style="flex: 1; min-height: 0;">
+          
+          <template #1>
+            <n-scrollbar style="height: 100%; padding-right: 16px;">
+              <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
+                <n-form-item :label="t('debug_panel_enable_debug')">
+                  <n-switch v-model:value="debugSwitch" @update:value="handleChange"></n-switch>
+                </n-form-item>
+                <n-form-item :label="t('key')">
+                  <n-flex :align="'center'">
+                      <n-input-number v-model:value="keyBinding"></n-input-number>
+                      <div class="keyboard no-select" style="height: 54px; width: 54px;">
+                          <KeyEditCell :width="1" :height="1" :x="0" :y="0" v-model:value="keyBinding"></KeyEditCell>
+                      </div>
+                  </n-flex>
+                </n-form-item>
+                <n-form-item :label="t('debug_panel_key_event')">                    
+                  <n-select 
+                    v-model:value="keyEvent"
+                    :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
+                    style="width: 320px;"
+                  />
+                </n-form-item>
+                <n-form-item :label="t('debug_panel_others')">
+                  <n-flex>
+                  <n-checkbox v-model:checked="isVirtual">
+                      {{ t('debug_panel_is_virtual') }}
+                  </n-checkbox>
+                  <n-checkbox v-model:checked="useKeymap">
+                      {{ t('debug_panel_use_keymap') }}
+                  </n-checkbox>
+                  </n-flex>
+                </n-form-item>
+              </n-form>
+            </n-scrollbar>
+          </template>
+          
+          <template #2>
+            <div style="display: flex; flex-direction: column; height: 100%; padding-left: 16px;">
+                
+                <ActiveKeysMonitor :data="tableData" style="margin-bottom: 12px; flex-shrink: 0;" />
+                <OsKeyMonitor style="margin-bottom: 12px; flex-shrink: 0;" />
+                
+                <n-data-table 
+                  :data="tableData" 
+                  :columns="columns" 
+                  :bordered="false" 
+                  flex-height
+                  style="flex: 1; min-height: 0;"
+                />
+                
+            </div>
+          </template>
+          
+        </n-split>
     </n-card>
 </template>
 
