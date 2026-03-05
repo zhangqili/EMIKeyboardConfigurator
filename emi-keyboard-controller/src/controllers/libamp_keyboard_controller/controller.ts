@@ -85,6 +85,16 @@ export class RequestQueue {
 
         this.isProcessing = false;
     }
+    public clear(reason: Error = new Error("Queue cleared")) {
+        // 将队列中所有还未执行的 Promise 全部 reject 掉，防止外部 await 死等
+        for (const item of this.queue) {
+            item.reject(reason);
+        }
+        // 清空数组释放内存
+        this.queue = [];
+        // 释放处理锁
+        this.isProcessing = false;
+    }
 }
 
 export class LibampKeyboardController extends KeyboardController {
@@ -227,6 +237,8 @@ export class LibampKeyboardController extends KeyboardController {
             this.pendingRequest.reject(new Error("Device disconnected abruptly"));
             this.pendingRequest = null;
         }
+
+        this.requestQueue.clear(new Error("Device disconnected abruptly"));
     }
 
     private async _set_large_data(dataType: number, data: Uint8Array): Promise<void> {

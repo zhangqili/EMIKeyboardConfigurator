@@ -889,13 +889,48 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
       <n-layout-header class="header" bordered>
         <n-grid :x-gap="12" :y-gap="12" :cols="5">
           <n-gi :span="4">
-            <n-flex>
-              <n-select @update:value="handleUpdateDeviceValue" style="max-width: 200px;" :disabled="isReady"
-                v-model:value="selectedDevice" v-model:options="devices" filterable
-                :placeholder="t('toolbar_select_device')" />
-              <n-button @click="connectCommand" :disabled="selectedDevice == undefined">{{ isConnected ?
-                t('toolbar_disconnect') :
-                t('toolbar_connect') }}</n-button>
+            <n-flex align="center">
+              
+              <div :style="{
+                width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                backgroundColor: isReady ? '#18a058' : (isConnected ? '#f0a020' : '#d32f2f'),
+                boxShadow: isReady ? '0 0 8px #18a058' : 'none',
+                transition: 'all 0.3s'
+              }"></div>
+          
+              <n-select 
+                @update:value="handleUpdateDeviceValue" 
+                style="width: 240px;" 
+                :disabled="isConnected"
+                v-model:value="selectedDevice" 
+                v-model:options="devices" 
+                filterable
+                :placeholder="t('toolbar_select_device')" 
+              >
+                <template #action>
+                  <n-button size="small" type="primary" dashed block @click="pairNewDevice">
+                    + {{ t('pair_new_device', '寻找新键盘 (WebHID)') }}
+                  </n-button>
+                </template>
+              </n-select>
+            
+              <n-button 
+                v-if="isConnected" 
+                @click="connectCommand" 
+                type="error" 
+                secondary
+              >
+                {{ t('toolbar_disconnect') }}
+              </n-button>
+              <n-button 
+                v-else 
+                @click="connectCommand" 
+                type="primary" 
+                :disabled="selectedDevice == undefined"
+              >
+                {{ t('toolbar_connect') }}
+              </n-button>
+            
               <n-button @click="applyCommand" :disabled="!isReady">{{ t('toolbar_apply') }}</n-button>
               <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
                 :options="advanced_options">
@@ -904,6 +939,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
               <n-button tertiary :type="versionStatusType">
                 {{ displayVersion }}
               </n-button>
+            
             </n-flex>
           </n-gi>
           <n-gi :span="1">
