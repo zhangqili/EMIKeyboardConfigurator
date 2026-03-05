@@ -1,62 +1,75 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { NCard, NFlex, NTag } from 'naive-ui';
+import { ref, watch } from 'vue';
+import KeyMonitorDisplay from './KeyMonitorDisplay.vue';
+import type { DisplayKey } from './KeyBadgeList.vue';
 
-// 定义传入的数据接口，只需要关心我们渲染所需的字段
 interface KeyData {
     id: number;
     state: boolean;
     report_state: boolean;
-    [key: string]: any; // 允许存在 raw, value 等其他字段
+    [key: string]: any; 
 }
 
-// 接收父组件传来的表格映射数据
 const props = defineProps<{
     data: KeyData[];
 }>();
 
-// 实时筛选出处于按下状态的按键
-const pressedKeys = computed(() => {
-    if (!props.data) return [];
-    return props.data.filter(row => row.state || row.report_state);
-});
+// 扩展 DisplayKey 以记录硬件物理 ID
+interface HardwareKeyRecord extends DisplayKey {
+    id: number; 
+}
+
+const pressedKeys = ref<HardwareKeyRecord[]>([]);
+const releasedKeys = ref<HardwareKeyRecord[]>([]);
+let globalId = 0;
+
+watch(() => props.data, (newData) => {
+    if (!newData) return;
+
+    const currentActiveIds = newData
+        .filter(row => row.state || row.report_state)
+        .map(row => row.id);
+
+    // 1. 模拟 KeyUp
+    for (let i = pressedKeys.value.length - 1; i >= 0; i--) {
+        const tk = pressedKeys.value[i];
+        if (!currentActiveIds.includes(tk.id)) {
+            pressedKeys.value.splice(i, 1);
+            
+            tk.isFading = false;
+            releasedKeys.value.unshift(tk);
+
+            setTimeout(() => { tk.isFading = true; }, 20);
+            const currentUuid = tk.uuid;
+            setTimeout(() => {
+                releasedKeys.value = releasedKeys.value.filter(k => k.uuid !== currentUuid);
+            }, 500);
+        }
+    }
+
+    // 2. 模拟 KeyDown
+    currentActiveIds.forEach(id => {
+        const isAlreadyPressed = pressedKeys.value.some(k => k.id === id);
+        if (!isAlreadyPressed) {
+            const ghostIndex = releasedKeys.value.findIndex(k => k.id === id);
+            if (ghostIndex !== -1) {
+                releasedKeys.value.splice(ghostIndex, 1);
+            }
+
+            pressedKeys.value.unshift({
+                uuid: globalId++,
+                id: id,
+                label: `Key ${id}` // 组装硬件显示的文本
+            });
+        }
+    });
+}, { deep: true, immediate: true }); 
 </script>
 
 <template>
-    <n-card 
-        size="small" 
-        :bordered="true"
-    >
-        <n-flex :size="8" style="min-height: 34px; align-items: center; position: relative;">
-
-            <TransitionGroup name="fade">
-                <n-tag 
-                    v-for="key in pressedKeys" 
-                    :key="key.id" 
-                    type="success" 
-                    size="large" 
-                    :bordered="false"
-                    style="font-weight: bold; font-size: 14px; border-radius: 6px;"
-                >
-                    Key {{ key.id }}
-                </n-tag>
-            </TransitionGroup>
-        </n-flex>
-    </n-card>
+    <KeyMonitorDisplay 
+        tag-type="success"
+        :pressed="pressedKeys"
+        :released="releasedKeys"
+    />
 </template>
-
-<style scoped>
-/* 声明动画的持续时间和缓动曲线（使用平滑的 ease-out 替代弹跳，时间拉长到 0.4s） */
-.fade-leave-active {
-    transition: opacity 0.5s ease-out;
-}
-
-/* 离开的最终状态是完全透明 */
-.fade-leave-to {
-    opacity: 0;
-}
-
-/* 🚨 核心修改：我们彻底删除了 .pop-leave-active { position: absolute; } */
-/* 这样，松开的按键在 0.4s 内会一直占据着原来的物理位置，直到完全透明消失后，
-   右侧的元素才会瞬间补位。彻底杜绝了重叠和乱窜的现象！ */
-</style>

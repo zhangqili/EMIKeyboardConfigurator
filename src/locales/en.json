@@ -33,6 +33,10 @@
     "main_webhid_detect_title" : "Your browser doesn't support WebHID",
     "main_webhid_detect_content" : "Please use a browser with Chromium >= 89 to access your device.",
 
+    "main_new_version_title" : "New version detected",
+    "main_new_version_content" : "",
+    "main_refresh_now" : "Refresh Now",
+
     "key_tracker_desc" : "Press any key here",
 
     "key_selector_normal" : "Normal",

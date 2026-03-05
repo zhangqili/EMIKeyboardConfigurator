@@ -1,32 +1,60 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { NCard, NFlex, NTag } from 'naive-ui';
+import KeyMonitorDisplay from './KeyMonitorDisplay.vue';
+import type { DisplayKey } from './KeyBadgeList.vue';
 
-// 使用 Set 来存储当前按下的键，天然去重（防止长按时触发连续的 keydown）
-const activeKeys = ref<Set<string>>(new Set());
+// 扩展 DisplayKey 接口以记录系统键值特有的 code 属性，方便查找
+interface OsKeyRecord extends DisplayKey {
+    code: string; 
+}
+
+const pressedKeys = ref<OsKeyRecord[]>([]);
+const releasedKeys = ref<OsKeyRecord[]>([]);
+let globalId = 0; 
 
 const handleKeyDown = (e: KeyboardEvent) => {
-    // 忽略单纯的修饰键长按时可能产生的重复事件
     if (e.repeat) return; 
+    const ghostIndex = releasedKeys.value.findIndex(k => k.code === e.code);
+    if (ghostIndex !== -1) {
+        releasedKeys.value.splice(ghostIndex, 1);
+    }
     
-    // 使用 e.code (如 'KeyA', 'ShiftLeft') 能够无视输入法，准确反映物理按键位置
-    // 你也可以换成 e.key (如 'a', 'A', 'Shift') 来显示实际字符
-    const keyName = e.code; 
-    
-    activeKeys.value.add(keyName);
-    // 强制触发 Vue 响应式更新
-    activeKeys.value = new Set(activeKeys.value);
+    if (!pressedKeys.value.some(k => k.code === e.code)) {
+        pressedKeys.value.unshift({
+            uuid: globalId++,
+            code: e.code,
+            label: e.code // 直接显示 code
+        });
+    }
 };
 
 const handleKeyUp = (e: KeyboardEvent) => {
-    activeKeys.value.delete(e.code);
-    activeKeys.value = new Set(activeKeys.value);
+    const index = pressedKeys.value.findIndex(k => k.code === e.code);
+    if (index !== -1) {
+        const keyRecord = pressedKeys.value[index];
+        pressedKeys.value.splice(index, 1);
+
+        keyRecord.isFading = false;
+        releasedKeys.value.unshift(keyRecord); 
+        
+        setTimeout(() => { keyRecord.isFading = true; }, 20);
+        setTimeout(() => {
+            releasedKeys.value = releasedKeys.value.filter(k => k.uuid !== keyRecord.uuid);
+        }, 500);
+    }
 };
 
-// 当窗口失去焦点时（比如用 Alt+Tab 切走），清空所有按键，防止幽灵按键残留
 const handleBlur = () => {
-    activeKeys.value.clear();
-    activeKeys.value = new Set();
+    pressedKeys.value.forEach(keyRecord => {
+        keyRecord.isFading = false;
+        releasedKeys.value.unshift(keyRecord);
+        
+        setTimeout(() => { keyRecord.isFading = true; }, 20);
+        setTimeout(() => {
+            releasedKeys.value = releasedKeys.value.filter(k => k.uuid !== keyRecord.uuid);
+        }, 500);
+    });
+    pressedKeys.value = [];
 };
 
 onMounted(() => {
@@ -41,37 +69,11 @@ onBeforeUnmount(() => {
     window.removeEventListener('blur', handleBlur);
 });
 </script>
+
 <template>
-    <n-card 
-        size="small" 
-        :bordered="true"
-    >
-        <n-flex :size="8" style="min-height: 34px; align-items: center; position: relative;">
-
-            <TransitionGroup name="fade">
-                <n-tag 
-                    v-for="key in activeKeys" 
-                    :key="key" 
-                    type="info" 
-                    size="large" 
-                    :bordered="false"
-                    style="font-weight: bold; font-size: 14px; border-radius: 6px;"
-                >
-                    {{ key }}
-                </n-tag>
-            </TransitionGroup>
-            
-        </n-flex>
-    </n-card>
+    <KeyMonitorDisplay 
+        tag-type="info"
+        :pressed="pressedKeys"
+        :released="releasedKeys"
+    />
 </template>
-
-<style scoped>
-.fade-leave-active {
-    transition: opacity 0.5s ease-out;
-}
-
-/* 离开的最终状态是完全透明 */
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

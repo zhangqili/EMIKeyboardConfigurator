@@ -33,6 +33,10 @@
     "main_webhid_detect_title" : "你的浏览器不支持WebHID",
     "main_webhid_detect_content" : "请使用Chromium内核版本大于89的浏览器以访问你的设备",
 
+    "main_new_version_title" : "检测到新版配置器",
+    "main_new_version_content" : "",
+    "main_refresh_now" : "立即刷新",
+
     "key_tracker_desc" : "在这里按下按键",
 
     "key_selector_normal" : "普通",

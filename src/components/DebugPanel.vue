@@ -22,7 +22,7 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import { EChartsType, SeriesOption, LegendComponentOption } from 'echarts';
-import { DebugDataItem } from '../apis/utils';
+import { DebugDataItem, keyCodeToStringLabels } from '../apis/utils';
 import KeyEditCell from './KeyEditCell.vue';
 import ActiveKeysMonitor from './ActiveKeysMonitor.vue';
 import OsKeyMonitor from './OsKeyMonitor.vue';
@@ -41,7 +41,7 @@ const { t } = useI18n();
 const store = useMainStore();
 // 只取 switch 和 advancedKeys 用于显示
 // 移除 chart_option 的响应式解构，我们只在初始化时用它
-const { advancedKeys, debugSwitch, themeName, keyBinding, keyEvent, isVirtual, useKeymap } = storeToRefs(store);
+const { advancedKeys, debugSwitch, themeName, keyBinding, keyEvent, isVirtual, useKeymap, keymap, currentLayerIndex } = storeToRefs(store);
 // 手动非响应式获取初始配置，避免 watch 开销
 const isPolling = ref(false);
 
@@ -109,7 +109,13 @@ const columns: DataTableColumns<ekc.IAdvancedKey> = [
             )
         }
     },
-    { title: t('debug_panel_raw'), key: 'raw', width: 100 },
+    { title: t('debug_panel_raw'), key: 'raw', width: 100,
+        render(row) {
+            if (typeof row.raw === 'number') {
+                return row.raw.toFixed(2);
+            }
+            return row.raw;
+        } },
     { title: t('debug_panel_value'), key: 'value', width: 100,
         render(row) {
             if (typeof row.value === 'number') {
@@ -163,13 +169,39 @@ onBeforeUnmount(() => {
     apis.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
+function handleMouseDown(event : MouseEvent, index: number) {
+  if (event.buttons === 1) {
+    apis.emit(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value)
+    console.log(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value);
+  } else {
+
+  }
+}
+
+function handleMouseEnter(event : MouseEvent, index: number) {
+  if (event.buttons === 1) {
+    apis.emit(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value)
+    console.log(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value);
+  } else {
+
+  }
+}
+
 </script>
 
 <template>
     <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
         <n-scrollbar>
         <n-flex vertical>
-
+            <n-flex vertical  v-if="keymap != undefined && keymap.length>0 &&  keymap[0].length> advancedKeys.length">
+              <div class="keyboard no-select" style="height: 54px;">
+                <PlainKey v-for="(binding,index) in keymap[currentLayerIndex].slice(advancedKeys == undefined ? 0 : advancedKeys.length)"
+                  @mousedown="(event : MouseEvent) => handleMouseDown(event, index + advancedKeys.length)"
+                  @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index + advancedKeys.length)"
+                  :width="1" :height="1" :x=index
+                  :labels="[(index + advancedKeys.length).toString()]" />
+              </div>
+            </n-flex>
             <n-flex :align="'center'" :size="16" style="margin-bottom: 12px; flex-shrink: 0; ">
                 <span>{{ t('debug_panel_enable_debug') }}</span>
                 <n-switch v-model:value="debugSwitch" @update:value="handleChange"></n-switch>

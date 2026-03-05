@@ -23,6 +23,7 @@ import MacroPanel from "./MacroPanel.vue";
 import OscilloscopePanel from "./OscilloscopePanel.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "../locales/i18n";
+import { useRegisterSW } from 'virtual:pwa-register/vue';
 
 interface Window {
   showOpenFilePicker?: any;
@@ -61,6 +62,7 @@ const {
   firmwareFeature,
   oscilloscopeSelectedKeys
 } = storeToRefs(store);
+
 
 const message = useMessage();
 const notification = useNotification();
@@ -146,6 +148,46 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (resizeObserver) resizeObserver.disconnect();
 });
+
+const {
+  needRefresh,
+  updateServiceWorker,
+} = useRegisterSW({
+  onRegistered(r) {
+    if (r) {
+      setInterval(() => {
+        r.update();
+      }, 60 * 60 * 1000);
+    }
+  },
+  onRegisterError(error: any) {
+    console.error('Service Worker 注册失败', error);
+  }
+});
+
+watch(needRefresh, (isNeed) => {
+  if (isNeed) {
+    const n = notification.info({
+      title: t('main_new_version_title'),
+      content: t('main_new_version_content'),
+      duration: 0,
+      keepAliveOnHover: true,
+      action: () =>
+        h(
+          NButton,
+          {
+            type: 'primary',
+            onClick: () => {
+              n.destroy();
+              updateServiceWorker(true);
+            }
+          },
+          { default: () => t('main_refresh_now') }
+        )
+    });
+  }
+}, { immediate: true });
+
 
 // 处理拖拽结束事件：判断是否需要“吸附”
 function handleDragEnd() {

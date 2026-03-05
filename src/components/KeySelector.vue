@@ -150,7 +150,7 @@ const keyboard_config_value = ref((KeyboardConfig.KeyboardConfigDebug as number)
                             <n-button-group>
                                 <n-button v-for="(key, index) in Object.keys(KeyModifier)
                                     .slice(1, 9)" @click="handleKeyModifierClick(key)"
-                                    :type="((binding >> 8) & 0xFF & (key as unknown as number)) > 0 ? 'primary' : ''">
+                                    :type="(((binding >> 8) & 0xFF & (key as unknown as number)) > 0) ? 'primary' : ''">
                                     {{ keyModifierToKeyName[key as unknown as KeyModifier] }}</n-button>
                             </n-button-group>
                         </n-space>

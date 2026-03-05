@@ -47,10 +47,9 @@ function handleMouseEnter(event : MouseEvent, index: number) {
             :width="1" :height="1" :x=index
             :labels="keyCodeToStringLabels(binding)" />
         </div>
-        <n-divider></n-divider>
       </n-flex>
+      <OsKeyMonitor style="margin-bottom: 12px; flex-shrink: 0;" />
       <KeyTracker v-model:binding="keyBinding"></KeyTracker>
-      <n-divider></n-divider>
       <KeySelector v-model:binding="keyBinding"></KeySelector>
     </n-scrollbar>
   </n-card>
