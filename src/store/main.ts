@@ -14,13 +14,8 @@ export const useMainStore = defineStore('main',
         const keyboardKeys = ref<KeyConfig[]>([]);
 
         const selectedDevice = ref<string | undefined>(undefined);
-        const advancedKey = ref<IAdvancedKey>(new AdvancedKey());
-        const rgbConfig = ref<IRGBConfig>(new RGBConfig());
-        const dynamicKey = ref<IDynamicKey>(new DynamicKey());;
-        const dynamicKeyIndex = ref<number>(-1);;
 
         const advancedKeys = ref<IAdvancedKey[]>([]);
-        const rgbBaseConfig = ref<IRGBBaseConfig>(new RGBBaseConfig());
         const rgbConfigs = ref<IRGBConfig[]>([]);
         const keymap = ref<number[][]>([new Array<number>]);
         const dynamicKeys = ref<IDynamicKey[]>([]);
@@ -52,13 +47,8 @@ export const useMainStore = defineStore('main',
             keyboardKeys,
 
             selectedDevice,
-            advancedKey,
-            rgbConfig,
-            dynamicKey,
-            dynamicKeyIndex,
 
             advancedKeys,
-            rgbBaseConfig,
             rgbConfigs,
             keymap,
             dynamicKeys,

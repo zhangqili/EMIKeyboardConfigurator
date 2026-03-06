@@ -35,12 +35,7 @@ const store = useMainStore();
 const {
   lang,
   selectedDevice,
-  advancedKey,
-  rgbConfig,
-  dynamicKey,
-  dynamicKeyIndex,
   advancedKeys,
-  rgbBaseConfig,
   rgbConfigs,
   keymap,
   useKeymap,
@@ -67,6 +62,11 @@ const {
 const message = useMessage();
 const notification = useNotification();
 const isConnected = ref<boolean>(false);
+const advancedKey = ref<ekc.IAdvancedKey>(new ekc.AdvancedKey());
+const rgbBaseConfig = ref<ekc.IRGBBaseConfig>(new ekc.RGBBaseConfig());
+const rgbConfig = ref<ekc.IRGBConfig>(new ekc.RGBConfig());
+const dynamicKey = ref<ekc.IDynamicKey>(new ekc.DynamicKey());
+const dynamicKeyIndex = ref<number>(-1);;
 
 const latest_version = ref({
   major: 0,
@@ -431,7 +431,7 @@ function applyToSelectedKey(index: number) {
                 dynamic_key_mutex.is_key2_primary = false;
                 const binding = keymap.value[currentLayerIndex.value][id];
                 dynamic_key_mutex.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
-                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
                 dynamicKey.value = dynamic_key_mutex;
 
@@ -440,7 +440,7 @@ function applyToSelectedKey(index: number) {
                 dynamic_key_mutex.is_key2_primary = true;
                 const binding = keymap.value[currentLayerIndex.value][id];
                 dynamic_key_mutex.target_keys_location[1] = { layer: currentLayerIndex.value, id: id };
-                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
                 dynamicKey.value = dynamic_key_mutex;
               }
@@ -450,7 +450,7 @@ function applyToSelectedKey(index: number) {
                   keymap.value[dynamicKey.value.target_keys_location[1].layer][dynamicKey.value.target_keys_location[1].id] = last_binding;
                   const binding = keymap.value[currentLayerIndex.value][id];
                   dynamicKey.value.target_keys_location[1] = { layer: currentLayerIndex.value, id: id };
-                  keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                  keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                   dynamicKey.value.set_primary_binding(binding);
                 }
                 else {
@@ -458,11 +458,12 @@ function applyToSelectedKey(index: number) {
                   keymap.value[dynamicKey.value.target_keys_location[0].layer][dynamicKey.value.target_keys_location[0].id] = last_binding;
                   const binding = keymap.value[currentLayerIndex.value][id];
                   dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
-                  keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                  keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                   dynamicKey.value.set_primary_binding(binding);
 
                 }
               }
+              dynamicKeys.value[dynamicKeyIndex.value] = dynamicKey.value;
               triggerRef(dynamicKey);
               mapDynamicKey(keymap.value, dynamicKeys.value);
             }
@@ -472,7 +473,7 @@ function applyToSelectedKey(index: number) {
               if (dynamicKey.value.target_keys_location.length == 0) {
                 const binding = keymap.value[currentLayerIndex.value][id];
                 dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
-                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                 dynamicKey.value.set_primary_binding(binding);
               }
               else {
@@ -480,9 +481,10 @@ function applyToSelectedKey(index: number) {
                 keymap.value[dynamicKey.value.target_keys_location[0].layer][dynamicKey.value.target_keys_location[0].id] = last_binding;
                 const binding = keymap.value[currentLayerIndex.value][id];
                 dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
-                keymap.value[currentLayerIndex.value][id] = (ekc.Keycode.DynamicKey & 0xFF | (dynamicKeyIndex.value & 0xFF << 8));
+                keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                 dynamicKey.value.set_primary_binding(binding);
               }
+              dynamicKeys.value[dynamicKeyIndex.value] = dynamicKey.value;
               mapDynamicKey(keymap.value, dynamicKeys.value);
             }
             break;
@@ -1060,7 +1062,12 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
             <template #2>
               <div style="height: 100%; overflow-y: auto; display: flex; flex-direction: column;">
                 <Transition name="fade" mode="out-in">
-                  <component :is="currentPanel" />
+                  <component :is="currentPanel" 
+                  v-model:advancedKey="advancedKey"
+                  v-model:rgbBaseConfig="rgbBaseConfig"
+                  v-model:rgbConfig="rgbConfig"
+                  v-model:dynamicKey="dynamicKey"
+                  v-model:dynamicKeyIndex="dynamicKeyIndex"/>
                 </Transition>
               </div>
             </template>

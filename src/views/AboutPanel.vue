@@ -18,8 +18,6 @@ const { t } = useI18n();
 
 const message = useMessage();
 
-const dynamicKey = ref<ekc.IDynamicKey>();
-
 const store = useMainStore();
 const { readmeMarkdown } = storeToRefs(store);
 </script>

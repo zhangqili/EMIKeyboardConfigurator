@@ -12,9 +12,12 @@ import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();
 const store = useMainStore();
-const {rgbConfig, keyboardKeys, rgbConfigs, rgbBaseConfig} = storeToRefs(store);
+const {keyboardKeys, rgbConfigs} = storeToRefs(store);
 const direction = ref(0);
 const density = ref(10);
+
+const rgbBaseConfig = defineModel<ekc.IRGBBaseConfig>('rgbBaseConfig', { default: new ekc.RGBBaseConfig() });
+const rgbConfig = defineModel<ekc.IRGBConfig>('rgbConfig', { default: new ekc.RGBConfig() });
 
 const base_speed = computed<number>({
   get: () => (Math.round(rgbBaseConfig.value.speed * 1000)),

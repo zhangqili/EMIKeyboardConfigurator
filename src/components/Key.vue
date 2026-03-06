@@ -10,24 +10,12 @@ import { DynamicKeyToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplay
 
 const store = useMainStore();
 const { 
-  lang,
-  selectedDevice,
-  advancedKey, 
-  rgbConfig, 
-  dynamicKey,
-  dynamicKeyIndex,
-  advancedKeys, 
-  rgbBaseConfig,
+  advancedKeys,
   rgbConfigs, 
   keymap, 
-  keyBinding, 
   currentLayerIndex, 
   tabSelection,
-  profiles,
-  selectedProfileIndex,
   dynamicKeys,
-  keyboardKeys,
-  themeName
 } = storeToRefs(store);
 
 const labels = computed(() => {
