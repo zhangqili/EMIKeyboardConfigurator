@@ -23,12 +23,11 @@ import KeyboardRender from "@/components/KeyboardRender.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "@/locales/i18n";
 
-// 🚨 1. 声明安全类型，剔除报错的 listeners 属性
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
 const props = defineProps<{ 
   deviceName: string;
-  controller?: SafeController; // 🚨 2. 使用安全类型
+  controller?: SafeController; 
 }>();
 
 const controller = computed(() => props.controller);
@@ -199,7 +198,7 @@ function updateKeyboard(value: kle.Keyboard) {
 }
 
 watch(() => props.deviceName, async (newName) => {
-  if (!newName || !controller.value) return; // 🚨 安全卫兵
+  if (!newName || !controller.value) return;
   if (isConnected.value) {
     await controller.value.disconnect();
     isConnected.value = false;
@@ -212,14 +211,14 @@ watch(() => props.deviceName, async (newName) => {
 }, { immediate: true });
 
 async function connect_device() {
-    if (!controller.value) return false; // 🚨 安全卫兵
+    if (!controller.value) return false;
     var d = await controller.value.detect();
     if (d.length > 0) return await controller.value.connect(d[0]);
     else return false;
 }
 
 async function connectCommand() {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   if (isConnected.value) {
     await controller.value.disconnect();
     isConnected.value = false;
@@ -232,7 +231,7 @@ async function connectCommand() {
 }
 
 async function applyCommand() {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   if (isConnected.value) {
     const argsString = "--no-column -m32";
     const { bytecode } = await mqjsCompile(scriptSource.value, argsString);
@@ -251,7 +250,7 @@ async function applyCommand() {
 }
 
 async function getController() {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   advancedKeys.value = await controller.value.get_advanced_keys();
   keymap.value = await controller.value.get_keymap();
   rgbBaseConfig.value = await controller.value.get_rgb_base_config();
@@ -279,7 +278,7 @@ async function getController() {
 }
 
 async function updateData() {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   if (keymap.value != undefined) mapBackDynamicKey(keymap.value, dynamicKeys.value);
   selectedProfileIndex.value = await controller.value.get_profile_index();
   macros.value = await controller.value.get_macros();
@@ -290,7 +289,7 @@ async function updateData() {
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   await controller.value.set_profile_index(option.value as number);
 }
 
@@ -371,7 +370,7 @@ function applyToSelectedKey(index: number) {
       }
       break;
     case "DebugPanel":
-      if (controller.value) { // 🚨 安全卫兵
+      if (controller.value) {
         controller.value.emit(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value);
       }
       break;
@@ -390,7 +389,7 @@ function applyToSelectedKey(index: number) {
 interface IConfig { device: string; advancedKeys: ekc.IAdvancedKey[]; rgbBaseConfig: ekc.IRGBBaseConfig; keymap: number[][]; rgbConfigs: ekc.IRGBConfig[]; dynamicKeys: ekc.IDynamicKey[]; }
 
 async function loadDefaultConfig() {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   controller.value.reset_to_default();
   advancedKeys.value = await controller.value.get_advanced_keys();
   keymap.value = await controller.value.get_keymap();
@@ -469,7 +468,7 @@ watch(menuOptions, (newOpts) => {
 });
 
 function handleAdvancedMenu(key: string | number) {
-  if (!controller.value) return; // 🚨 安全卫兵
+  if (!controller.value) return;
   if (isConnected.value) {
     switch (key) {
       case advanced_options.value[0].key: controller.value.flash_config(); break;
