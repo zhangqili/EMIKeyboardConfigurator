@@ -106,7 +106,7 @@ export class LibampKeyboardController extends KeyboardController {
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
     private requestQueue = new RequestQueue();
     firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
-    macros : MacroAction[][] = [new Array<MacroAction>];
+    macros : MacroAction[][] = [[]];
     feature : Feature = {
         script_level: ScriptLevel.Disable,
         advanced_key_flag: true,

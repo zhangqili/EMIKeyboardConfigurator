@@ -908,7 +908,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         return "KeyboardController";
     }
     get_macros(): IMacroAction[][] {
-        return [new Array<MacroAction>];
+        return [[]];
     }
     set_macros(macros: IMacroAction[][]): void {
         
@@ -1012,11 +1012,11 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     reset_to_default() : void
     {
-        this.advanced_keys = new Array<IAdvancedKey>();
+        this.advanced_keys = [];
         this.rgb_base_config = new RGBBaseConfig();
-        this.rgb_configs = new Array<IRGBConfig>();
-        this.keymap = new Array<Array<number>>();
-        this.dynamic_keys = new Array<IDynamicKey>();
+        this.rgb_configs = [];
+        this.keymap = [];
+        this.dynamic_keys = [];
         this.config_index = 0;
     }
     fetch_config() : void

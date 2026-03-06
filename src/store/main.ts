@@ -9,35 +9,8 @@ export const useMainStore = defineStore('main',
     () => {
         // 所有这些属性都将自动推断出它们的类型
         const themeName = ref<string>('dark');
-
-        const keyboardKeys = ref<KeyConfig[]>([]);
-
-        const advancedKeys = ref<IAdvancedKey[]>([]);
-        const rgbConfigs = ref<IRGBConfig[]>([]);
-        const keymap = ref<number[][]>([new Array<number>]);
-        const dynamicKeys = ref<IDynamicKey[]>([]);
-        const macros = ref<IMacroAction[][]>([new Array<IMacroAction>]);
-
-        const currentLayerIndex = ref<number>(0);
-        
-        const tabSelection = ref<string | null>("PerformancePanel");
-
-        //keymap: [][] as number[][],
-        //hasChanged: true,
         return {
             themeName,
-
-            keyboardKeys,
-
-            advancedKeys,
-            rgbConfigs,
-            keymap,
-            dynamicKeys,
-            macros,
-
-            tabSelection,
-            
-            currentLayerIndex,
         }
     }
   );

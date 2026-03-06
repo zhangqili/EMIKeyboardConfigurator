@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, type Ref, ref } from 'vue'
 import { NSpace } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -7,8 +7,8 @@ import KeyTracker from '@/components/KeyTracker.vue';
 import KeySelector from '@/components/KeySelector.vue';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '@/store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "@/apis/utils";
-import { Keycode } from 'emi-keyboard-controller';
+import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels, KeyConfig } from "@/apis/utils";
+import * as ekc from 'emi-keyboard-controller';
 
 const { t } = useI18n();
 
@@ -16,7 +16,25 @@ const store = useMainStore();
 const keyBinding = defineModel<number>("keyBinding",{ 
   default: 0
 });
-const { currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
+
+interface KeyboardContext {
+  keyboardKeys: Ref<KeyConfig[]>;
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {

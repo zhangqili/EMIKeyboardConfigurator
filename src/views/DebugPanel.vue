@@ -1,6 +1,6 @@
 ;''
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, provide, watch, shallowRef,triggerRef, h } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, ref, inject, type Ref, provide, watch, shallowRef,triggerRef, h } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex, NTag } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -17,7 +17,25 @@ const { t } = useI18n();
 const store = useMainStore();
 // 只取 switch 和 advancedKeys 用于显示
 // 移除 chart_option 的响应式解构，我们只在初始化时用它
-const { advancedKeys, keymap, currentLayerIndex } = storeToRefs(store);
+
+interface KeyboardContext {
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
+
 // 手动非响应式获取初始配置，避免 watch 开销
 const debugSwitch = ref(false);
 const isPolling = ref(false);

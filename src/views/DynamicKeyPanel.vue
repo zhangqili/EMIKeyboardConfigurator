@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref, triggerRef } from 'vue'
+import { computed, h, onMounted, inject, type Ref, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -24,7 +24,24 @@ const message = useMessage();
 
 
 const store = useMainStore();
-const { dynamicKeys, keymap} = storeToRefs(store);
+
+interface KeyboardContext {
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
 
 const dynamicKey = defineModel<ekc.IDynamicKey>("dynamicKey",{ 
   default: new ekc.DynamicKey()
@@ -225,7 +242,7 @@ function confirmDynamicKey()
 
 const data = computed<DynamicKeyRow[]>(
   ()=>{
-    var dynamic_key_rows = new Array<DynamicKeyRow>();
+    var dynamic_key_rows : Array<DynamicKeyRow> = [];
     dynamicKeys.value.forEach((item,index)=>
     {
       switch (item.type) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick, inject, type Ref } from 'vue';
 import { NCard, NFlex, NSpace, NSwitch, NSelect, NButton, NSlider } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import * as apis from '@/apis/api';
@@ -11,13 +11,34 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
 import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
+import * as ekc from 'emi-keyboard-controller'
+import { KeyConfig } from '@/apis/utils';
 
 // 引入 LegendComponent 以便显示图例区分不同按键
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent]);
 
 const { t } = useI18n();
 const store = useMainStore();
-const { advancedKeys, themeName, keymap } = storeToRefs(store);
+const { themeName } = storeToRefs(store);
+
+interface KeyboardContext {
+  keyboardKeys: Ref<KeyConfig[]>;
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
 
 const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys",{ 
   default: []

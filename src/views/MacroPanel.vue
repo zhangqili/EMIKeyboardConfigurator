@@ -1,25 +1,20 @@
 <script setup lang="ts">
 import { computed, h, ref, nextTick, watch, onMounted } from 'vue'
 import { useI18n } from "vue-i18n";
-import { storeToRefs } from 'pinia';
-import { useMainStore } from '@/store/main';
 import * as ekc from 'emi-keyboard-controller';
 import { NButton, NInputNumber, NSelect, NCard, NScrollbar, NCheckbox, NList, NListItem, useMessage, NTooltip } from 'naive-ui'
 import KeyEditCell from '@/components/KeyEditCell.vue';
 
 const { t } = useI18n();
 const message = useMessage();
-const store = useMainStore();
-const { macros } = storeToRefs(store);
 
-export interface IMacroAction {
-    delay: number;
-    event: ekc.KeyboardKeyEvent
-}
-
-interface UIMacroRow extends IMacroAction {
+interface UIMacroRow extends ekc.MacroAction {
   uuid: number;
 }
+
+const macros = defineModel<ekc.IMacroAction[][]>("macros",{ 
+  default: [[]]
+});
 
 const MAX_MACRO_LENGTH = 128;
 const isInternalUpdate = ref(false);
@@ -85,7 +80,7 @@ function syncToStore() {
   // 1. 上锁
   isInternalUpdate.value = true;
 
-  const cleanMacros: IMacroAction[][] = localMacroStore.value.map(rows => {
+  const cleanMacros: ekc.IMacroAction[][] = localMacroStore.value.map(rows => {
     const placeholder = rows.find(r => r.event.keycode === 0);
     let validRows = rows
       .filter(r => r.event.keycode !== 0)

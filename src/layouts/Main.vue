@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, getCurrentInstance, triggerRef, watch } from "vue";
+import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, getCurrentInstance, triggerRef, watch, provide } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar } from 'naive-ui'
@@ -33,14 +33,6 @@ interface Window {
 const { t } = useI18n();
 const store = useMainStore();
 const {
-  advancedKeys,
-  rgbConfigs,
-  keymap,
-  currentLayerIndex,
-  tabSelection,
-  dynamicKeys,
-  macros,
-  keyboardKeys,
   themeName
 } = storeToRefs(store);
 
@@ -73,6 +65,25 @@ const scriptBytecode = ref<Uint8Array>(new Uint8Array());
 
 const selectedProfileIndex = ref<number | undefined>(undefined);
 const oscilloscopeSelectedKeys = ref<number[]>([]);
+const macros = ref<ekc.IMacroAction[][]>([[]]);
+
+const keyboardKeys = ref<KeyConfig[]>([]);
+const advancedKeys = ref<ekc.IAdvancedKey[]>([]);
+const rgbConfigs = ref<ekc.IRGBConfig[]>([]);
+const keymap = ref<number[][]>([new Array<number>()]);
+const dynamicKeys = ref<ekc.IDynamicKey[]>([]);
+const currentLayerIndex = ref<number>(0);
+const tabSelection = ref<string | null>("PerformancePanel");
+
+provide('keyboardContext', {
+  keyboardKeys,
+  advancedKeys,
+  rgbConfigs,
+  keymap,
+  dynamicKeys,
+  currentLayerIndex,
+  tabSelection
+});
 
 const latest_version = ref({
   major: 0,
@@ -1080,6 +1091,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                   v-model:scriptSource="scriptSource"
                   v-model:scriptBytecode="scriptBytecode"
                   v-model:oscilloscopeSelectedKeys="oscilloscopeSelectedKeys"
+                  v-model:macros="macros"
                   :readme-markdown="readmeMarkdown"/>
                 </Transition>
               </div>
