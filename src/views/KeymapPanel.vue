@@ -13,7 +13,10 @@ import { Keycode } from 'emi-keyboard-controller';
 const { t } = useI18n();
 
 const store = useMainStore();
-const { keyBinding, currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
+const keyBinding = defineModel<number>("keyBinding",{ 
+  default: 0
+});
+const { currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {

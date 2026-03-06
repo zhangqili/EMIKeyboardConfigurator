@@ -24,7 +24,7 @@ const message = useMessage();
 
 
 const store = useMainStore();
-const { keyBinding, dynamicKeys, currentLayerIndex, keymap, advancedKeys} = storeToRefs(store);
+const { dynamicKeys, keymap} = storeToRefs(store);
 
 const dynamicKey = defineModel<ekc.IDynamicKey>("dynamicKey",{ 
   default: new ekc.DynamicKey()
@@ -70,16 +70,13 @@ var edit_mode : boolean = false;
 var dynamic_key_cache : ekc.IDynamicKey;
 
 function compactDynamicKeys() {
-  // 1. 提取出当前数组中所有“有效”的动态按键
   const validKeys = dynamicKeys.value.filter(item => {
     const type = item?.type;
     return type !== undefined && type !== 0 && type !== ekc.DynamicKeyType.DynamicKeyNone;
   });
 
-  // 2. 获取数组总容量 (通常是 32)
   const totalSlots = dynamicKeys.value.length; 
 
-  // 3. 重新覆盖数组：前面放有效按键，后面补齐空按键
   for (let i = 0; i < totalSlots; i++) {
     if (i < validKeys.length) {
       dynamicKeys.value[i] = validKeys[i];

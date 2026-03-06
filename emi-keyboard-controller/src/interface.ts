@@ -864,18 +864,12 @@ export interface IKeyboardController{
 
 export interface IMacroAction {
     delay: number;
-    keycode: number;
-    event: number;
-    is_virtual : boolean;
-    key_id : number;
+    event: KeyboardKeyEvent;
 }
 
 export class MacroAction implements IMacroAction {
     delay: number = 0;
-    keycode: number = 0;
-    event: number = 0;
-    is_virtual: boolean = false;
-    key_id: number = 0;
+    event: KeyboardKeyEvent = new KeyboardKeyEvent();
 
 }
 
@@ -1091,6 +1085,16 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
 }
 
+
+export class KeyboardKeyEvent {
+    keycode: number = 0;
+    event: number = 0;
+    is_virtual: boolean = false;
+    key_id: number = 0;
+    constructor()
+    {
+    }
+}
 
 export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
     const bytes = new Uint8Array(48); // 总共 45 字节

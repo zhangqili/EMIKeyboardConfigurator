@@ -17,7 +17,11 @@ use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent,
 
 const { t } = useI18n();
 const store = useMainStore();
-const { advancedKeys, themeName, oscilloscopeSelectedKeys, keymap } = storeToRefs(store);
+const { advancedKeys, themeName, keymap } = storeToRefs(store);
+
+const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys",{ 
+  default: []
+});
 
 // --- 状态控制 ---
 const isPolling = ref(false);

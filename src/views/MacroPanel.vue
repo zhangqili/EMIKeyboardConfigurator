@@ -14,10 +14,7 @@ const { macros } = storeToRefs(store);
 
 export interface IMacroAction {
     delay: number;
-    keycode: number;
-    event: number;
-    is_virtual: boolean;
-    key_id: number;
+    event: ekc.KeyboardKeyEvent
 }
 
 interface UIMacroRow extends IMacroAction {
@@ -35,10 +32,12 @@ const currentMacroIndex = ref(0);
 const createPlaceholderRow = (tickValue: number = 0): UIMacroRow => ({
   uuid: Date.now() + Math.random(),
   delay: tickValue,
-  keycode: 0,
-  event: 3,
-  is_virtual: true,
-  key_id: 0
+  event: {
+    keycode: 0,
+    event: 3,
+    is_virtual: true,
+    key_id: 0,
+  }
 });
 const localMacroStore = ref<UIMacroRow[][]>(Array.from({ length: 4 }, () => []));
 const currentRows = ref<UIMacroRow[]>([]);
@@ -52,7 +51,7 @@ function syncFromStore() {
     // 1. 寻找结束符的位置
     // 固件执行宏时，遇到 keycode=0 会停止。
     // 所以我们只关心数组开头到第一个 keycode=0 之间的部分。
-    let validLength = sourceActions.findIndex(a => a.keycode === 0);
+    let validLength = sourceActions.findIndex(a => a.event.keycode === 0);
     
     // 如果没找到 0 (说明宏写满了 128 项)，则取全部
     if (validLength === -1) validLength = sourceActions.length;
@@ -87,9 +86,9 @@ function syncToStore() {
   isInternalUpdate.value = true;
 
   const cleanMacros: IMacroAction[][] = localMacroStore.value.map(rows => {
-    const placeholder = rows.find(r => r.keycode === 0);
+    const placeholder = rows.find(r => r.event.keycode === 0);
     let validRows = rows
-      .filter(r => r.keycode !== 0)
+      .filter(r => r.event.keycode !== 0)
       .map(({ uuid, ...rest }) => ({ ...rest }));
 
     validRows.sort((a, b) => a.delay - b.delay);
@@ -107,10 +106,12 @@ function syncToStore() {
 
     validRows.push({
       delay: terminatorDelay,
-      keycode: 0, 
-      event: 1,
-      is_virtual: false,
-      key_id: 0
+      event : {
+        keycode: 0, 
+        event: 1,
+        is_virtual: false,
+        key_id: 0
+      }
     });
 
     return validRows;
@@ -128,7 +129,7 @@ function syncToStore() {
 }
 
 const maxValidDelay = computed(() => {
-  const valid = currentRows.value.filter(r => r.keycode !== 0);
+  const valid = currentRows.value.filter(r => r.event.keycode !== 0);
   return valid.length > 0 ? Math.max(...valid.map(r => r.delay)) : 0;
 });
 onMounted(() => { syncFromStore(); });
@@ -140,7 +141,7 @@ watch(currentMacroIndex, (newIndex) => {
 });
 watch(localMacroStore, () => { syncToStore(); }, { deep: true });
 watch(maxValidDelay, (newMax) => {
-  const placeholder = currentRows.value.find(r => r.keycode === 0);
+  const placeholder = currentRows.value.find(r => r.event.keycode === 0);
   if (placeholder) {
     if (placeholder.delay < newMax) {
       placeholder.delay = newMax;
@@ -181,8 +182,8 @@ const displayData = computed(() => {
     
     // 2. 【核心修改】Delay 相同，占位行 (keycode 0) 必须排在最后 (Asc) 或最前 (Desc)
     // 假设是升序(asc)，我们希望占位行在底部 -> 权重最大
-    const isAPlaceholder = a.keycode === 0;
-    const isBPlaceholder = b.keycode === 0;
+    const isAPlaceholder = a.event.keycode === 0;
+    const isBPlaceholder = b.event.keycode === 0;
     
     if (isAPlaceholder && !isBPlaceholder) return sortOrder.value === 'asc' ? 1 : -1;
     if (!isAPlaceholder && isBPlaceholder) return sortOrder.value === 'asc' ? -1 : 1;
@@ -204,7 +205,7 @@ const setInputRef = (el: any, uuid: number) => { if (el) inputRefs.value[uuid] =
 function handleDelayUpdate(row: UIMacroRow, val: number | null) {
   if (val !== null) {
     // 如果是占位行，不允许小于最大有效值
-    if (row.keycode === 0 && val < maxValidDelay.value) {
+    if (row.event.keycode === 0 && val < maxValidDelay.value) {
       row.delay = maxValidDelay.value;
     } else {
       row.delay = val;
@@ -225,20 +226,20 @@ function deleteRow(row: UIMacroRow) {
 }
 function toggleSort() { sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'; }
 function handleKeycodeUpdate(row: UIMacroRow, newValue: number) {
-  const oldValue = row.keycode;
+  const oldValue = row.event.keycode;
   if (oldValue === 0 && newValue !== 0) {
     // 双重保险：虽然UI禁用了，但逻辑层也检查一下
     if (currentRows.value.length >= MAX_MACRO_LENGTH) {
       message.warning(t('macro_limit_reached') || `Max ${MAX_MACRO_LENGTH} actions allowed`);
-      nextTick(() => { row.keycode = 0; });
+      nextTick(() => { row.event.keycode = 0; });
       return;
     }
-    row.keycode = newValue;
+    row.event.keycode = newValue;
     currentRows.value.push(createPlaceholderRow(row.delay));
   } else if (newValue === 0 && oldValue !== 0) {
     deleteRow(row);
   } else {
-    row.keycode = newValue;
+    row.event.keycode = newValue;
   }
 }
 
@@ -260,7 +261,7 @@ function handleClear() {
             <div style="display: flex; align-items: center; gap: 12px;">
               <n-select v-model:value="currentMacroIndex" :options="macroOptions" size="small" style="width: 140px" />
               <span style="font-size: 12px; opacity: 0.6;">
-                {{ currentRows.length - (currentRows[currentRows.length-1]?.keycode === 0 ? 1 : 0) }} / {{ MAX_MACRO_LENGTH - 1 }}
+                {{ currentRows.length - (currentRows[currentRows.length-1]?.event.keycode === 0 ? 1 : 0) }} / {{ MAX_MACRO_LENGTH - 1 }}
               </span>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -291,7 +292,7 @@ function handleClear() {
 
               <TransitionGroup name="list" tag="div" class="list-transition-group">
                 <n-list-item v-for="row in displayData" :key="row.uuid" class="list-item-row"
-                  :style="{ opacity: (row.keycode === 0 && isListFull) ? 0.8 : 1 }"
+                  :style="{ opacity: (row.event.keycode === 0 && isListFull) ? 0.8 : 1 }"
                 >
                   
                   <div class="grid-row">
@@ -302,44 +303,44 @@ function handleClear() {
                         :value="row.delay" 
                         @update:value="(v) => handleDelayUpdate(row, v)"
                         size="small" :step="50"
-                        :placeholder="row.keycode === 0 ? 'End' : ''"
-                        :min="row.keycode === 0 ? maxValidDelay : 0"
+                        :placeholder="row.event.keycode === 0 ? 'End' : ''"
+                        :min="row.event.keycode === 0 ? maxValidDelay : 0"
                         :disabled="false" 
                       />
                     </div>
 
                     <div class="center-cell">
                       <n-checkbox 
-                        v-model:checked="row.is_virtual" 
-                        :disabled="row.keycode === 0" 
+                        v-model:checked="row.event.is_virtual" 
+                        :disabled="row.event.keycode === 0" 
                       />
                     </div>
 
                     <div>
                       <n-input-number 
-                        v-model:value="row.key_id" 
+                        v-model:value="row.event.key_id" 
                         size="small" :min="0" placeholder=""
-                        :disabled="row.is_virtual || row.keycode === 0"
+                        :disabled="row.event.is_virtual || row.event.keycode === 0"
                       />
                     </div>
 
                     <div>
                       <n-select 
-                        v-model:value="row.event" 
+                        v-model:value="row.event.event" 
                         size="small" 
                         :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
-                        :disabled="row.keycode === 0"
+                        :disabled="row.event.keycode === 0"
                       />
                     </div>
 
                     <div>
                       <div style="height: 40px; display: flex; align-items: center;">
                         <div style="height: 54px;" 
-                             :style="(row.keycode === 0 && isListFull) ? { pointerEvents: 'none', opacity: 0.5, filter: 'grayscale(1)' } : {}"
-                             :title="(row.keycode === 0 && isListFull) ? (t('macro_full') || 'Max length reached') : ''"
+                             :style="(row.event.keycode === 0 && isListFull) ? { pointerEvents: 'none', opacity: 0.5, filter: 'grayscale(1)' } : {}"
+                             :title="(row.event.keycode === 0 && isListFull) ? (t('macro_full') || 'Max length reached') : ''"
                         >
                             <KeyEditCell 
-                              :value="row.keycode" :x="0"
+                              :value="row.event.keycode" :x="0"
                               @update:value="(val) => handleKeycodeUpdate(row, val)" 
                             />
                         </div>
@@ -347,7 +348,7 @@ function handleClear() {
                     </div>
 
                     <div class="center-cell">
-                      <n-button v-if="row.keycode !== 0" type="error" size="tiny" quaternary @click="deleteRow(row)">
+                      <n-button v-if="row.event.keycode !== 0" type="error" size="tiny" quaternary @click="deleteRow(row)">
                         {{ t('delete') || 'Del' }}
                       </n-button>
                       <span v-else-if="isListFull" style="font-size: 10px; color: #999;">

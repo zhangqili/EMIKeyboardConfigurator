@@ -760,11 +760,13 @@ export class LibampKeyboardController extends KeyboardController {
                 const keycode = dataView.getUint16(offset + 10, true);
 
                 this.macros[macro_index][idx] = {
-                    delay,
-                    key_id,
-                    is_virtual,
-                    event,
-                    keycode
+                    delay : delay,
+                    event : {
+                        key_id : key_id,
+                        is_virtual : is_virtual,
+                        event : event,
+                        keycode : keycode
+                    }
                 }
             } 
             else if (code === PacketCode.PacketCodeSet) {
@@ -779,10 +781,10 @@ export class LibampKeyboardController extends KeyboardController {
                 if (action) {
                     dataView.setUint32(offset, action.delay, true);
                     // offset+4 (idx) 已经被调用者填好了，不需要重写，或者重写一遍也无妨
-                    dataView.setUint16(offset + 6, action.key_id, true);
-                    dataView.setUint8(offset + 8, action.is_virtual ? 1 : 0);
-                    dataView.setUint8(offset + 9, action.event);
-                    dataView.setUint16(offset + 10, action.keycode, true);
+                    dataView.setUint16(offset + 6, action.event.key_id, true);
+                    dataView.setUint8(offset + 8, action.event.is_virtual ? 1 : 0);
+                    dataView.setUint8(offset + 9, action.event.event);
+                    dataView.setUint16(offset + 10, action.event.keycode, true);
                 } else {
                     // 如果本地没有这个 Action (越界或空)，填充 0 或默认值
                     // 通常建议填充 MacroEnd (0)

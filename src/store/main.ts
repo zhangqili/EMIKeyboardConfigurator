@@ -8,69 +8,36 @@ export const useMainStore = defineStore('main',
     // 为了完整类型推理，推荐使用箭头函数
     () => {
         // 所有这些属性都将自动推断出它们的类型
-        const lang = ref<string>('en');
         const themeName = ref<string>('dark');
 
         const keyboardKeys = ref<KeyConfig[]>([]);
-
-        const selectedDevice = ref<string | undefined>(undefined);
 
         const advancedKeys = ref<IAdvancedKey[]>([]);
         const rgbConfigs = ref<IRGBConfig[]>([]);
         const keymap = ref<number[][]>([new Array<number>]);
         const dynamicKeys = ref<IDynamicKey[]>([]);
         const macros = ref<IMacroAction[][]>([new Array<IMacroAction>]);
-        const scriptSource = ref<string>(demoScriptSource);
-        const scriptBytecode = ref<Uint8Array>(new Uint8Array());
 
-        const keyBinding = ref<number>(0);
-        const keyEvent = ref<number>(3);
-        const isVirtual = ref<boolean>(false);
-        const useKeymap = ref<boolean>(false);
         const currentLayerIndex = ref<number>(0);
         
         const tabSelection = ref<string | null>("PerformancePanel");
-        const profiles = ref<string[]>([]);
-        const selectedProfileIndex = ref<number | undefined>(undefined);
-        const debugSwitch = ref(false);
-        const oscilloscopeSelectedKeys = ref<number[]>([]);
-        const firmwareVersion = ref<FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
-        const readmeMarkdown = ref("");
-        const firmwareFeature = ref(new Feature());
 
         //keymap: [][] as number[][],
         //hasChanged: true,
         return {
-            lang,
             themeName,
 
             keyboardKeys,
-
-            selectedDevice,
 
             advancedKeys,
             rgbConfigs,
             keymap,
             dynamicKeys,
             macros,
-            scriptSource,
-            scriptBytecode,
 
             tabSelection,
-            profiles,
-            selectedProfileIndex,
-
-            keyBinding,
-            keyEvent,
-            useKeymap,
-            isVirtual,
+            
             currentLayerIndex,
-
-            debugSwitch,
-            oscilloscopeSelectedKeys,
-            firmwareVersion,
-            readmeMarkdown,
-            firmwareFeature
         }
     }
   );

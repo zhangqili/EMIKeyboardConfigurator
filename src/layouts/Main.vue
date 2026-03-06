@@ -5,7 +5,7 @@ import * as kle from "@ijprest/kle-serial";
 import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar } from 'naive-ui'
 import * as apis from '@/apis/api'
 import * as ekc from "emi-keyboard-controller";
-import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup } from "@/apis/utils";
+import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup, demoScriptSource } from "@/apis/utils";
 import { useMainStore } from "@/store/main"
 import { storeToRefs } from "pinia";
 import { DebugDataItem, mqjsCompile } from '@/apis/utils';
@@ -33,40 +33,46 @@ interface Window {
 const { t } = useI18n();
 const store = useMainStore();
 const {
-  lang,
-  selectedDevice,
   advancedKeys,
   rgbConfigs,
   keymap,
-  useKeymap,
-  isVirtual,
-  keyEvent,
-  keyBinding,
   currentLayerIndex,
   tabSelection,
-  profiles,
-  selectedProfileIndex,
   dynamicKeys,
   macros,
-  scriptSource,
-  scriptBytecode,
   keyboardKeys,
-  themeName,
-  firmwareVersion,
-  readmeMarkdown,
-  firmwareFeature,
-  oscilloscopeSelectedKeys
+  themeName
 } = storeToRefs(store);
 
 
 const message = useMessage();
 const notification = useNotification();
+
+
+const lang = ref<string>("");
+const selectedDevice = ref<string | undefined>(undefined);
 const isConnected = ref<boolean>(false);
 const advancedKey = ref<ekc.IAdvancedKey>(new ekc.AdvancedKey());
 const rgbBaseConfig = ref<ekc.IRGBBaseConfig>(new ekc.RGBBaseConfig());
 const rgbConfig = ref<ekc.IRGBConfig>(new ekc.RGBConfig());
 const dynamicKey = ref<ekc.IDynamicKey>(new ekc.DynamicKey());
-const dynamicKeyIndex = ref<number>(-1);;
+const dynamicKeyIndex = ref<number>(-1);
+const readmeMarkdown = ref<string>("");
+const debugEvent = ref<ekc.KeyboardKeyEvent>({
+    keycode: 0,
+    event: 3,
+    is_virtual: false,
+    key_id: 0,});
+const useKeymap = ref<boolean>(false);
+const keyBinding = ref<number>(0);
+const firmwareVersion = ref<ekc.FirmwareVersion>({ major: 0, minor: 0, patch: 0, info: "" });
+const firmwareFeature = ref(new ekc.Feature());
+
+const scriptSource = ref<string>(demoScriptSource);
+const scriptBytecode = ref<Uint8Array>(new Uint8Array());
+
+const selectedProfileIndex = ref<number | undefined>(undefined);
+const oscilloscopeSelectedKeys = ref<number[]>([]);
 
 const latest_version = ref({
   major: 0,
@@ -497,8 +503,8 @@ function applyToSelectedKey(index: number) {
       break;
     }
     case "DebugPanel": {
-      apis.emit(keyEvent.value, keyBinding.value, id, isVirtual.value, useKeymap.value)
-      console.log(keyEvent.value, keyBinding.value, id, isVirtual.value, useKeymap.value);
+      apis.emit(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value)
+      console.log(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value);
       break;
     }
     case "OscilloscopePanel": {
@@ -1067,7 +1073,14 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                   v-model:rgbBaseConfig="rgbBaseConfig"
                   v-model:rgbConfig="rgbConfig"
                   v-model:dynamicKey="dynamicKey"
-                  v-model:dynamicKeyIndex="dynamicKeyIndex"/>
+                  v-model:dynamicKeyIndex="dynamicKeyIndex"
+                  v-model:debugEvent="debugEvent"
+                  v-model:useKeymap="useKeymap"
+                  v-model:keyBinding="keyBinding"
+                  v-model:scriptSource="scriptSource"
+                  v-model:scriptBytecode="scriptBytecode"
+                  v-model:oscilloscopeSelectedKeys="oscilloscopeSelectedKeys"
+                  :readme-markdown="readmeMarkdown"/>
                 </Transition>
               </div>
             </template>
