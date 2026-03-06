@@ -13,6 +13,8 @@
     "@guolao/vue-monaco-editor": "^1.6.0",
     "@ijprest/kle-serial": "^0.15.1",
     "@types/lodash": "^4.17.16",
+    "@vicons/ionicons5": "^0.13.0",
+    "@vicons/material": "^0.13.0",
     "echarts": "^5.5.1",
     "emi-keyboard-controller": "link:emi-keyboard-controller",
     "github-markdown-css": "^5.9.0",

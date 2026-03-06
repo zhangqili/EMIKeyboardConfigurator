@@ -37,7 +37,7 @@ if (hid !== undefined && keyCodeToKeyName[hid as keyof typeof keyCodeToKeyName])
   return (code || '').replace('Key', '').replace('Digit', '');
 };
 
-// 🚨 核心组装：把零散的按键状态转换为公共组件能够接收的数据流格式
+// 核心组装：把零散的按键状态转换为公共组件能够接收的数据流格式
 const displayKeys = computed<DisplayKey[]>(() => {
   const keys: DisplayKey[] = [];
   

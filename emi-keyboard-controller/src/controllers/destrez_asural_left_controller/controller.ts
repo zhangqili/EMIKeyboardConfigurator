@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, detectHIDDevice } from '../../interface';
 
 const layout = `[[{"w":1.75},"BackSpace","+\\n=","_\\n-","(\\n0",")\\n9","*\\n8","&\\n7"],[{"x":0.25,"w":1.5},"|\\n\\\\","{\\n[","}\\n]","P","O","I","U"],[{"w":1.75},"Enter","\\"\\n'",":\\n;","L","K","J","H"],[{"w":1.75},"Shift","?\\n/","<\\n,",">\\n.","M","N",{"a":7},""],[{"a":4,"w":1.25},"Ctrl",{"w":1.25},"Menu","Del",{"w":1.25},"Alt",{"a":7},"",{"w":2},""]]`;
 
@@ -15,25 +15,11 @@ export class DestrezAsuralLeftController extends LibampKeyboardController {
     }
 
     async detect(silent: boolean = false): Promise<HIDDevice[]> {
-        const targetVendorId = 0xFEED;
-        const targetProductId = 22319;
-        const targetUsagePage = 0xFF60;
-
-        if (silent) {
-            if (!(navigator as any).hid) return [];
-            const devices = await (navigator as any).hid.getDevices();
-            return devices.filter((d: any) => 
-                d.vendorId === targetVendorId && d.productId === targetProductId
-            );
-        } else {
-            return await (navigator as any).hid.requestDevice({
-                filters: [{ 
-                    vendorId: targetVendorId, 
-                    productId: targetProductId, 
-                    usagePage: targetUsagePage 
-                }]
-            });
-        }
+        return detectHIDDevice({
+            vendorId: 0xFEED,
+            productId: 22319,
+            usagePage: 0xFF60
+            }, silent);
     }
 
     get_layout_json(): string {

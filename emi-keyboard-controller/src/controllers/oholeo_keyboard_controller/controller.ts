@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, MacroAction } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, MacroAction, detectHIDDevice } from './../../interface';
 
 import layout from './keyboard_layout.json?raw';
 import markdown from './README.md?raw';
@@ -16,25 +16,11 @@ export class OholeoKeyboardController extends LibampKeyboardController {
     }
 
     async detect(silent: boolean = false): Promise<HIDDevice[]> {
-        const targetVendorId = 0xFEED;
-        const targetProductId = 22319;
-        const targetUsagePage = 0xFF60;
-
-        if (silent) {
-            if (!(navigator as any).hid) return [];
-            const devices = await (navigator as any).hid.getDevices();
-            return devices.filter((d: any) => 
-                d.vendorId === targetVendorId && d.productId === targetProductId
-            );
-        } else {
-            return await (navigator as any).hid.requestDevice({
-                filters: [{ 
-                    vendorId: targetVendorId, 
-                    productId: targetProductId, 
-                    usagePage: targetUsagePage 
-                }]
-            });
-        }
+        return detectHIDDevice({
+            vendorId: 0xFEED,
+            productId: 22319,
+            usagePage: 0xFF60
+            }, silent);
     }
 
     get_layout_json(): string {

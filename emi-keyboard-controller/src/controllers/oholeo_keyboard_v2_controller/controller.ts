@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode, ScriptLevel, MacroAction } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode, ScriptLevel, MacroAction, detectHIDDevice } from '../../interface';
 
 import layout from './keyboard_layout.json?raw';
 
@@ -17,25 +17,11 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
     }
 
     async detect(silent: boolean = false): Promise<HIDDevice[]> {
-        const targetVendorId = 0x0d00;
-        const targetProductId = 0x0721;
-        const targetUsagePage = 0xFF60;
-
-        if (silent) {
-            if (!(navigator as any).hid) return [];
-            const devices = await (navigator as any).hid.getDevices();
-            return devices.filter((d: any) => 
-                d.vendorId === targetVendorId && d.productId === targetProductId
-            );
-        } else {
-            return await (navigator as any).hid.requestDevice({
-                filters: [{ 
-                    vendorId: targetVendorId, 
-                    productId: targetProductId, 
-                    usagePage: targetUsagePage 
-                }]
-            });
-        }
+        return detectHIDDevice({
+            vendorId: 0x0d00,
+            productId: 0x0721,
+            usagePage: 0xFF60
+            }, silent);
     }
 
     get_layout_json(): string {

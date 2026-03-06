@@ -120,7 +120,7 @@ const chartOption = shallowRef({
                 const color = lineColors[index % lineColors.length];
                 let rawVal = '-';
                 let valVal = '-';
-                let isPressed = false; // 🚨 记录当前状态
+                let isPressed = false; // 记录当前状态
 
                 const rawCache = rawDataCache[id];
                 const valCache = valueDataCache[id];
@@ -143,7 +143,7 @@ const chartOption = shallowRef({
                     if (v) valVal = v[1].toFixed(4);
                 }
 
-                // --- 2. 🚨 获取 State 状态 ---
+                // --- 2. 获取 State 状态 ---
                 if (stateCache) {
                     // 判断当前的 tick 是否落在任何一个高亮区间内
                     isPressed = stateCache.some(area => 
