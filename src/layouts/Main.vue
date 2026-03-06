@@ -16,12 +16,10 @@ const notification = useNotification();
 const store = useMainStore();
 const { themeName } = storeToRefs(store);
 
-// 供新建标签页时选择的设备列表
 const availableDevices = ref<{ label: string; key: string; icon?: any }[]>([]);
 const activeTheme = computed(() => (themeName.value === 'dark' ? darkTheme : null));
 export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
-// 定义标签页的数据结构
 interface WorkspaceTab { 
   id: string; 
   title: string; 
@@ -32,53 +30,14 @@ let tabIndex = 1;
 const tabs = ref<WorkspaceTab[]>([]);
 const currentTab = ref<string>('');
 
-function generateMiniLayoutSVG(jsonStr: string) {
-  if (!jsonStr || jsonStr === "[]") return undefined;
-  try {
-    const layout = JSON.parse(jsonStr);
-    const keyboard = kle.Serial.deserialize(layout);
-    let maxX = 0;
-    let maxY = 0;
-    const rects: any[] = [];
-
-    // 遍历所有按键物理坐标
-    keyboard.keys.forEach(key => {
-      const x = key.x;
-      const y = key.y;
-      const w = key.width || 1;
-      const h = key.height || 1;
-      
-      // 计算画板总尺寸
-      maxX = Math.max(maxX, x + w);
-      maxY = Math.max(maxY, y + h);
-
-      // 绘制按键矩形：缩进 0.05U，制造物理间隙感
-      rects.push(import("vue").then(m => m.h('rect', {
-        x: x + 0.05,
-        y: y + 0.05,
-        width: w - 0.1,
-        height: h - 0.1,
-        rx: 0.15, // 微微的圆角，更像键帽
-        ry: 0.15,
-        fill: 'currentColor',
-      })));
-    });
-
-    // 留出一点边距
-    const padding = 0.2;
-    // 返回渲染函数供 Naive UI 调用
-    return () => h(NIcon, { size: 24, style: "margin-top: 1px;" }, {
-      default: () => h('svg', {
-        viewBox: `-${padding} -${padding} ${maxX + padding * 2} ${maxY + padding * 2}`,
-        xmlns: 'http://www.w3.org/2000/svg',
-        style: 'opacity: 0.8;' // 稍微透明，不喧宾夺主
-      }, rects.map(r => r instanceof Promise ? null : r)) // 解决异步 h 函数问题，下面提供同步写法
-    });
-  } catch (e) {
-    console.warn("解析键盘 JSON 失败", e);
-    return undefined;
+const { needRefresh, updateServiceWorker } = useRegisterSW({
+  onRegistered(r) { 
+    if (r) setInterval(() => r.update(), 60 * 60 * 1000); // 每小时检查一次更新
+  },
+  onRegisterError(error: any) { 
+    console.error('Service Worker 注册失败', error); 
   }
-}
+});
 
 function generateMiniLayoutSVGSync(jsonStr: string) {
   if (!jsonStr || jsonStr === "[]") return undefined;
@@ -143,7 +102,6 @@ function handleCloseTab(id: string) {
   }
 }
 
-// 记录上一次检测到的物理设备数量，用于比对差值
 const lastPhysicalCounts = ref<Record<string, number>>({});
 let hotplugTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -154,31 +112,22 @@ async function checkHotplug() {
     const deviceName = deviceObj.key;
     const tempController = create_controller(deviceName);
     try {
-      // 获取当前已授权且处于物理连接状态的设备数量
       const detected = await tempController.detect(true); 
       const currentCount = detected ? detected.length : 0;
       const previousCount = lastPhysicalCounts.value[deviceName] || 0;
       
       if (currentCount > previousCount) {
-        // 【设备插入】：计算差值，新增对应数量的标签页
         const added = currentCount - previousCount;
-        for (let i = 0; i < added; i++) {
-          handleAddTab(deviceName);
-        }
+        for (let i = 0; i < added; i++) { handleAddTab(deviceName); }
       } else if (currentCount < previousCount) {
-        // 【设备拔出】：计算差值，关闭对应数量的标签页
         const removed = previousCount - currentCount;
         const existingTabs = tabs.value.filter(t => t.deviceName === deviceName);
         for (let i = 0; i < removed; i++) {
           if (existingTabs.length > i) {
-            // 优先从右侧（最后面）关闭，减少对正在操作标签的干扰
-            const tabToClose = existingTabs[existingTabs.length - 1 - i];
-            handleCloseTab(tabToClose.id);
+            handleCloseTab(existingTabs[existingTabs.length - 1 - i].id);
           }
         }
       }
-      
-      // 更新缓存
       lastPhysicalCounts.value[deviceName] = currentCount;
     } catch (e) {
       console.warn(`检测 ${deviceName} 状态时出错:`, e);
@@ -186,16 +135,26 @@ async function checkHotplug() {
   }
 }
 
-// 防抖触发器：避免复合 USB 设备瞬间触发大量事件
 function triggerHotplugCheck() {
   if (hotplugTimer) clearTimeout(hotplugTimer);
-  hotplugTimer = setTimeout(() => {
-    checkHotplug();
-  }, 500);
+  hotplugTimer = setTimeout(() => { checkHotplug(); }, 500);
 }
 
 onMounted(async () => {
-  // 获取所有支持的设备型号
+  if (navigator.userAgent.toLowerCase().includes("linux") && localStorage.getItem('dontShowLinuxDetect') != 'true') {
+    const linux_detect_notification = notification.warning({
+      title: t('main_linux_detect_title'), content: t('main_linux_detect_content'), duration: 5000, keepAliveOnHover: true,
+      action: () => [h(NButton, { text: true, type: 'primary', onClick: () => { localStorage.setItem('dontShowLinuxDetect', 'true'); linux_detect_notification.destroy(); } }, { default: () => t('dont_show_again') })]
+    });
+  }
+
+  if (!('hid' in navigator) && localStorage.getItem('dontShowWebHIDDetect') != 'true') {
+    const webhid_detect_notification = notification.warning({
+      title: t('main_webhid_detect_title'), content: t('main_webhid_detect_content'), duration: 5000, keepAliveOnHover: true,
+      action: () => [h(NButton, { text: true, type: 'primary', onClick: () => { localStorage.setItem('dontShowWebHIDDetect', 'true'); webhid_detect_notification.destroy(); } }, { default: () => t('dont_show_again') })]
+    });
+  }
+
   const result: string[] = await apis.get_devices();
   const devicesWithIcons = [];
   for (const label of result) {
@@ -205,7 +164,6 @@ onMounted(async () => {
       devicesWithIcons.push({ 
         label, 
         key: label, 
-        // 生成真实布局 SVG 函数，N-Dropdown 会自动识别并渲染
         icon: generateMiniLayoutSVGSync(jsonStr) 
       });
     } catch (e) {
@@ -214,10 +172,8 @@ onMounted(async () => {
   }
   availableDevices.value = devicesWithIcons;
 
-  // 1. 软件启动时的首次物理设备检测
   await checkHotplug();
 
-  // 2. 挂载浏览器原生的 USB 热插拔事件监听器
   if ('hid' in navigator) {
     (navigator as any).hid.addEventListener('connect', triggerHotplugCheck);
     (navigator as any).hid.addEventListener('disconnect', triggerHotplugCheck);
@@ -266,7 +222,7 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
             </n-button>
           
             <div key="add-button" class="add-btn-wrapper">
-              <n-dropdown size="large" :options="availableDevices" @select="handleAddTab" trigger="click">
+              <n-dropdown  trigger="hover" size="large" :options="availableDevices" @select="handleAddTab" placement="bottom-start">
                 <n-button circle size="large" quaternary :focusable="false" class="add-tab-btn">
                   <template #icon>
                     <n-icon><PlusIcon /></n-icon>
