@@ -37,7 +37,6 @@ declare module 'vue' {
     NGi: typeof import('naive-ui')['NGi']
     NGrid: typeof import('naive-ui')['NGrid']
     NGridItem: typeof import('naive-ui')['NGridItem']
-    NIcon: typeof import('naive-ui')['NIcon']
     NInputNumber: typeof import('naive-ui')['NInputNumber']
     NLayoutContent: typeof import('naive-ui')['NLayoutContent']
     NLayoutSider: typeof import('naive-ui')['NLayoutSider']

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, h } from "vue";
-import { NTabs, NTab, useNotification, NButton, NDropdown, NConfigProvider, NGlobalStyle, NLayout, darkTheme, NEmpty, NIcon } from 'naive-ui';
+import { ref, onMounted, computed, h, watch } from "vue";
+import { NTabs, NTab, useNotification, NButton, NDropdown, NConfigProvider, NGlobalStyle, NLayout, darkTheme, NEmpty, NIcon, NFlex } from 'naive-ui';
 import { useI18n } from "vue-i18n";
 import * as apis from '@/apis/api';
 import { useRegisterSW } from 'virtual:pwa-register/vue';
@@ -36,6 +36,19 @@ const { needRefresh, updateServiceWorker } = useRegisterSW({
   },
   onRegisterError(error: any) { 
     console.error('Service Worker 注册失败', error); 
+  }
+});
+
+watch(needRefresh, (val) => {
+  if (val) {
+    const n = notification.info({
+      title: t('main_update_title') || '发现新版本',
+      content: t('main_update_content') || '配置器已有新版本可用，是否立即更新并重启？',
+      action: () => h(NFlex, { justify: 'end', style: 'gap: 8px' }, [
+        h(NButton, { type: 'primary', onClick: () => updateServiceWorker() }, { default: () => t('update') || '立即更新' })
+      ]),
+      duration: 0
+    });
   }
 });
 

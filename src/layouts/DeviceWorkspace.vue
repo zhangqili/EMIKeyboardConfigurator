@@ -509,32 +509,52 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
 <template>
   <n-layout style="display: flex; flex-direction: column;  height: 100%; width: 100%;">
     <n-layout-header class="header" bordered>
-      <n-grid :x-gap="12" :y-gap="12" :cols="5">
-        <n-gi :span="4">
-          <n-flex :align="'center'">
-            <div :style="{ width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0, backgroundColor: isReady ? '#18a058' : (isConnected ? '#f0a020' : '#d32f2f'), boxShadow: isReady ? '0 0 8px #18a058' : 'none', transition: 'all 0.3s' }"></div>
-            
-            <n-button v-if="isConnected" @click="connectCommand" type="error" secondary>
-              {{ t('toolbar_disconnect') }}
-            </n-button>
-            <n-button v-else @click="connectCommand"  :disabled="!controller" type="primary">
-              {{ t('toolbar_connect') }}
-            </n-button>
-          
-            <n-button @click="applyCommand" :disabled="!isReady">{{ t('toolbar_apply') }}</n-button>
-            <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start" :options="advanced_options">
-              <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>
-            </n-dropdown>
-            <n-button tertiary :focusable="false" :type="versionStatusType">{{ displayVersion }}</n-button>
-          </n-flex>
-        </n-gi>
-        <n-gi :span="1">
-          <n-flex justify="end">
-            <n-button @click="handleThemeUpdate">{{ themeLabelMap[themeName as 'light' | 'dark'] }}</n-button>
-            <n-select @update:value="handleLanguageMenu" style="max-width: 100px;" v-model:value="lang" :options="language_options" />
-          </n-flex>
-        </n-gi>
-      </n-grid>
+      <n-flex justify="space-between" :align="'center'" style="width: 100%;">
+  
+        <n-flex :align="'center'" :wrap="false">
+          <div :style="{ 
+            width: '10px', 
+            height: '10px', 
+            borderRadius: '50%', 
+            flexShrink: 0, 
+            backgroundColor: isReady ? '#18a058' : (isConnected ? '#f0a020' : '#d32f2f'), 
+            boxShadow: isReady ? '0 0 8px #18a058' : 'none', 
+            transition: 'all 0.3s' 
+          }"></div>
+
+          <n-button v-if="isConnected" @click="connectCommand" type="error" secondary>
+            {{ t('toolbar_disconnect') }}
+          </n-button>
+          <n-button v-else @click="connectCommand" :disabled="!controller" type="primary">
+            {{ t('toolbar_connect') }}
+          </n-button>
+        
+          <n-button @click="applyCommand" :disabled="!isReady">
+            {{ t('toolbar_apply') }}
+          </n-button>
+
+          <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start" :options="advanced_options">
+            <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>
+          </n-dropdown>
+        
+          <n-button tertiary :focusable="false" :type="versionStatusType">
+            {{ displayVersion }}
+          </n-button>
+        </n-flex>
+      
+        <n-flex :align="'center'">
+          <n-button @click="handleThemeUpdate">
+            {{ themeLabelMap[themeName as 'light' | 'dark'] }}
+          </n-button>
+          <n-select 
+            @update:value="handleLanguageMenu" 
+            style="width: 110px;" 
+            v-model:value="lang" 
+            :options="language_options" 
+          />
+        </n-flex>
+
+      </n-flex>
     </n-layout-header>
 
     <n-layout v-if="controller" has-sider class="main-body">
