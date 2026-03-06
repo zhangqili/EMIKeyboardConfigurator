@@ -75,6 +75,8 @@ const dynamicKeys = ref<ekc.IDynamicKey[]>([]);
 const currentLayerIndex = ref<number>(0);
 const tabSelection = ref<string | null>("PerformancePanel");
 
+const controller = ref<ekc.KeyboardController>(new ekc.OholeoKeyboardV2Controller());
+
 provide('keyboardContext', {
   keyboardKeys,
   advancedKeys,
@@ -302,14 +304,24 @@ function updateKeyboard(value: kle.Keyboard) {
   });
 }
 
+async function connect_device(){
+    var d = await controller.value.detect();
+    if (d.length > 0) {
+        return await controller.value.connect(d[0]);
+    }
+    else{
+        return false;
+    }
+}
+
 async function connectCommand() {
   if (isConnected.value) {
-    await apis.disconnect_device();
+    await controller.value.disconnect();
     isConnected.value = false;
   }
   else {
     if (selectedDevice != undefined) {
-      var result = await apis.connect_device();
+      var result = await connect_device();
       isConnected.value = result;
       if (isConnected.value) {
         message.success(t('main_found_device'));
@@ -328,17 +340,17 @@ async function applyCommand() {
     const { bytecode, stdout, stderr }  = await mqjsCompile(scriptSource.value, argsString);
     scriptBytecode.value = bytecode;
     triggerRef(scriptBytecode);
-    await apis.set_advanced_keys(advancedKeys.value);
-    await apis.set_rgb_base_config(rgbBaseConfig.value);
+    await controller.value.set_advanced_keys(advancedKeys.value);
+    await controller.value.set_rgb_base_config(rgbBaseConfig.value);
     if (keymap.value != undefined) {
-      await apis.set_keymap(keymap.value);
+      await controller.value.set_keymap(keymap.value);
     }
-    await apis.set_rgb_configs(rgbConfigs.value);
-    await apis.set_dynamic_keys(dynamicKeys.value);
-    await apis.set_macros(macros.value);
-    await apis.set_script_source(scriptSource.value);
-    await apis.set_script_bytecode(scriptBytecode.value);
-    var result = await apis.save_config();
+    await controller.value.set_rgb_configs(rgbConfigs.value);
+    await controller.value.set_dynamic_keys(dynamicKeys.value);
+    await controller.value.set_macros(macros.value);
+    await controller.value.set_script_source(scriptSource.value);
+    await controller.value.set_script_bytecode(scriptBytecode.value);
+    var result = await controller.value.save_config();
     console.debug(result);
 
   }
@@ -346,26 +358,26 @@ async function applyCommand() {
 
 async function flashCommand() {
   if (isConnected.value) {
-    var result = await apis.flash_config();
+    var result = await controller.value.flash_config();
     console.debug(result);
 
   }
 }
 
 async function getController() {
-  advancedKeys.value = await apis.get_advanced_keys();
-  keymap.value = await apis.get_keymap();
-  rgbBaseConfig.value = await apis.get_rgb_base_config();
-  rgbConfigs.value = await apis.get_rgb_configs();
-  dynamicKeys.value = await apis.get_dynamic_keys();
-  firmwareVersion.value = await apis.get_firmware_version();
-  macros.value = await apis.get_macros();
+  advancedKeys.value = await controller.value.get_advanced_keys();
+  keymap.value = await controller.value.get_keymap();
+  rgbBaseConfig.value = await controller.value.get_rgb_base_config();
+  rgbConfigs.value = await controller.value.get_rgb_configs();
+  dynamicKeys.value = await controller.value.get_dynamic_keys();
+  firmwareVersion.value = await controller.value.get_firmware_version();
+  macros.value = await controller.value.get_macros();
 
-  selectedProfileIndex.value = await apis.get_profile_index();
-  const cnofig_file_num = await apis.get_profile_num();
-  layout_labels.value = await apis.get_layout_labels();
-  readmeMarkdown.value = await apis.get_readme_markdown();
-  firmwareFeature.value = await apis.get_feature();
+  selectedProfileIndex.value = await controller.value.get_profile_index();
+  const cnofig_file_num = await controller.value.get_profile_num();
+  layout_labels.value = await controller.value.get_layout_labels();
+  readmeMarkdown.value = await controller.value.get_readme_markdown();
+  firmwareFeature.value = await controller.value.get_feature();
   console.log(firmwareFeature.value);
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
@@ -377,7 +389,7 @@ async function getController() {
   currentLayerIndex.value = 0;
   triggerRef(keymap);
 
-  apis.addEventListener('deviceDisconnected', async () => {
+  controller.value.addEventListener('deviceDisconnected', async () => {
     isConnected.value = false;
     message.error(t('device_disconnected') || '设备已断开连接');
   });
@@ -389,9 +401,9 @@ async function updateData() {
     mapBackDynamicKey(keymap.value, dynamicKeys.value);
   }
   console.log("update data");
-  selectedProfileIndex.value = await apis.get_profile_index();
-  macros.value = await apis.get_macros();
-  scriptSource.value = await apis.get_script_source();
+  selectedProfileIndex.value = await controller.value.get_profile_index();
+  macros.value = await controller.value.get_macros();
+  scriptSource.value = await controller.value.get_script_source();
   console.log(keymap.value)
   triggerRef(advancedKeys);
   triggerRef(keymap);
@@ -405,16 +417,16 @@ async function updateData() {
 
 async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
   await apis.set_device(option.label as string);
-  var layout_json: string = await apis.get_layout_json();
+  var layout_json: string = await controller.value.get_layout_json();
   oscilloscopeSelectedKeys.value.length = 0;
   //console.debug(layout_json);
   getController();
   renderKeyboardFromJson(layout_json);
-  apis.addEventListener('updateData', (event: Event) => { updateData(); });
+  controller.value.addEventListener('updateData', (event: Event) => { updateData(); });
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
-  await apis.set_profile_index(option.value as number);
+  await controller.value.set_profile_index(option.value as number);
 }
 
 function applyToAllKeys() {
@@ -514,7 +526,7 @@ function applyToSelectedKey(index: number) {
       break;
     }
     case "DebugPanel": {
-      apis.emit(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value)
+      controller.value.emit(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value)
       console.log(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value);
       break;
     }
@@ -550,11 +562,11 @@ interface IConfig {
 
 
 async function loadDefaultConfig() {
-  apis.reset_to_default();
-  advancedKeys.value = await apis.get_advanced_keys();
-  keymap.value = await apis.get_keymap();
-  rgbConfigs.value = await apis.get_rgb_configs();
-  dynamicKeys.value = await apis.get_dynamic_keys();
+  controller.value.reset_to_default();
+  advancedKeys.value = await controller.value.get_advanced_keys();
+  keymap.value = await controller.value.get_keymap();
+  rgbConfigs.value = await controller.value.get_rgb_configs();
+  dynamicKeys.value = await controller.value.get_dynamic_keys();
 }
 
 async function importConfig() {
@@ -752,15 +764,15 @@ function handleAdvancedMenu(key: string | number) {
   if (isConnected.value) {
     switch (key) {
       case advanced_options.value[0].key: {
-        apis.flash_config();
+        controller.value.flash_config();
         break;
       }
       case advanced_options.value[1].key: {
-        apis.system_reset();
+        controller.value.system_reset();
         break;
       }
       case advanced_options.value[2].key: {
-        apis.factory_reset();
+        controller.value.factory_reset();
         break;
       }
       default: {
@@ -1092,6 +1104,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                   v-model:scriptBytecode="scriptBytecode"
                   v-model:oscilloscopeSelectedKeys="oscilloscopeSelectedKeys"
                   v-model:macros="macros"
+                  :controller="controller"
                   :readme-markdown="readmeMarkdown"/>
                 </Transition>
               </div>

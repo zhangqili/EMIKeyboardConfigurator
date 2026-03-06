@@ -48,12 +48,16 @@ const useKeymap = defineModel<boolean>("useKeymap",{
   default: false
 });
 
+const props = defineProps<{
+    controller: ekc.KeyboardController;
+}>();
+
 async function startRequestLoop() {
     isPolling.value = true;
     while (isPolling.value) {
         try {
             // 只管发请求，不需要在这里等待返回值处理 UI
-            await apis.request_debug();
+            await props.controller.request_debug();
         } catch (e) {
             console.error("Request disrupted:", e);
             await new Promise(resolve => setTimeout(resolve, 100)); // 错误退避
@@ -69,10 +73,10 @@ function stopRequestLoop() {
 
 async function handleChange(value: boolean) {
     if (value) {
-        //await apis.start_debug();
+        //await props.controller.start_debug();
         startRequestLoop();
     } else {
-        //await apis.stop_debug();
+        //await props.controller.stop_debug();
         stopRequestLoop();
     }
 }
@@ -163,17 +167,17 @@ onMounted(() => {
         raw: k.raw,
         value: k.value
     }));
-    apis.addEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.addEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 onBeforeUnmount(() => {
     stopRequestLoop();
-    apis.removeEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    apis.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
+    props.controller.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
     console.log(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value);
   } else {
 
@@ -182,7 +186,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    apis.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
+    props.controller.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
     console.log(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value);
   } else {
 

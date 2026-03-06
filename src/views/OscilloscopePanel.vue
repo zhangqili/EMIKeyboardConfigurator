@@ -40,6 +40,10 @@ const {
   dynamicKeys
 } = inject<KeyboardContext>('keyboardContext')!;
 
+const props = defineProps<{
+    controller: ekc.KeyboardController;
+}>();
+
 const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys",{ 
   default: []
 });
@@ -233,7 +237,7 @@ async function startRequestLoop() {
     while (isPolling.value) {
         try {
             if (oscilloscopeSelectedKeys.value.length > 0) {
-                apis.request_debug_at(oscilloscopeSelectedKeys.value);
+                props.controller.request_debug_at(oscilloscopeSelectedKeys.value);
             }
         } catch (e) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -244,11 +248,11 @@ async function startRequestLoop() {
 
 async function togglePolling(val: boolean) {
     if (val){
-        await apis.start_debug();
+        await props.controller.start_debug();
         startRequestLoop();
     }
     else {
-        await apis.stop_debug();
+        await props.controller.stop_debug();
         isPolling.value = false;
         if (!isRenderPending) {
             isRenderPending = true;
@@ -431,12 +435,12 @@ const handleDebugDataUpdated = (event: Event) => {
 
 onMounted(() => {
     connect('osc_group');
-    apis.addEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.addEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 onBeforeUnmount(() => {
     isPolling.value = false;
-    apis.removeEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 function clearWaveform() {
