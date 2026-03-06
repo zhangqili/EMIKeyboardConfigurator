@@ -2,7 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, getCurrentInstance, triggerRef, watch, provide } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
-import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar } from 'naive-ui'
+import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar, NTabs, NTab, NGi, NGrid, NDropdown, NSelect, NColorPicker, NInputNumber, NRadioGroup, NRadioButton, NIcon } from 'naive-ui'
 import * as apis from '@/apis/api'
 import * as ekc from "emi-keyboard-controller";
 import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup, demoScriptSource } from "@/apis/utils";
@@ -36,13 +36,11 @@ const {
   themeName
 } = storeToRefs(store);
 
-
 const message = useMessage();
 const notification = useNotification();
 
-
 const lang = ref<string>("");
-const selectedDevice = ref<string | undefined>(undefined);
+const selectedDevice = ref<number | undefined>(undefined);
 const isConnected = ref<boolean>(false);
 const advancedKey = ref<ekc.IAdvancedKey>(new ekc.AdvancedKey());
 const rgbBaseConfig = ref<ekc.IRGBBaseConfig>(new ekc.RGBBaseConfig());
@@ -95,7 +93,6 @@ const latest_version = ref({
 });
 
 const versionStatusType = computed(() => {
-  console.log(firmwareVersion.value)
   const current = firmwareVersion.value;
   const target = latest_version.value;
   if (current.major !== target.major || current.minor !== target.minor) {
@@ -116,38 +113,33 @@ const displayVersion = computed(() => {
   const ver = v.info ? `${base}-${v.info}` : base;
   return ((versionStatusType.value == 'warning' || versionStatusType.value == 'error') && isConnected.value) ? ver + t('need_update') : ver;
 });
-// Split 面板的大小 (字符串形式，如 "400px")
+
 const splitSize = ref("400px");
-// 是否处于“自动高度”模式
+
 const isAutoHeight = ref(true);
-// 记录内容真实高度
+
 const contentRealHeight = ref(400);
 const maxSplitSize = computed(() => {
   return (contentRealHeight.value + splitBuffer) + 'px';
 });
 const isDragging = ref(false);
 const enableTransition = ref(false);
-// 获取内部内容容器的引用
 const keyboardContentRef = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 const footerRef = ref<HTMLElement | null>(null);
 const splitBuffer = 4;
+
 onMounted(async () => {
   if (keyboardContentRef.value) {
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const h = entry.contentRect.height;
         contentRealHeight.value = h;
-
-        // 【关键】内容变化导致的调整，必须是瞬时的，否则会感觉到迟滞
-        // 确保此时关闭动画
-
         if (isAutoHeight.value) {
           splitSize.value = (h + splitBuffer) + 'px';
         }
         else {
           const currentSplitPx = parseFloat(splitSize.value);
-          // 如果当前高度已经足够容纳内容（接近自动高度），则吸附过去
           if (currentSplitPx > h + 10) {
             isAutoHeight.value = true;
             splitSize.value = (h + splitBuffer) + 'px';
@@ -157,11 +149,17 @@ onMounted(async () => {
     });
     resizeObserver.observe(keyboardContentRef.value.firstElementChild as Element || keyboardContentRef.value);
   }
+
+  // 🚨 修正：加载设备列表后自动选中第一个
   const result: string[] = await apis.get_devices();
   devices.value = result.map((label: string, index: number) => ({
     label,
     value: index,
   }));
+
+  if (devices.value.length > 0) {
+    handleTabChange(devices.value[0].value);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -207,8 +205,6 @@ watch(needRefresh, (isNeed) => {
   }
 }, { immediate: true });
 
-
-// 处理拖拽结束事件：判断是否需要“吸附”
 function handleDragEnd() {
   isDragging.value = false;
   const currentPx = parseFloat(splitSize.value);
@@ -221,23 +217,19 @@ function handleDragEnd() {
   }
 }
 
-// 处理拖拽开始：临时关闭自动模式，避免冲突
 function handleDragStart() {
   isAutoHeight.value = false;
   isDragging.value = true;
-  enableTransition.value = false; // 拖拽时禁用动画
+  enableTransition.value = false;
 }
 
-// 双击分割条：重置为自动高度
 function resetToAuto() {
   isAutoHeight.value = true;
   splitSize.value = (contentRealHeight.value + splitBuffer) + 'px';
 }
 
-// 折叠/展开按钮逻辑
-function toggleCollapse() {// 1. 开启动画
+function toggleCollapse() {
   enableTransition.value = true;
-
   nextTick(() => {
     const currentPx = parseFloat(splitSize.value);
     if (currentPx < 50) {
@@ -246,8 +238,6 @@ function toggleCollapse() {// 1. 开启动画
       isAutoHeight.value = false;
       splitSize.value = "0px";
     }
-
-    // 2. 动画结束后关闭开关
     setTimeout(() => {
       enableTransition.value = false;
     }, 350);
@@ -265,7 +255,6 @@ const keyboard_layout = ref({
 });
 
 var devices = ref<{ label: string; value: number }[]>([]);
-
 var files = ref<{ label: string; value: number }[]>([]);
 
 function renderKeyboardFromJson(json_str: string) {
@@ -335,7 +324,6 @@ async function connectCommand() {
 
 async function applyCommand() {
   if (isConnected.value) {
-
     const argsString = "--no-column -m32";
     const { bytecode, stdout, stderr }  = await mqjsCompile(scriptSource.value, argsString);
     scriptBytecode.value = bytecode;
@@ -351,16 +339,12 @@ async function applyCommand() {
     await controller.value.set_script_source(scriptSource.value);
     await controller.value.set_script_bytecode(scriptBytecode.value);
     var result = await controller.value.save_config();
-    console.debug(result);
-
   }
 }
 
 async function flashCommand() {
   if (isConnected.value) {
     var result = await controller.value.flash_config();
-    console.debug(result);
-
   }
 }
 
@@ -378,7 +362,7 @@ async function getController() {
   layout_labels.value = await controller.value.get_layout_labels();
   readmeMarkdown.value = await controller.value.get_readme_markdown();
   firmwareFeature.value = await controller.value.get_feature();
-  console.log(firmwareFeature.value);
+
   files.value.length = 0;
   for (let index = 0; index < cnofig_file_num; index++) {
     files.value.push({
@@ -393,18 +377,16 @@ async function getController() {
     isConnected.value = false;
     message.error(t('device_disconnected') || '设备已断开连接');
   });
-  //console.debug(rgbConfigs.value);
 }
 
 async function updateData() {
   if (keymap.value != undefined) {
     mapBackDynamicKey(keymap.value, dynamicKeys.value);
   }
-  console.log("update data");
   selectedProfileIndex.value = await controller.value.get_profile_index();
   macros.value = await controller.value.get_macros();
   scriptSource.value = await controller.value.get_script_source();
-  console.log(keymap.value)
+  
   triggerRef(advancedKeys);
   triggerRef(keymap);
   triggerRef(rgbBaseConfig);
@@ -415,14 +397,38 @@ async function updateData() {
   triggerRef(firmwareVersion);
 }
 
-async function handleUpdateDeviceValue(_value: string, option: SelectOption) {
-  await apis.set_device(option.label as string);
-  var layout_json: string = await controller.value.get_layout_json();
-  oscilloscopeSelectedKeys.value.length = 0;
-  //console.debug(layout_json);
-  getController();
-  renderKeyboardFromJson(layout_json);
-  controller.value.addEventListener('updateData', (event: Event) => { updateData(); });
+function create_controller(device: string): ekc.KeyboardController {
+    switch (device) {
+        case "Trinity Pad": return new ekc.TrinityPadController();
+        case "Oholeo Keyboard": return new ekc.OholeoKeyboardController();
+        case "Oholeo Keyboard v2": return new ekc.OholeoKeyboardV2Controller();
+        case "Zellia60 HE": return new ekc.Zellia60Controller();
+        case "Zellia80 HE": return new ekc.Zellia80Controller();
+        case "Zellia Starlight": return new ekc.ZelliaStarlightController();
+        case "Destrez Asural Left": return new ekc.DestrezAsuralLeftController();
+        case "Destrez Asural Right": return new ekc.DestrezAsuralRightController();
+        case "ANSI 104 Sample": return new ekc.ANSI104SampleController();
+        default: return new ekc.ANSI104SampleController();
+    }
+}
+
+
+async function handleTabChange(value: string | number) {
+  selectedDevice.value = value as number; 
+  const selectedOption = devices.value.find(d => d.value === value);
+  if (selectedOption) {
+    if (isConnected.value) {
+      await controller.value.disconnect();
+      isConnected.value = false;
+    }
+    controller.value = create_controller(selectedOption.label as string);
+    
+    var layout_json: string = await controller.value.get_layout_json();
+    oscilloscopeSelectedKeys.value.length = 0;
+    getController();
+    renderKeyboardFromJson(layout_json);
+    controller.value.addEventListener('updateData', (event: Event) => { updateData(); });
+  }
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
@@ -436,7 +442,6 @@ function applyToAllKeys() {
 }
 
 function applyToSelectedKey(index: number) {
-  //message.info(id.toString());
   let id = index;
   var keys = keyboardKeys.value;
   switch (tabSelection.value) {
@@ -463,7 +468,6 @@ function applyToSelectedKey(index: number) {
                 keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                 dynamic_key_mutex.set_primary_binding(binding);
                 dynamicKey.value = dynamic_key_mutex;
-
               }
               else if (dynamic_key_mutex.target_keys_location.length == 1) {
                 dynamic_key_mutex.is_key2_primary = true;
@@ -489,7 +493,6 @@ function applyToSelectedKey(index: number) {
                   dynamicKey.value.target_keys_location[0] = { layer: currentLayerIndex.value, id: id };
                   keymap.value[currentLayerIndex.value][id] = ((ekc.Keycode.DynamicKey & 0xFF) | ((dynamicKeyIndex.value & 0xFF) << 8));
                   dynamicKey.value.set_primary_binding(binding);
-
                 }
               }
               dynamicKeys.value[dynamicKeyIndex.value] = dynamicKey.value;
@@ -527,19 +530,15 @@ function applyToSelectedKey(index: number) {
     }
     case "DebugPanel": {
       controller.value.emit(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value)
-      console.log(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value);
       break;
     }
     case "OscilloscopePanel": {
       const currentKeys = [...oscilloscopeSelectedKeys.value];
-      
       if (!currentKeys.includes(id)) {
         currentKeys.push(id);
-        
         if (currentKeys.length > 4) {
           currentKeys.shift(); 
         }
-        
         oscilloscopeSelectedKeys.value = currentKeys;
       }
       break;
@@ -550,7 +549,6 @@ function applyToSelectedKey(index: number) {
   }
 }
 
-
 interface IConfig {
   device: string;
   advancedKeys: ekc.IAdvancedKey[];
@@ -559,7 +557,6 @@ interface IConfig {
   rgbConfigs: ekc.IRGBConfig[];
   dynamicKeys: ekc.IDynamicKey[];
 }
-
 
 async function loadDefaultConfig() {
   controller.value.reset_to_default();
@@ -583,7 +580,10 @@ async function importConfig() {
     const file = await fileHandle.getFile();
     const text = await file.text();
     const configData = JSON.parse(text) as IConfig;
-    if (selectedDevice.value == configData.device) {
+    
+    // 假设 selectedDevice 现在存的是 ID 数字，需要找对应的文本名称来比较
+    const selectedDeviceName = devices.value.find(d => d.value === selectedDevice.value)?.label;
+    if (selectedDeviceName == configData.device) {
       advancedKeys.value.forEach((item, index) => {
         advancedKeys.value[index] = configData.advancedKeys[index];
       });
@@ -615,9 +615,10 @@ async function importConfig() {
 }
 
 async function exportConfig() {
+  const selectedDeviceName = devices.value.find(d => d.value === selectedDevice.value)?.label;
   const jsonStr = JSON.stringify(
     {
-      device: selectedDevice.value,
+      device: selectedDeviceName,
       advancedKeys: advancedKeys.value,
       keymap: keymap.value,
       rgbBaseConfig: rgbBaseConfig.value,
@@ -791,91 +792,6 @@ function handleLanguageMenu(key: string) {
   setI18nLanguage(key);
 }
 
-onMounted(async () => {
-  //initializeKeyboard();
-  if (navigator.userAgent.toLowerCase().includes("linux") && localStorage.getItem('dontShowLinuxDetect') != 'true') {
-    const linux_detect_notification = notification.warning(
-      {
-        title: t('main_linux_detect_title'),
-        content: t('main_linux_detect_content'),
-        duration: 5000,
-        keepAliveOnHover: true,
-        action: () =>
-          [
-            /*           h(
-                        NButton,
-                        {
-                          text: true,
-                          type: 'primary',
-                        },
-                        {
-                          default: () => "Read more"
-                        }
-                      ), */
-            h(
-              NButton,
-              {
-                text: true,
-                type: 'primary',
-                onClick: () => {
-                  localStorage.setItem('dontShowLinuxDetect', 'true');
-                  linux_detect_notification.destroy();
-                }
-              },
-              {
-                default: () => t('dont_show_again')
-              }
-            ),
-          ]
-      }
-    );
-  }
-  if (!('hid' in navigator) && localStorage.getItem('dontShowWebHIDDetect') != 'true') {
-    const webhid_detect_notification = notification.warning(
-      {
-        title: t('main_webhid_detect_title'),
-        content: t('main_webhid_detect_content'),
-        duration: 5000,
-        keepAliveOnHover: true,
-        action: () =>
-          [
-            /*           h(
-                        NButton,
-                        {
-                          text: true,
-                          type: 'primary',
-                        },
-                        {
-                          default: () => "Read more"
-                        }
-                      ), */
-            h(
-              NButton,
-              {
-                text: true,
-                type: 'primary',
-                onClick: () => {
-                  localStorage.setItem('dontShowWebHIDDetect', 'true');
-                  webhid_detect_notification.destroy();
-                }
-              },
-              {
-                default: () => t('dont_show_again')
-              }
-            ),
-          ]
-      }
-    );
-
-  }
-  const result: string[] = await apis.get_devices();
-  devices.value = result.map((label: string, index: number) => ({
-    label,
-    value: index,
-  }));
-});
-
-
 const layers = computed(() => {
   if (keymap.value != undefined) {
     return keymap.value.map((item, index) => ({
@@ -900,7 +816,6 @@ const currentPanel = computed(() => {
   }
 });
 
-
 function handleThemeUpdate() {
   if (themeName.value === 'dark') {
     themeName.value = 'light'
@@ -911,92 +826,62 @@ function handleThemeUpdate() {
 }
 
 let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
-
 </script>
-
 <template>
-  <div class="root_container">
-    <n-layout has-sider>
+  <n-layout class="root_container">
+    
+    <n-tabs
+      v-model:value="selectedDevice"
+      type="card"
+      @update:value="handleTabChange"
+      style="flex-shrink: 0; padding-top: 8px;"
+    >
+      <n-tab v-for="dev in devices" :key="dev.value" :name="dev.value">
+        {{ dev.label }}
+      </n-tab>
+    </n-tabs>
+
+    <n-layout style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+      
       <n-layout-header class="header" bordered>
         <n-grid :x-gap="12" :y-gap="12" :cols="5">
           <n-gi :span="4">
             <n-flex align="center">
+              <div :style="{ width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0, backgroundColor: isReady ? '#18a058' : (isConnected ? '#f0a020' : '#d32f2f'), boxShadow: isReady ? '0 0 8px #18a058' : 'none', transition: 'all 0.3s' }"></div>
               
-              <div :style="{
-                width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
-                backgroundColor: isReady ? '#18a058' : (isConnected ? '#f0a020' : '#d32f2f'),
-                boxShadow: isReady ? '0 0 8px #18a058' : 'none',
-                transition: 'all 0.3s'
-              }"></div>
-          
-              <n-select 
-                @update:value="handleUpdateDeviceValue" 
-                style="width: 240px;" 
-                :disabled="isConnected"
-                v-model:value="selectedDevice" 
-                v-model:options="devices" 
-                filterable
-                :placeholder="t('toolbar_select_device')" 
-              >
-              </n-select>
-            
-              <n-button 
-                v-if="isConnected" 
-                @click="connectCommand" 
-                type="error" 
-                secondary
-              >
+              <n-button v-if="isConnected" @click="connectCommand" type="error" secondary>
                 {{ t('toolbar_disconnect') }}
               </n-button>
-              <n-button 
-                v-else 
-                @click="connectCommand" 
-                type="primary" 
-                :disabled="selectedDevice == undefined"
-              >
+              <n-button v-else @click="connectCommand" type="primary" :disabled="selectedDevice == undefined">
                 {{ t('toolbar_connect') }}
               </n-button>
             
               <n-button @click="applyCommand" :disabled="!isReady">{{ t('toolbar_apply') }}</n-button>
-              <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start"
-                :options="advanced_options">
+              <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start" :options="advanced_options">
                 <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>
               </n-dropdown>
-              <n-button tertiary :type="versionStatusType">
-                {{ displayVersion }}
-              </n-button>
-            
+              <n-button tertiary :type="versionStatusType">{{ displayVersion }}</n-button>
             </n-flex>
           </n-gi>
           <n-gi :span="1">
             <n-flex justify="end">
-              <n-button @click="handleThemeUpdate">
-                {{ themeLabelMap[themeName as 'light' | 'dark'] }}
-              </n-button>
-              <n-select @update:value="handleLanguageMenu" style="max-width: 100px;" v-model:value="lang"
-                :options="language_options" />
+              <n-button @click="handleThemeUpdate">{{ themeLabelMap[themeName as 'light' | 'dark'] }}</n-button>
+              <n-select @update:value="handleLanguageMenu" style="max-width: 100px;" v-model:value="lang" :options="language_options" />
             </n-flex>
           </n-gi>
         </n-grid>
       </n-layout-header>
-      <div class="container">
-        <n-layout-sider :width="200" style="flex-shrink: 0;"
-          content-style="display: flex; flex-direction: column; height: 100%;">
 
+      <n-layout has-sider style="flex: 1; min-height: 0;">
+        <n-layout-sider bordered :width="200" style="flex-shrink: 0;" content-style="display: flex; flex-direction: column; height: 100%;">
           <div style="flex-shrink: 0; padding: 8px;">
             <n-select v-if="files.length != 0" style="font-size: 14px; margin-bottom: 8px;" size="large" :placeholder="t('main_tabs_profile')"
               @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex" v-model:options="files" />
 
             <n-grid :cols="3" :x-gap="4" style="">
-              <n-gi>
-                <n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button>
-              </n-gi>
-              <n-gi>
-                <n-button size="tiny" block @click="importConfig">{{ t('import') }}</n-button>
-              </n-gi>
-              <n-gi>
-                <n-button size="tiny" block @click="exportConfig">{{ t('export') }}</n-button>
-              </n-gi>
+              <n-gi><n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button></n-gi>
+              <n-gi><n-button size="tiny" block @click="importConfig">{{ t('import') }}</n-button></n-gi>
+              <n-gi><n-button size="tiny" block @click="exportConfig">{{ t('export') }}</n-button></n-gi>
             </n-grid>
           </div>
 
@@ -1006,68 +891,49 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 <n-button v-for="option in menuOptions" :key="option.key" class="menu-item-btn"
                   :type="tabSelection === option.key ? 'primary' : 'default'" :secondary="tabSelection === option.key"
                   :quaternary="tabSelection !== option.key" @click="tabSelection = option.key as string" size="large">
-                  <div class="menu-label">
-                    {{ option.label }}
-                  </div>
+                  <div class="menu-label">{{ option.label }}</div>
                 </n-button>
               </TransitionGroup>
             </div>
           </n-scrollbar>
         </n-layout-sider>
-        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
 
+        <n-layout-content content-style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
           <n-split direction="vertical" v-model:size="splitSize" :min="0" :max="maxSplitSize" :pane1-style="{
             overflow: 'hidden',
-            /* 【核心修改】只有在 !isDragging 且 enableTransition 为 true 时才应用动画 */
             transition: (!isDragging && enableTransition) ? 'flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
           }" @drag-start="handleDragStart" @drag-end="handleDragEnd" :resize-trigger-size="36">
             <template #1>
               <div style="height: 100%; position: relative; display: flex; flex-direction: column;">
-
                 <div v-show="isDragging" style="position: absolute; inset: 0; z-index: 100; cursor: ns-resize;"></div>
-
-                <n-scrollbar style="flex: 1; min-height: 0;" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }"
-                  trigger="hover">
+                <n-scrollbar style="flex: 1; min-height: 0;" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }" trigger="hover">
                   <div ref="keyboardContentRef" style="padding-bottom: 4px;">
-                    <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels"
-                      @select="applyToSelectedKey" />
+                    <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
                   </div>
                 </n-scrollbar>
-
               </div>
             </template>
 
             <template #resize-trigger>
               <div class="custom-resize-trigger" :class="{ 'dark': themeName === 'dark' }">
-                <div style="position: absolute; inset: 0; z-index: 0; pointer-events: auto;" @dblclick="resetToAuto">
-                </div>
+                <div style="position: absolute; inset: 0; z-index: 0; pointer-events: auto;" @dblclick="resetToAuto"></div>
 
                 <div class="trigger-left" style="z-index: 1;">
                   <Transition name="fade">
-                    <div
-                      v-if="tabSelection == 'PerformancePanel' || tabSelection == 'KeymapPanel' || tabSelection == 'RGBPanel'"
-                      @mousedown.stop style="pointer-events: auto;">
-                      <n-button size="tiny" secondary @click="applyToAllKeys">
-                        {{ t('apply_to_all') }}
-                      </n-button>
+                    <div v-if="tabSelection == 'PerformancePanel' || tabSelection == 'KeymapPanel' || tabSelection == 'RGBPanel'" @mousedown.stop style="pointer-events: auto;">
+                      <n-button size="tiny" secondary @click="applyToAllKeys">{{ t('apply_to_all') }}</n-button>
                     </div>
                   </Transition>
                 </div>
 
                 <div class="trigger-center" style="z-index: 1;">
                   <Transition name="fade" mode="out-in">
-                    <div v-if="tabSelection == 'KeymapPanel' || tabSelection == 'DynamicKeyPanel'" key="layer-selector"
-                      @mousedown.stop
-                      style="display: flex; align-items: center; justify-content: center; pointer-events: auto;">
-                      <n-radio-group v-if="layers && layers.length > 0" :key="selectedDevice + '-' + layers.length"
-                        v-model:value="currentLayerIndex" size="tiny">
-                        <n-radio-button v-for="item in layers" :key="item.value" :value="item.value"
-                          :label="item.label" />
+                    <div v-if="tabSelection == 'KeymapPanel' || tabSelection == 'DynamicKeyPanel'" key="layer-selector" @mousedown.stop style="display: flex; align-items: center; justify-content: center; pointer-events: auto;">
+                      <n-radio-group v-if="layers && layers.length > 0" :key="(selectedDevice || 0) + '-' + layers.length" v-model:value="currentLayerIndex" size="small">
+                        <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />
                       </n-radio-group>
                     </div>
-
-                    <div v-else key="handle-bar"
-                      style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                    <div v-else key="handle-bar" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
                       <div class="handle-bar" :class="{ 'active': isAutoHeight }"></div>
                     </div>
                   </Transition>
@@ -1076,12 +942,8 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 <div class="trigger-right" style="z-index: 1;">
                   <div class="toggle-btn" @click="toggleCollapse" @mousedown.stop style="pointer-events: auto;">
                     <n-icon size="16">
-                      <svg v-if="parseFloat(splitSize) < 50" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z" />
-                      </svg>
-                      <svg v-else viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6l-6 6l1.41 1.41z" />
-                      </svg>
+                      <svg v-if="parseFloat(splitSize) < 50" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z" /></svg>
+                      <svg v-else viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6l-6 6l1.41 1.41z" /></svg>
                     </n-icon>
                   </div>
                 </div>
@@ -1109,57 +971,35 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
                 </Transition>
               </div>
             </template>
-
           </n-split>
-        </div>
-      </div>
+        </n-layout-content>
+      </n-layout>
+
     </n-layout>
-  </div>
+  </n-layout>
 </template>
 
 <style scoped>
+/* 全新防溢出弹性样式 */
+.root_container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden; 
+  display: flex;
+  flex-direction: column;
+}
+
 .header {
-  position: sticky;
-  top: 0;
-  height: 80px;
-  padding: 24px;
+  flex-shrink: 0;
+  padding: 16px 24px;
   z-index: 2;
 }
 
-.right {
-  background-color: lightgreen;
-  flex-grow: 1;
-  /* 让右侧占据剩余空间 */
-}
-
-.tab {
-  position: sticky;
-  top: 0px;
-}
-
-.container {
-  display: flex;
-  position: fixed;
-  top: 80px;
-  bottom: 0px;
-  width: 100vw;
-  height: 100vh-80px;
-  /*
-    position: fixed;
-    top: 80px;
-    bottom: 0px;
-    width: 100vw;
-    height: 100vh-80px;
-    */
-}
-
-.root_container {
-  display: flex;
-  position: absolute;
-  top: 0px;
-  bottom: 0px;
-  width: 100vw;
-  height: 100vh;
+:deep(.n-layout) {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100%;
+  /* 🚨 修复4：彻底删除 background: transparent，让 Naive UI 自动应用深浅色背景 */
 }
 
 .keyboard_render {
@@ -1208,24 +1048,16 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
 }
 
 .custom-resize-trigger {
-  /* 增加高度以容纳按钮，32px-36px 是比较舒适的工具栏高度 */
   height: 36px;
   background-color: #f5f5f5;
   border-top: 1px solid #eee;
   border-bottom: 1px solid #eee;
-
-  /* Flex 布局 */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 左右两端对齐，中间居中 */
   padding: 0 12px;
-  /* 左右内边距 */
-
   position: relative;
   transition: background-color 0.2s;
-
-  /* 鼠标样式：在空白处是调整大小，在按钮上是默认 */
   cursor: ns-resize;
 }
 
@@ -1240,9 +1072,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  /* 确保垂直居中 */
   pointer-events: none;
-  /* 【关键】让空白区域允许鼠标穿透，从而触发拖拽 */
 }
 
 .trigger-center {
@@ -1258,9 +1088,7 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  /* 确保垂直居中 */
   pointer-events: none;
-  /* 【关键】让空白区域允许鼠标穿透 */
 }
 
 .handle-bar {
@@ -1288,26 +1116,19 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   background-color: rgba(0, 0, 0, 0.05);
 }
 
-/* 自定义菜单容器 */
 .menu-list-container {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* 菜单项之间的间距 */
   padding: 6px 8px;
-  /* 整体内边距，根据需要调整 */
   position: relative;
-  /* 为 absolute 定位提供基准 */
 }
 
-/* 按钮样式微调 */
 .menu-item-btn {
   width: 100%;
   justify-content: flex-start;
-  /* 让文字左对齐 */
   text-align: left;
   transition: all 0.5s;
-  /* 自身样式的过渡 */
 }
 
 .menu-label {
@@ -1316,43 +1137,26 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
   white-space: nowrap;
 }
 
-/* --- 核心动画代码 --- */
 .menu-list-move {
-  /* 明确指定只过渡 transform，且时长稍微慢一点，显得更平滑 */
-  /* 使用 !important 并不是必须的，但在这种混合了 n-button 自身样式的场景下，
-     它可以确保列表排序动画的优先级最高，防止被按钮自带的 transition: all 覆盖 */
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  
-  /* 确保移动中的元素盖过正在淡出的元素 */
   z-index: 1; 
   position: relative;
 }
 
-/* 2. 进场/离场 动画状态 */
 .menu-list-enter-active,
 .menu-list-leave-active {
-  /* 分离属性：透明度用于淡入淡出，transform 用于位置调整 */
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
-/* 3. 进场初始态 & 离场结束态 */
 .menu-list-enter-from,
 .menu-list-leave-to {
   opacity: 0;
-  /* 可选：让进场/离场带一点位移感，效果更生动 */
-  /* transform: translateX(-10px); */ 
 }
 
-/* 4. 离场元素定位 (关键修复) */
 .menu-list-leave-active {
   position: absolute;
-  
-  /* 【核心修复】锁定位置和宽度 */
-  /* 对应父容器 padding: 6px 8px; 中的 8px */
   left: 8px; 
-  right: 8px; /* 使用 left+right 组合比 width: calc() 更抗打，能自动适应 padding */
-  
-  /* 确保它不遮挡正在交互的元素 */
+  right: 8px;
   z-index: 0; 
 }
 </style>
