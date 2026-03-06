@@ -16,12 +16,22 @@ const { t } = useI18n();
 
 const message = useMessage();
 const store = useMainStore();
-const { themeName, scriptSource, scriptBytecode } = storeToRefs(store); // 获取全局主题状态
+const { themeName } = storeToRefs(store); // 获取全局主题状态
+
 
 const editorRef = shallowRef()
 const noColumn = ref(false);
 const compileStdout = ref('');
 const compileStderr = ref('');
+
+const scriptBytecode = defineModel<Uint8Array>("scriptBytecode",{ 
+  default: new Uint8Array()
+});
+
+const scriptSource = defineModel<string>("scriptSource",{ 
+  default: ""
+});
+
 const handleMount = (editor: any, monaco: any) => {
   editorRef.value = editor
   
@@ -177,7 +187,8 @@ watch(
         </n-split>
       </template>
       <template #2>
-          <n-log :log="compileStderr + compileStdout"/>
+          <!-- <n-log :log="compileStderr + compileStdout"/> -->
+           <n-log :log="'Nothing here:)'"/>
       </template>
     </n-split>
     <template #header-extra>

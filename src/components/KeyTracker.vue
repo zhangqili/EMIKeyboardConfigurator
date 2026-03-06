@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
 import { keyboardEventToHidCodeMap, keyCodeToKeyName } from "@/apis/utils"
-import { storeToRefs } from 'pinia';
-import { useMainStore } from '@/store/main';
 import { useI18n } from 'vue-i18n';
 import KeyBadgeList, { type DisplayKey } from './KeyBadgeList.vue';
 
 const { t } = useI18n();
-const store = useMainStore();
-const { keyBinding, currentLayerIndex } = storeToRefs(store);
 
 const modifierKeys = ref<string[]>([]);
 const regularKey = ref<string>('NoEvent');
@@ -41,7 +37,7 @@ if (hid !== undefined && keyCodeToKeyName[hid as keyof typeof keyCodeToKeyName])
   return (code || '').replace('Key', '').replace('Digit', '');
 };
 
-// 🚨 核心组装：把零散的按键状态转换为公共组件能够接收的数据流格式
+// 核心组装：把零散的按键状态转换为公共组件能够接收的数据流格式
 const displayKeys = computed<DisplayKey[]>(() => {
   const keys: DisplayKey[] = [];
   

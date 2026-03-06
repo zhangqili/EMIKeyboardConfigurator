@@ -864,18 +864,12 @@ export interface IKeyboardController{
 
 export interface IMacroAction {
     delay: number;
-    keycode: number;
-    event: number;
-    is_virtual : boolean;
-    key_id : number;
+    event: KeyboardKeyEvent;
 }
 
 export class MacroAction implements IMacroAction {
     delay: number = 0;
-    keycode: number = 0;
-    event: number = 0;
-    is_virtual: boolean = false;
-    key_id: number = 0;
+    event: KeyboardKeyEvent = new KeyboardKeyEvent();
 
 }
 
@@ -914,7 +908,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         return "KeyboardController";
     }
     get_macros(): IMacroAction[][] {
-        return [new Array<MacroAction>];
+        return [[]];
     }
     set_macros(macros: IMacroAction[][]): void {
         
@@ -951,10 +945,12 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     
     async detect(silent: boolean = false): Promise<HIDDevice[]>
-    {        
-        return await navigator.hid.requestDevice({
-            filters: [{ vendorId: 0xFFFF, productId: 0xFFFF, usagePage:0xFFC0}]
-        });;
+    {
+        return detectHIDDevice({
+            vendorId: 0xFFFF,
+            productId: 0xFFFF,
+            usagePage: 0xFFC0
+            }, silent);
     }
 
     write(buf: Uint8Array) : number
@@ -1018,11 +1014,11 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     }
     reset_to_default() : void
     {
-        this.advanced_keys = new Array<IAdvancedKey>();
+        this.advanced_keys = [];
         this.rgb_base_config = new RGBBaseConfig();
-        this.rgb_configs = new Array<IRGBConfig>();
-        this.keymap = new Array<Array<number>>();
-        this.dynamic_keys = new Array<IDynamicKey>();
+        this.rgb_configs = [];
+        this.keymap = [];
+        this.dynamic_keys = [];
         this.config_index = 0;
     }
     fetch_config() : void
@@ -1092,6 +1088,16 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
 }
 
 
+export class KeyboardKeyEvent {
+    keycode: number = 0;
+    event: number = 0;
+    is_virtual: boolean = false;
+    key_id: number = 0;
+    constructor()
+    {
+    }
+}
+
 export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
     const bytes = new Uint8Array(48); // 总共 45 字节
     bytes[0] = key.mode; // 写入 mode (1 字节)
@@ -1119,3 +1125,45 @@ export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
 
     return bytes;
   }
+
+  export interface HIDFilter {
+  vendorId: number;
+  productId: number;
+  usagePage?: number;
+}
+
+/**
+ * 通用的 WebHID 设备检测/请求函数
+ * @param filter 设备过滤参数 (VID, PID, UsagePage)
+ * @param silent 是否为静默模式 (true: 获取已授权列表; false: 弹出浏览器选择框)
+ */
+export async function detectHIDDevice(filter: HIDFilter, silent: boolean = false): Promise<HIDDevice[]> {
+  const hid = (navigator as any).hid;
+  if (!hid) return [];
+
+  if (silent) {
+    // 静默模式：获取已授权且在线的设备列表
+    const devices = await hid.getDevices();
+    return devices.filter((d: any) => {
+      // 1. 基本 VID/PID 校验
+      if (d.vendorId !== filter.vendorId || d.productId !== filter.productId) {
+        return false;
+      }
+      // 2. 如果指定了 UsagePage，则深度匹配 collections
+      if (filter.usagePage) {
+        return d.collections.some((c: any) => c.usagePage === filter.usagePage);
+      }
+      return true;
+    });
+  } else {
+    // 弹窗模式：请求用户授权新设备
+    // 注意：这必须由用户手势（如点击按钮）触发
+    return await hid.requestDevice({
+      filters: [{
+        vendorId: filter.vendorId,
+        productId: filter.productId,
+        usagePage: filter.usagePage
+      }]
+    });
+  }
+}

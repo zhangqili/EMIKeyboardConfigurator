@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { computed, h, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
-import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
-import KeyTracker from './KeyTracker.vue';
-import KeySelector from './KeySelector.vue';
-import { storeToRefs } from 'pinia';
-import { useMainStore } from '@/store/main';
-import { keyBindingModifierToString, keyCodeToKeyName, keyModifierToKeyName, keyCodeToString, keyCodeToStringLabels } from "@/apis/utils";
-import { Keycode } from 'emi-keyboard-controller';
 import * as ekc from 'emi-keyboard-controller';
 import PlainKey from "@/components/PlainKey.vue";
 import KeyEditCell from '@/components/KeyEditCell.vue';
@@ -17,8 +10,6 @@ const { t } = useI18n();
 
 const message = useMessage();
 
-const store = useMainStore();
-const { keyBinding, currentLayerIndex, keymap, advancedKeys } = storeToRefs(store);
 
 const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamicKey",{ 
   default: {
@@ -26,27 +17,6 @@ const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamicKey",{
   }
 });
 
-function handleMouseDown(event : MouseEvent, index: number) {
-  if (event.buttons === 1) {
-    if (dynamic_key_tk.value != undefined) {
-      dynamic_key_tk.value.bindings[0] = keyBinding.value;
-      triggerRef(dynamic_key_tk);
-      }
-  } else {
-
-  }
-}
-
-function handleMouseEnter(event : MouseEvent, index: number) {
-  if (event.buttons === 1) {
-    if (dynamic_key_tk.value != undefined) {
-      dynamic_key_tk.value.bindings[0] = keyBinding.value;
-      triggerRef(dynamic_key_tk);
-      }
-  } else {
-
-  }
-}
 </script>
 <template>
 <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">

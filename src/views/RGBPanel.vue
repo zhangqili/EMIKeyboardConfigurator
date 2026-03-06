@@ -1,20 +1,41 @@
 ;''
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, inject, type Ref } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
 import * as ekc from 'emi-keyboard-controller';
-import { rgbToHex } from '@/apis/utils';
+import { KeyConfig, rgbToHex } from '@/apis/utils';
 import tinycolor from "tinycolor2";
 import { useMainStore } from '@/store/main';
 import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();
-const store = useMainStore();
-const {rgbConfig, keyboardKeys, rgbConfigs, rgbBaseConfig} = storeToRefs(store);
+
+interface KeyboardContext {
+  keyboardKeys: Ref<KeyConfig[]>;
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  keyboardKeys,
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
 const direction = ref(0);
 const density = ref(10);
+
+const rgbBaseConfig = defineModel<ekc.IRGBBaseConfig>('rgbBaseConfig', { default: new ekc.RGBBaseConfig() });
+const rgbConfig = defineModel<ekc.IRGBConfig>('rgbConfig', { default: new ekc.RGBConfig() });
 
 const base_speed = computed<number>({
   get: () => (Math.round(rgbBaseConfig.value.speed * 1000)),

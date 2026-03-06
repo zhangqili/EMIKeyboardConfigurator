@@ -10,8 +10,7 @@ import { useMainStore } from '@/store/main';
 
 const { t } = useI18n();
 
-const store = useMainStore();
-const {advancedKey} = storeToRefs(store);
+const advancedKey = defineModel<ekc.IAdvancedKey>('advancedKey', { default: new ekc.AdvancedKey() });
 
 const mode = computed<ekc.KeyMode>({
   get: () => advancedKey.value.mode,

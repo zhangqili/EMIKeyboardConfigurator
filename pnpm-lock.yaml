@@ -20,6 +20,12 @@ importers:
       '@types/lodash':
         specifier: ^4.17.16
         version: 4.17.16
+      '@vicons/ionicons5':
+        specifier: ^0.13.0
+        version: 0.13.0
+      '@vicons/material':
+        specifier: ^0.13.0
+        version: 0.13.0
       echarts:
         specifier: ^5.5.1
         version: 5.5.1
@@ -1083,6 +1089,12 @@ packages:
 
   '@types/yauzl@2.10.3':
     resolution: {integrity: sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==}
+
+  '@vicons/ionicons5@0.13.0':
+    resolution: {integrity: sha512-zvZKBPjEXKN7AXNo2Na2uy+nvuv6SP4KAMQxpKL2vfHMj0fSvuw7JZcOPCjQC3e7ayssKnaoFVAhbYcW6v41qQ==}
+
+  '@vicons/material@0.13.0':
+    resolution: {integrity: sha512-lKVxFNprM+CaBkUH3gt6VjIeiMsKQl2zARQMwTCZruQl2vRHzyeZiKeCflWS99CEfv2JzX/6y697smxlzyxcVw==}
 
   '@vitejs/plugin-vue@5.2.1':
     resolution: {integrity: sha512-cxh314tzaWwOLqVes2gnnCtvBDcM1UMdn+iFR+UjAn411dPT3tOmqrJjbMd7koZpMAmBM/GqeV4n9ge7JSiJJQ==}
@@ -3869,6 +3881,10 @@ snapshots:
     dependencies:
       '@types/node': 22.15.31
     optional: true
+
+  '@vicons/ionicons5@0.13.0': {}
+
+  '@vicons/material@0.13.0': {}
 
   '@vitejs/plugin-vue@5.2.1(vite@6.0.1(@types/node@22.15.31)(jiti@2.6.1)(terser@5.44.1))(vue@3.5.13(typescript@5.6.3))':
     dependencies:

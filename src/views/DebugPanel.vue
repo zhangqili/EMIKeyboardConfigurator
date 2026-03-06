@@ -1,6 +1,6 @@
 ;''
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, provide, watch, shallowRef,triggerRef, h } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, ref, inject, type Ref, provide, watch, shallowRef,triggerRef, h } from 'vue'
 import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex, NTag } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -9,49 +9,55 @@ import * as apis from '@/apis/api';
 import * as ekc from 'emi-keyboard-controller';
 import { storeToRefs } from 'pinia';
 import { useMainStore } from '@/store/main';
-
-import { use } from 'echarts/core';
-import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart, PieChart } from 'echarts/charts';
-import {
-    TitleComponent,
-    TooltipComponent,
-    LegendComponent,
-    SingleAxisComponent,
-    GridComponent,
-} from 'echarts/components';
-import VChart from 'vue-echarts';
-import { EChartsType, SeriesOption, LegendComponentOption } from 'echarts';
-import { DebugDataItem, keyCodeToStringLabels } from '@/apis/utils';
 import KeyEditCell from '@/components/KeyEditCell.vue';
 import ActiveKeysMonitor from '@/components/ActiveKeysMonitor.vue';
 import OsKeyMonitor from '@/components/OsKeyMonitor.vue';
-
-use([
-    CanvasRenderer,
-    LineChart,
-    TitleComponent,
-    TooltipComponent,
-    LegendComponent,
-    SingleAxisComponent,
-    GridComponent
-]);
 
 const { t } = useI18n();
 const store = useMainStore();
 // 只取 switch 和 advancedKeys 用于显示
 // 移除 chart_option 的响应式解构，我们只在初始化时用它
-const { advancedKeys, debugSwitch, themeName, keyBinding, keyEvent, isVirtual, useKeymap, keymap, currentLayerIndex } = storeToRefs(store);
+
+interface KeyboardContext {
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
+
 // 手动非响应式获取初始配置，避免 watch 开销
+const debugSwitch = ref(false);
 const isPolling = ref(false);
 
+const debugEvent = defineModel<ekc.KeyboardKeyEvent>("debugEvent",{ 
+  default: new ekc.KeyboardKeyEvent()
+});
+
+const useKeymap = defineModel<boolean>("useKeymap",{ 
+  default: false
+});
+
+const props = defineProps<{
+    controller: ekc.KeyboardController;
+}>();
 
 async function startRequestLoop() {
     isPolling.value = true;
     while (isPolling.value) {
         try {
             // 只管发请求，不需要在这里等待返回值处理 UI
-            await apis.request_debug();
+            await props.controller.request_debug();
         } catch (e) {
             console.error("Request disrupted:", e);
             await new Promise(resolve => setTimeout(resolve, 100)); // 错误退避
@@ -67,10 +73,10 @@ function stopRequestLoop() {
 
 async function handleChange(value: boolean) {
     if (value) {
-        //await apis.start_debug();
+        //await props.controller.start_debug();
         startRequestLoop();
     } else {
-        //await apis.stop_debug();
+        //await props.controller.stop_debug();
         stopRequestLoop();
     }
 }
@@ -161,18 +167,18 @@ onMounted(() => {
         raw: k.raw,
         value: k.value
     }));
-    apis.addEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.addEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 onBeforeUnmount(() => {
     stopRequestLoop();
-    apis.removeEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    apis.emit(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value)
-    console.log(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value);
+    props.controller.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
+    console.log(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value);
   } else {
 
   }
@@ -180,8 +186,8 @@ function handleMouseDown(event : MouseEvent, index: number) {
 
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    apis.emit(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value)
-    console.log(keyEvent.value, keyBinding.value, index, isVirtual.value, useKeymap.value);
+    props.controller.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
+    console.log(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value);
   } else {
 
   }
@@ -211,22 +217,22 @@ function handleMouseEnter(event : MouseEvent, index: number) {
                 </n-form-item>
                 <n-form-item :label="t('key')">
                   <n-flex :align="'center'">
-                      <n-input-number v-model:value="keyBinding"></n-input-number>
+                      <n-input-number v-model:value="debugEvent.keycode"></n-input-number>
                       <div class="keyboard no-select" style="height: 54px; width: 54px;">
-                          <KeyEditCell :width="1" :height="1" :x="0" :y="0" v-model:value="keyBinding"></KeyEditCell>
+                          <KeyEditCell :width="1" :height="1" :x="0" :y="0" v-model:value="debugEvent.keycode"></KeyEditCell>
                       </div>
                   </n-flex>
                 </n-form-item>
                 <n-form-item :label="t('debug_panel_key_event')">                    
                   <n-select 
-                    v-model:value="keyEvent"
+                    v-model:value="debugEvent.event"
                     :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
                     style="width: 320px;"
                   />
                 </n-form-item>
                 <n-form-item :label="t('debug_panel_others')">
                   <n-flex>
-                  <n-checkbox v-model:checked="isVirtual">
+                  <n-checkbox v-model:checked="debugEvent.is_virtual">
                       {{ t('debug_panel_is_virtual') }}
                   </n-checkbox>
                   <n-checkbox v-model:checked="useKeymap">

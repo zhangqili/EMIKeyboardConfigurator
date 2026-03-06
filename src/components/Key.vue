@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, type CSSProperties  } from "vue";
+import { computed, inject, type Ref, reactive, ref, type CSSProperties  } from "vue";
 import * as kle from "@ijprest/kle-serial";
 import { Translation } from "vue-i18n";
 import {useMainStore} from "@/store/main"
@@ -9,26 +9,24 @@ import { NPopover, NButton} from 'naive-ui'
 import { DynamicKeyToKeyName, keyCodeToString, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex } from "@/apis/utils";
 
 const store = useMainStore();
+
+interface KeyboardContext {
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
 const { 
-  lang,
-  selectedDevice,
-  advancedKey, 
-  rgbConfig, 
-  dynamicKey,
-  dynamicKeyIndex,
-  advancedKeys, 
-  rgbBaseConfig,
+  advancedKeys,
   rgbConfigs, 
   keymap, 
-  keyBinding, 
   currentLayerIndex, 
   tabSelection,
-  profiles,
-  selectedProfileIndex,
-  dynamicKeys,
-  keyboardKeys,
-  themeName
-} = storeToRefs(store);
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
 
 const labels = computed(() => {
   let labels = [...props.labels];
@@ -241,10 +239,10 @@ const tooltipContent = computed(() => {
   });
   
   // 如果是 RGB 模式，可以额外显示颜色代码
-  if (store.tabSelection === 'RGBPanel' && rgbConfigs.value[props.id]) {
+  if (tabSelection.value === 'RGBPanel' && rgbConfigs.value[props.id]) {
      content.push(`Color: ${rgbToHex(rgbConfigs.value[props.id].rgb)}`);
   }
-  if ((store.tabSelection === 'KeymapPanel' || store.tabSelection === 'DynamicKeyPanel' )&& keymap.value[currentLayerIndex.value][props.id]) {
+  if ((tabSelection.value === 'KeymapPanel' || tabSelection.value === 'DynamicKeyPanel' )&& keymap.value[currentLayerIndex.value][props.id]) {
      content.push(`Keycode:  ${toUint16Hex(keymap.value[currentLayerIndex.value][props.id])}`);
   }
   return content;

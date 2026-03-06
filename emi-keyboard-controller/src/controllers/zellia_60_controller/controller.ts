@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardController, DynamicKey, RGBBaseConfig } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardController, DynamicKey, RGBBaseConfig, detectHIDDevice } from '../../interface';
 
 const layout = `[[{"x":2.25},"~\\n\`","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7","*\\n8","(\\n9",")\\n0","_\\n-","+\\n=",{"w":2},"Backspace",{"a":7},"",""],[{"x":2.25,"a":4,"w":1.5},"Tab","Q","W","E","R","T","Y","U","I","O","P","{\\n[","}\\n]",{"w":1.5},"|\\n\\\\"   ],   [     {       "x": 2.25,       "w": 1.75     },     "CapsLock",     "A",     "S",     "D",     "F",     "G",     "H",     "J",     "K",     "L",     ":\\n;",     "\\"\\n'",{"w":2.25},"Enter"],[{"a":7,"w":1.25},"","",{"a":4,"w":2.25},"Shift","Z","X","C","V","B","N","M","<\\n,",">\\n.","?\\n/",{"w":2.75},"Shift",{"a":7,"w":1.75},"",""],[{"x":2.25,"a":4,"w":1.5},"Ctrl","Win",{"w":1.5},"Alt",{"a":7,"w":7},"",{"a":4,"w":1.5},"Alt","Win",{"w":1.5},"Ctrl"],[{"x":6.25,"a":7,"w":3.5},"",{"w":3.5},""]]`;
 
@@ -14,25 +14,11 @@ export class Zellia60Controller extends LibampKeyboardController {
     }
 
     async detect(silent: boolean = false): Promise<HIDDevice[]> {
-        const targetVendorId = 0xFEED;
-        const targetProductId = 22319;
-        const targetUsagePage = 0xFF60;
-
-        if (silent) {
-            if (!(navigator as any).hid) return [];
-            const devices = await (navigator as any).hid.getDevices();
-            return devices.filter((d: any) => 
-                d.vendorId === targetVendorId && d.productId === targetProductId
-            );
-        } else {
-            return await (navigator as any).hid.requestDevice({
-                filters: [{ 
-                    vendorId: targetVendorId, 
-                    productId: targetProductId, 
-                    usagePage: targetUsagePage 
-                }]
-            });
-        }
+        return detectHIDDevice({
+            vendorId: 0xFEED,
+            productId: 22319,
+            usagePage: 0xFF60
+            }, silent);
     }
 
     get_layout_json(): string {

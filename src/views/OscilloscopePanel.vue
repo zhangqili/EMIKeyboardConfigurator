@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick, inject, type Ref } from 'vue';
 import { NCard, NFlex, NSpace, NSwitch, NSelect, NButton, NSlider } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import * as apis from '@/apis/api';
@@ -11,13 +11,42 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
 import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
+import * as ekc from 'emi-keyboard-controller'
+import { KeyConfig } from '@/apis/utils';
 
 // 引入 LegendComponent 以便显示图例区分不同按键
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent]);
 
 const { t } = useI18n();
 const store = useMainStore();
-const { advancedKeys, themeName, oscilloscopeSelectedKeys, keymap } = storeToRefs(store);
+const { themeName } = storeToRefs(store);
+
+interface KeyboardContext {
+  keyboardKeys: Ref<KeyConfig[]>;
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
+
+const props = defineProps<{
+    controller: ekc.KeyboardController;
+}>();
+
+const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys",{ 
+  default: []
+});
 
 // --- 状态控制 ---
 const isPolling = ref(false);
@@ -91,7 +120,7 @@ const chartOption = shallowRef({
                 const color = lineColors[index % lineColors.length];
                 let rawVal = '-';
                 let valVal = '-';
-                let isPressed = false; // 🚨 记录当前状态
+                let isPressed = false; // 记录当前状态
 
                 const rawCache = rawDataCache[id];
                 const valCache = valueDataCache[id];
@@ -114,7 +143,7 @@ const chartOption = shallowRef({
                     if (v) valVal = v[1].toFixed(4);
                 }
 
-                // --- 2. 🚨 获取 State 状态 ---
+                // --- 2. 获取 State 状态 ---
                 if (stateCache) {
                     // 判断当前的 tick 是否落在任何一个高亮区间内
                     isPressed = stateCache.some(area => 
@@ -208,7 +237,7 @@ async function startRequestLoop() {
     while (isPolling.value) {
         try {
             if (oscilloscopeSelectedKeys.value.length > 0) {
-                apis.request_debug_at(oscilloscopeSelectedKeys.value);
+                props.controller.request_debug_at(oscilloscopeSelectedKeys.value);
             }
         } catch (e) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -219,11 +248,11 @@ async function startRequestLoop() {
 
 async function togglePolling(val: boolean) {
     if (val){
-        await apis.start_debug();
+        await props.controller.start_debug();
         startRequestLoop();
     }
     else {
-        await apis.stop_debug();
+        await props.controller.stop_debug();
         isPolling.value = false;
         if (!isRenderPending) {
             isRenderPending = true;
@@ -406,12 +435,12 @@ const handleDebugDataUpdated = (event: Event) => {
 
 onMounted(() => {
     connect('osc_group');
-    apis.addEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.addEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 onBeforeUnmount(() => {
     isPolling.value = false;
-    apis.removeEventListener('updateDebugData', handleDebugDataUpdated);
+    props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
 function clearWaveform() {

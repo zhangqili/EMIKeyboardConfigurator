@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref, triggerRef } from 'vue'
+import { computed, h, onMounted, inject, type Ref, ref, triggerRef } from 'vue'
 import { DataTableColumns, MenuOption, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 import { createI18n } from 'vue-i18n'
 import { useI18n } from "vue-i18n";
@@ -24,7 +24,32 @@ const message = useMessage();
 
 
 const store = useMainStore();
-const { keyBinding, dynamicKeys, currentLayerIndex, keymap, advancedKeys, dynamicKey, dynamicKeyIndex} = storeToRefs(store);
+
+interface KeyboardContext {
+  advancedKeys: Ref<ekc.IAdvancedKey[]>;
+  rgbConfigs: Ref<ekc.IRGBConfig[]>;
+  keymap: Ref<number[][]>;
+  dynamicKeys: Ref<ekc.IDynamicKey[]>;
+  currentLayerIndex: Ref<number>;
+  tabSelection: Ref<string | null>;
+}
+
+const { 
+  advancedKeys,
+  rgbConfigs, 
+  keymap, 
+  currentLayerIndex, 
+  tabSelection,
+  dynamicKeys
+} = inject<KeyboardContext>('keyboardContext')!;
+
+const dynamicKey = defineModel<ekc.IDynamicKey>("dynamicKey",{ 
+  default: new ekc.DynamicKey()
+});
+
+const dynamicKeyIndex = defineModel<number>("dynamicKeyIndex",{ 
+  required: true
+});
 
 const dynamic_key_types =
   [
@@ -60,14 +85,34 @@ interface DynamicKeyRow {
 
 var edit_mode : boolean = false;
 var dynamic_key_cache : ekc.IDynamicKey;
+
+function compactDynamicKeys() {
+  const validKeys = dynamicKeys.value.filter(item => {
+    const type = item?.type;
+    return type !== undefined && type !== 0 && type !== ekc.DynamicKeyType.DynamicKeyNone;
+  });
+
+  const totalSlots = dynamicKeys.value.length; 
+
+  for (let i = 0; i < totalSlots; i++) {
+    if (i < validKeys.length) {
+      dynamicKeys.value[i] = validKeys[i];
+    } else {
+      dynamicKeys.value[i] = new ekc.DynamicKey();
+    }
+  }
+}
+
 function deleteDynamicKey(index : number)
 {
-  dynamicKey.value.target_keys_location.forEach((item,index)=>{
+  const targetDk = dynamicKeys.value[index];
+  targetDk.target_keys_location.forEach((item, loc_index)=>{
     if (keymap.value != undefined) {
-      keymap.value[item.layer][item.id] = dynamicKey.value.bindings[index];
+      keymap.value[item.layer][item.id] = targetDk.bindings[loc_index] || 0;
     }
   });
   dynamicKeys.value[index] = new ekc.DynamicKey();
+  compactDynamicKeys();
   if (keymap.value != undefined) {
     mapDynamicKey(keymap.value, dynamicKeys.value);
   }
@@ -151,7 +196,8 @@ const columns = computed(()=> createColumns({
 function handleDynamicTypeSelection(key: string, item: MenuOption) 
 {
   edit_mode = false;
-  dynamicKeyIndex.value = dynamicKeys.value.findIndex(item => item.type == ekc.DynamicKeyType.DynamicKeyNone);
+  let targetIndex = dynamicKeys.value.findIndex(item => item.type == ekc.DynamicKeyType.DynamicKeyNone);
+  let tempDynamicKey = new ekc.DynamicKey();
   switch (item.key) {
     case ekc.DynamicKeyType.DynamicKeyStroke:
       dynamicKey.value = new ekc.DynamicKeyStroke4x4();
@@ -168,7 +214,8 @@ function handleDynamicTypeSelection(key: string, item: MenuOption)
     default:
       break;
   }
-  dynamicKeys.value[dynamicKeyIndex.value] = dynamicKey.value;
+  dynamicKeys.value[targetIndex] = dynamicKey.value;
+  dynamicKeyIndex.value = targetIndex;
 }
 
 function cancelDynamicKey() 
@@ -195,7 +242,7 @@ function confirmDynamicKey()
 
 const data = computed<DynamicKeyRow[]>(
   ()=>{
-    var dynamic_key_rows = new Array<DynamicKeyRow>();
+    var dynamic_key_rows : Array<DynamicKeyRow> = [];
     dynamicKeys.value.forEach((item,index)=>
     {
       switch (item.type) {
