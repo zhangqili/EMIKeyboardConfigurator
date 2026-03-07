@@ -22,6 +22,7 @@ import OscilloscopePanel from "@/views/OscilloscopePanel.vue";
 import KeyboardRender from "@/components/KeyboardRender.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "@/locales/i18n";
+import SmoothSpan from '@/components/SmoothSpan.vue';
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -79,6 +80,12 @@ const versionStatusType = computed(() => {
 });
 
 const isReady = computed(() => isConnected.value && (versionStatusType.value == 'warning' || versionStatusType.value == 'success'));
+const emit = defineEmits(['updateStatus']);
+const currentStatus = computed(() => isReady.value ? 'ready' : (isConnected.value ? 'connected' : 'disconnected'));
+watch(currentStatus, (newVal) => {
+  emit('updateStatus', newVal);
+}, { immediate: true });
+
 const displayVersion = computed(() => {
   const v = firmwareVersion.value;
   const base = `${v.major}.${v.minor}.${v.patch}`;
@@ -512,21 +519,15 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
       <n-flex justify="space-between" :align="'center'" style="width: 100%;">
   
         <n-flex :align="'center'" :wrap="false">
-          <div :style="{ 
-            width: '10px', 
-            height: '10px', 
-            borderRadius: '50%', 
-            flexShrink: 0, 
-            backgroundColor: isReady ? '#18a058' : (isConnected ? '#f0a020' : '#d32f2f'), 
-            boxShadow: isReady ? '0 0 8px #18a058' : 'none', 
-            transition: 'all 0.3s' 
-          }"></div>
 
-          <n-button v-if="isConnected" @click="connectCommand" type="error" secondary>
-            {{ t('toolbar_disconnect') }}
-          </n-button>
-          <n-button v-else @click="connectCommand" :disabled="!controller" type="primary">
-            {{ t('toolbar_connect') }}
+          <n-button 
+            @click="connectCommand" 
+            :disabled="!isConnected && !controller" 
+            :type="isConnected ? 'error' : 'primary'" 
+            :secondary="isConnected"
+            style="transition: all 0.3s;"
+          >
+            <SmoothSpan :text="isConnected ? t('toolbar_disconnect') : t('toolbar_connect')" />
           </n-button>
         
           <n-button @click="applyCommand" :disabled="!isReady">

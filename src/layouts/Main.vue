@@ -20,22 +20,23 @@ const availableDevices = ref<{ label: string; key: string; icon?: any }[]>([]);
 const activeTheme = computed(() => (themeName.value === 'dark' ? darkTheme : null));
 export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
-interface WorkspaceTab { 
-  id: string; 
-  title: string; 
-  deviceName: string; 
-  controller: SafeController; 
+interface WorkspaceTab {
+  id: string;
+  title: string;
+  deviceName: string;
+  controller: SafeController;
+  status?: 'disconnected' | 'connected' | 'ready';
 }
 let tabIndex = 1;
 const tabs = ref<WorkspaceTab[]>([]);
 const currentTab = ref<string>('');
 
 const { needRefresh, updateServiceWorker } = useRegisterSW({
-  onRegistered(r) { 
+  onRegistered(r) {
     if (r) setInterval(() => r.update(), 60 * 60 * 1000); // 每小时检查一次更新
   },
-  onRegisterError(error: any) { 
-    console.error('Service Worker 注册失败', error); 
+  onRegisterError(error: any) {
+    console.error('Service Worker 注册失败', error);
   }
 });
 
@@ -100,14 +101,20 @@ function create_controller(device: string): SafeController {
 
 function handleAddTab(deviceName: string) {
   const id = `tab-${tabIndex++}`;
-  tabs.value.push({ id, title: deviceName, deviceName, controller: create_controller(deviceName) });
+  tabs.value.push({
+    id, 
+    title: deviceName, 
+    deviceName, 
+    controller: create_controller(deviceName),
+    status: 'disconnected'
+  });
   currentTab.value = id;
 }
 
 function handleCloseTab(id: string) {
   const index = tabs.value.findIndex((t) => t.id === id);
   if (index !== -1) {
-    tabs.value[index].controller.disconnect(); 
+    tabs.value[index].controller.disconnect();
     tabs.value.splice(index, 1);
     if (currentTab.value === id && tabs.value.length > 0) {
       currentTab.value = tabs.value[Math.max(0, index - 1)].id;
@@ -120,15 +127,15 @@ let hotplugTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function checkHotplug() {
   if (!('hid' in navigator)) return;
-  
+
   for (const deviceObj of availableDevices.value) {
     const deviceName = deviceObj.key;
     const tempController = create_controller(deviceName);
     try {
-      const detected = await tempController.detect(true); 
+      const detected = await tempController.detect(true);
       const currentCount = detected ? detected.length : 0;
       const previousCount = lastPhysicalCounts.value[deviceName] || 0;
-      
+
       if (currentCount > previousCount) {
         const added = currentCount - previousCount;
         for (let i = 0; i < added; i++) { handleAddTab(deviceName); }
@@ -174,10 +181,10 @@ onMounted(async () => {
     const tempController = create_controller(label);
     try {
       const jsonStr = await tempController.get_layout_json();
-      devicesWithIcons.push({ 
-        label, 
-        key: label, 
-        icon: generateMiniLayoutSVGSync(jsonStr) 
+      devicesWithIcons.push({
+        label,
+        key: label,
+        icon: generateMiniLayoutSVGSync(jsonStr)
       });
     } catch (e) {
       devicesWithIcons.push({ label, key: label });
@@ -201,66 +208,61 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
     <n-global-style />
 
     <div class="app-shell">
-      
+
       <div class="tab-bar-layout">
         <n-flex :align="'center'" :wrap="false" style="gap: 6px; height: 40px;">
           <TransitionGroup name="tab-list" tag="div" class="tab-list-container">
-          
-            <n-button
-              v-for="tab in tabs"
-              size="large"
-              :key="tab.id"
-              :class="{ 'is-active': currentTab === tab.id }"
-              :tertiary="currentTab === tab.id"
-              :quaternary="currentTab !== tab.id"
-              :focusable="false"
-              @click="currentTab = tab.id"
-              @mousedown.middle.prevent
-              @auxclick.middle.stop="handleCloseTab(tab.id)"
-              class="tab-btn"
-            >
+
+            <n-button v-for="tab in tabs" size="large" :key="tab.id" :class="{ 'is-active': currentTab === tab.id }"
+              :secondary="currentTab === tab.id" :quaternary="currentTab !== tab.id" :focusable="false"
+              @click="currentTab = tab.id" @mousedown.middle.prevent @auxclick.middle.stop="handleCloseTab(tab.id)"
+              :type="tab.status === 'ready' ? 'success' : (tab.status === 'connected' ? 'warning' : 'default')"
+              class="tab-btn">
               <n-flex :align="'center'" :wrap="false" style="gap: 8px;">
-                <component 
-                   v-if="availableDevices.find(d => d.key === tab.deviceName)?.icon" 
-                   :is="availableDevices.find(d => d.key === tab.deviceName)?.icon" 
-                 />
+                <component v-if="availableDevices.find(d => d.key === tab.deviceName)?.icon"
+                  :is="availableDevices.find(d => d.key === tab.deviceName)?.icon" />
                 <span>{{ tab.title }}</span>
 
                 <n-button circle quaternary :size="'tiny'" @click.stop="handleCloseTab(tab.id)">
                   <template #icon>
-                    <n-icon><CloseIcon /></n-icon>
+                    <n-icon>
+                      <CloseIcon />
+                    </n-icon>
                   </template>
                 </n-button>
               </n-flex>
             </n-button>
-          
+
             <div key="add-button" class="add-btn-wrapper">
-              <n-dropdown  trigger="hover" size="large" :options="availableDevices" @select="handleAddTab" placement="bottom-start">
+              <n-dropdown trigger="hover" size="large" :options="availableDevices" @select="handleAddTab"
+                placement="bottom-start">
                 <n-button circle size="large" quaternary :focusable="false" class="add-tab-btn">
                   <template #icon>
-                    <n-icon><PlusIcon /></n-icon>
+                    <n-icon>
+                      <PlusIcon />
+                    </n-icon>
                   </template>
                 </n-button>
               </n-dropdown>
             </div>
 
           </TransitionGroup>
-          
+
         </n-flex>
       </div>
 
       <div class="workspace-viewport">
+        <DeviceWorkspace 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          v-show="currentTab === tab.id"
+          :device-name="tab.deviceName"
+          :controller="tab.controller"
+          @update-status="(s: any) => tab.status = s"/>
         <DeviceWorkspace
-          v-if="tabs.length > 0 && activeTab"
-          :key="activeTab.id"
-          :device-name="activeTab.deviceName"
-          :controller="activeTab.controller"
-        />
-        <DeviceWorkspace
-          v-else
+          v-if="tabs.length === 0"
           device-name=""
-          :controller="undefined" 
-        />
+          :controller="undefined" />
       </div>
     </div>
   </n-config-provider>
@@ -342,7 +344,12 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   flex-direction: column;
 }
 
-.workspace-viewport > :first-child {
+.workspace-viewport> :first-child {
+  flex: 1;
+  height: 100%;
+}
+
+.workspace-viewport>* {
   flex: 1;
   height: 100%;
 }
@@ -363,6 +370,7 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   padding-right: 0px !important;
   margin-right: 0px !important;
   border-width: 0px !important;
-  transform: scale(0.9); /* 配合轻微缩小，效果更 Q 弹 */
+  transform: scale(0.9);
+  /* 配合轻微缩小，效果更 Q 弹 */
 }
 </style>

@@ -2,6 +2,7 @@ import { LibampKeyboardController } from '../libamp_keyboard_controller/controll
 import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode, ScriptLevel, MacroAction, detectHIDDevice } from '../../interface';
 
 import layout from './keyboard_layout.json?raw';
+import markdown from './README.md?raw';
 
 export class OholeoKeyboardV2Controller extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 69;
@@ -92,5 +93,9 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
     }
     get_layout_labels(): string[][] {
         return [["Spilt backspace"],["Spilt spacebar"]];
+    }
+
+    get_readme_markdown(): string {
+        return markdown;
     }
 }

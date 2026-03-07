@@ -59,5 +59,6 @@ declare module 'vue' {
     NThing: typeof import('naive-ui')['NThing']
     OsKeyMonitor: typeof import('./src/components/OsKeyMonitor.vue')['default']
     PlainKey: typeof import('./src/components/PlainKey.vue')['default']
+    SmoothSpan: typeof import('./src/components/SmoothSpan.vue')['default']
   }
 }
