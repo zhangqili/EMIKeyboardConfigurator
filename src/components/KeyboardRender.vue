@@ -60,17 +60,41 @@ watch(() => props.layout_labels, (newLabels) => {
 }, { immediate: true });
 
 </script>
-
 <template>
-  <div style="display: grid; place-items: center;">
-    <div class="keyboard no-select" :style="{ minHeight: minHeight, minWidth: minWidth, transition: 'all 0.5s ease'}">
-      <TransitionGroup name="list">
-        <Key v-for="(key, index) in visibleKeys" @mousedown="(event : MouseEvent) => handleMouseDown(event, key.id)" @mouseenter="(event : MouseEvent) => handleMouseEnter(event, key.id)" :key="key.id" :x="key.x" :y="key.y"
-        :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
-        :rotation-angle="key.rotation_angle" :labels="key.labels" :id="key.id" :color="key.color" :index="index"/>
-      </TransitionGroup>
-    </div>
-    <n-card v-if="props.layout_labels[0].length != 0" style="position: absolute; top: 10px; right: 10px; max-width: 300px;">
+  <div style="display: grid; place-items: center; position: relative; height: 100%;">
+    <n-card 
+      style="width: max-content;" 
+      content-style="padding: 8px;" 
+      :bordered="false"
+    >
+      <template #action>
+      <div 
+        class="keyboard no-select" 
+        :style="{ 
+          minHeight: minHeight, 
+          minWidth: minWidth, 
+          transition: 'all 0.5s ease',
+          position: 'relative' 
+        }"
+      >
+        <TransitionGroup name="list">
+          <Key 
+            v-for="(key, index) in visibleKeys" 
+            @mousedown="(event : MouseEvent) => handleMouseDown(event, key.id)" 
+            @mouseenter="(event : MouseEvent) => handleMouseEnter(event, key.id)" 
+            :key="key.id" :x="key.x" :y="key.y"
+            :width="key.width" :height="key.height" :rotation-x="key.rotation_x" :rotation-y="key.rotation_y"
+            :rotation-angle="key.rotation_angle" :labels="key.labels" :id="key.id" :color="key.color" :index="index"
+          />
+        </TransitionGroup>
+      </div>
+      </template>
+    </n-card>
+
+    <n-card 
+      v-if="props.layout_labels[0].length != 0" 
+      style="position: absolute; top: 10x; right: 10px; max-width: 300px; z-index: 10;"
+    >
       <n-flex vertical>
         <LayoutSubSelector v-for="(value,index) in props.layout_labels" v-model:selected-index="selectedIndices[index as number]" :labels="value"></LayoutSubSelector>
       </n-flex>
@@ -81,7 +105,7 @@ watch(() => props.layout_labels, (newLabels) => {
 <style scoped>
 .keyboard {
   background-color: transparent;
-  padding: 10px;
+  padding: 0px;
 }
 
 .list-move,

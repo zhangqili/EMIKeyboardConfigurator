@@ -171,8 +171,8 @@ const chartOption = shallowRef({
         }
     },
     grid: [
-        { left: 60, right: 40, top: '4%', height: '36%' },   // 上半部分 Raw
-        { left: 60, right: 40, top: '44%', height: '36%' }   // 下半部分 Value
+        { left: 60, right: 40, top: '4%', height: '40%' },   // 上半部分 Raw
+        { left: 60, right: 40, top: '44%', height: '40%' }   // 下半部分 Value
     ],
     xAxis: [
         {

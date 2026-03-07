@@ -195,7 +195,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
 
 </script>
 <template>
-    <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column;">
+    <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
         
         <n-flex vertical v-if="keymap != undefined && keymap.length>0 && keymap[0].length > advancedKeys.length" style="flex-shrink: 0; margin-bottom: 16px;">
           <div class="keyboard no-select" style="height: 54px;">

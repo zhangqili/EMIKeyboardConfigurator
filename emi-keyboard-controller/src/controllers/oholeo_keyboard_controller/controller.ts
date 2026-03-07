@@ -19,8 +19,8 @@ export class OholeoKeyboardController extends LibampKeyboardController {
         return detectHIDDevice({
             vendorId: 0xFEED,
             productId: 22319,
-            usagePage: 0xFF60
-            }, silent);
+            usagePage: 0xFF60,
+            }, silent, "Oholeo");
     }
 
     get_layout_json(): string {

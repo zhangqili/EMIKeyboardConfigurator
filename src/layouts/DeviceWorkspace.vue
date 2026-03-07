@@ -511,6 +511,17 @@ const currentPanel = computed(() => {
 function handleThemeUpdate() { themeName.value = themeName.value === 'dark' ? 'light' : 'dark'; }
 
 let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
+
+const displayLayerPage = computed({
+  get: () => currentLayerIndex.value + 1,
+  set: (val: number) => { 
+    currentLayerIndex.value = val - 1; 
+  }
+});
+
+const totalLayers = computed(() => {
+  return keymap.value ? keymap.value.length : 1;
+});
 </script>
 
 <template>
@@ -615,9 +626,11 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
               <div class="trigger-center" style="z-index: 1;">
                 <Transition name="fade" mode="out-in">
                   <div v-if="tabSelection == 'KeymapPanel' || tabSelection == 'DynamicKeyPanel'" key="layer-selector" @mousedown.stop style="display: flex; align-items: center; justify-content: center; pointer-events: auto;">
-                    <n-radio-group v-if="layers && layers.length > 0" :key="(props.deviceName) + '-' + layers.length" v-model:value="currentLayerIndex" size="small">
+                    <!-- <n-radio-group v-if="layers && layers.length > 0" :key="(props.deviceName) + '-' + layers.length" v-model:value="currentLayerIndex" size="small">
                       <n-radio-button v-for="item in layers" :key="item.value" :value="item.value" :label="item.label" />
-                    </n-radio-group>
+                    </n-radio-group> -->
+                    <n-pagination  v-model:page="displayLayerPage" :page-count="totalLayers" 
+                      size="large"></n-pagination>
                   </div>
                   <div v-else key="handle-bar" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
                     <div class="handle-bar" :class="{ 'active': isAutoHeight }"></div>

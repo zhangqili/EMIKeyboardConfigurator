@@ -1137,7 +1137,11 @@ export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
  * @param filter 设备过滤参数 (VID, PID, UsagePage)
  * @param silent 是否为静默模式 (true: 获取已授权列表; false: 弹出浏览器选择框)
  */
-export async function detectHIDDevice(filter: HIDFilter, silent: boolean = false): Promise<HIDDevice[]> {
+export async function detectHIDDevice(
+  filter: HIDFilter, 
+  silent: boolean = false, 
+  nameFilter?: string //
+): Promise<HIDDevice[]> {
   const hid = (navigator as any).hid;
   if (!hid) return [];
 
@@ -1149,21 +1153,35 @@ export async function detectHIDDevice(filter: HIDFilter, silent: boolean = false
       if (d.vendorId !== filter.vendorId || d.productId !== filter.productId) {
         return false;
       }
+      
       // 2. 如果指定了 UsagePage，则深度匹配 collections
       if (filter.usagePage) {
-        return d.collections.some((c: any) => c.usagePage === filter.usagePage);
+        const hasUsage = d.collections.some((c: any) => c.usagePage === filter.usagePage);
+        if (!hasUsage) return false;
       }
+      
+      // 注意：某些廉价主控可能没写 productName，所以要做一下判空保护
+      if (nameFilter && (!d.productName || !d.productName.includes(nameFilter))) {
+        return false;
+      }
+      
       return true;
     });
   } else {
     // 弹窗模式：请求用户授权新设备
-    // 注意：这必须由用户手势（如点击按钮）触发
-    return await hid.requestDevice({
+    const devices = await hid.requestDevice({
       filters: [{
         vendorId: filter.vendorId,
         productId: filter.productId,
         usagePage: filter.usagePage
       }]
     });
+
+    // 因为浏览器原生弹窗不支持按名字过滤，如果用户乱点了一个名字不匹配的设备，我们在这里把它剔除
+    if (nameFilter) {
+      return devices.filter((d: any) => d.productName && d.productName.includes(nameFilter));
+    }
+    
+    return devices;
   }
 }
