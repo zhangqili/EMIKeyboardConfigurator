@@ -4,8 +4,6 @@
     "toolbar_apply": "Apply",
     "toolbar_advance": "Advance",
     "toolbar_device_flash_configuration": "Flash configuration",
-    "toolbar_device_reset": "Reset device",
-    "toolbar_device_factory_reset": "Factory reset",
     "toolbar_settings": "Settings",
     "toolbar_select_device": "Select device",
 
@@ -18,6 +16,7 @@
     "main_tabs_script": "Script",
     "main_tabs_debug": "Debug",
     "main_tabs_oscilloscope": "Oscilloscope",
+    "main_tabs_settings": "Settings",
     "main_tabs_about": "About",
 
     "main_found_device": "Found device",
@@ -36,6 +35,9 @@
     "main_new_version_title" : "New version detected",
     "main_new_version_content" : "",
     "main_refresh_now" : "Refresh Now",
+
+    "main_offline_ready_title": "Ready for Offline Use",
+    "main_offline_ready_content": "The configurator has been cached. You can now access and configure your keyboard without an internet connection.",
 
     "key_tracker_desc" : "Press any key here",
 
@@ -133,6 +135,17 @@
     "oscilloscope_panel_enable_debug" : "Enable debug",
     "oscilloscope_panel_buffer_length" : "Buffer Length",
 
+    "setting_basic":"Basic", 
+    "setting_debug":"Debug", 
+    "setting_nkro":"N-Key Rollover(NKRO)", 
+    "setting_winlock":"Lock Win Key", 
+    "setting_others":"Others", 
+    "setting_continuous_poll":"Continuous polling", 
+    "setting_enable_report":"Enable report", 
+    "setting_device_reset": "Reboot device",
+    "setting_device_reset_confirm": "Are you sure you want to reboot the keyboard? The device will disconnect briefly.",
+    "setting_device_factory_reset_confirm": "Are you sure you want to factory reset? All saved configurations will be permanently erased!",
+
     "dynamic_key_panel_main_title" : "Create a new dynamic key",
     "dynamic_key_panel_sub_title" : "Existing dynamic key",
 
@@ -203,6 +216,8 @@
     "layout" : "Layout",
     "key_press" : "Press",
     "key_release" : "Release",
+    "keyboard_render_edit_layout" : "Edit layout",
+    "search" : "Search",
 
     "dark" : "Dark",
     "light" : "Light"

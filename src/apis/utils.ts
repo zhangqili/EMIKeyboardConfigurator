@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 import createMqjsCompiler from '@/wasm/mqjs_wasm';
 import wasmBinaryUrl from '@/wasm/mqjs_wasm.wasm?url';
@@ -387,19 +387,20 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardResetToDefault]: 'Reset to Default',
   [KeyboardKeycode.KeyboardRgbBrightnessUp]: 'Brightness Up',
   [KeyboardKeycode.KeyboardRgbBrightnessDown]: 'Brightness Down',
-  [KeyboardKeycode.KeyboardConfig0]: 'Profile 0',
-  [KeyboardKeycode.KeyboardConfig1]: 'Profile 1',
-  [KeyboardKeycode.KeyboardConfig2]: 'Profile 2',
-  [KeyboardKeycode.KeyboardConfig3]: 'Profile 3',
+  [KeyboardKeycode.KeyboardProfile0]: 'Profile 0',
+  [KeyboardKeycode.KeyboardProfile1]: 'Profile 1',
+  [KeyboardKeycode.KeyboardProfile2]: 'Profile 2',
+  [KeyboardKeycode.KeyboardProfile3]: 'Profile 3',
   [KeyboardKeycode.KeyboardConfigBase]: 'Config Base',
 };
 
-export const KeyboardConfigToKeyName: { [key in KeyboardConfig]: string } = {
-  [KeyboardConfig.KeyboardConfigDebug]: 'Debug',
-  [KeyboardConfig.KeyboardConfigNkro]: 'NKRO',
-  [KeyboardConfig.KeyboardConfigWinlock]: 'Winlock',
-  [KeyboardConfig.KeyboardConfigContinousPoll]: 'Continous poll',
-  [KeyboardConfig.KeyboardConfigNum]: 'Num',
+export const KeyboardConfigToKeyName: { [key in KeyboardConfigCode]: string } = {
+  [KeyboardConfigCode.KeyboardConfigDebug]: 'Debug',
+  [KeyboardConfigCode.KeyboardConfigNkro]: 'NKRO',
+  [KeyboardConfigCode.KeyboardConfigWinlock]: 'Winlock',
+  [KeyboardConfigCode.KeyboardConfigContinousPoll]: 'Continous poll',
+  [KeyboardConfigCode.KeyboardConfigEnableReport]: 'Enable Report',
+  [KeyboardConfigCode.KeyboardConfigNum]: 'Num',
 };
 
 export const LayerControlToKeyName: { [key in LayerControlKeycode]: string } = {
@@ -734,7 +735,7 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
             default:
               break;
           }
-          mainString = KeyboardConfigToKeyName[((modifier & 0x3f) - (KeyboardKeycode.KeyboardConfigBase)) as KeyboardConfig];
+          mainString = KeyboardConfigToKeyName[((modifier & 0x3f) - (KeyboardKeycode.KeyboardConfigBase)) as KeyboardConfigCode];
         }
         break;
       case Keycode.KeyUser:

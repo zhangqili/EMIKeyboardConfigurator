@@ -175,10 +175,15 @@ onBeforeUnmount(() => {
     props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
+function emitEvent(index : number)
+{
+    debugEvent.value.key_id = index;
+    props.controller.emit(debugEvent.value, useKeymap.value)
+}
+
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    props.controller.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
-    console.log(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value);
+    emitEvent(index);
   } else {
 
   }
@@ -186,10 +191,7 @@ function handleMouseDown(event : MouseEvent, index: number) {
 
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    props.controller.emit(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value)
-    console.log(debugEvent.value.event, debugEvent.value.keycode, index, debugEvent.value.is_virtual, useKeymap.value);
-  } else {
-
+    emitEvent(index);
   }
 }
 

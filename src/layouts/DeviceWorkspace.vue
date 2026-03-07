@@ -23,6 +23,7 @@ import KeyboardRender from "@/components/KeyboardRender.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "@/locales/i18n";
 import SmoothSpan from '@/components/SmoothSpan.vue';
+import SettingsPanel from '@/views/SettingsPanel.vue';
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -56,6 +57,7 @@ const scriptBytecode = ref<Uint8Array>(new Uint8Array());
 const selectedProfileIndex = ref<number | undefined>(undefined);
 const oscilloscopeSelectedKeys = ref<number[]>([]);
 const macros = ref<ekc.IMacroAction[][]>([[]]);
+const keyboardConfig = ref<ekc.KeyboardConfig>(new ekc.KeyboardConfig());
 
 const keyboardKeys = ref<KeyConfig[]>([]);
 const advancedKeys = ref<ekc.IAdvancedKey[]>([]);
@@ -244,6 +246,7 @@ async function applyCommand() {
     const { bytecode } = await mqjsCompile(scriptSource.value, argsString);
     scriptBytecode.value = bytecode;
     triggerRef(scriptBytecode);
+    await controller.value.set_config(keyboardConfig.value);
     await controller.value.set_advanced_keys(advancedKeys.value);
     await controller.value.set_rgb_base_config(rgbBaseConfig.value);
     if (keymap.value != undefined) await controller.value.set_keymap(keymap.value);
@@ -252,12 +255,13 @@ async function applyCommand() {
     await controller.value.set_macros(macros.value);
     await controller.value.set_script_source(scriptSource.value);
     await controller.value.set_script_bytecode(scriptBytecode.value);
-    await controller.value.save_config();
+    await controller.value.save();
   }
 }
 
 async function getController() {
   if (!controller.value) return;
+  keyboardConfig.value = await controller.value.get_config();
   advancedKeys.value = await controller.value.get_advanced_keys();
   keymap.value = await controller.value.get_keymap();
   rgbBaseConfig.value = await controller.value.get_rgb_base_config();
@@ -378,7 +382,8 @@ function applyToSelectedKey(index: number) {
       break;
     case "DebugPanel":
       if (controller.value) {
-        controller.value.emit(debugEvent.value.event, debugEvent.value.keycode, id, debugEvent.value.is_virtual, useKeymap.value);
+        debugEvent.value.key_id = id;
+        controller.value.emit(debugEvent.value, useKeymap.value);
       }
       break;
     case "OscilloscopePanel":
@@ -465,6 +470,7 @@ const menuOptions = computed(() => {
     opts.push({ label: t('main_tabs_debug'), key: 'DebugPanel' });
     opts.push({ label: t('main_tabs_oscilloscope'), key: 'OscilloscopePanel' });
   }
+  opts.push({ label: t('main_tabs_settings'), key: 'SettingsPanel' });
   opts.push({ label: t('main_tabs_about'), key: 'AboutPanel' });
   return opts;
 });
@@ -478,7 +484,7 @@ function handleAdvancedMenu(key: string | number) {
   if (!controller.value) return;
   if (isConnected.value) {
     switch (key) {
-      case advanced_options.value[0].key: controller.value.flash_config(); break;
+      case advanced_options.value[0].key: controller.value.flash(); break;
       case advanced_options.value[1].key: controller.value.system_reset(); break;
       case advanced_options.value[2].key: controller.value.factory_reset(); break;
     }
@@ -500,6 +506,7 @@ const currentPanel = computed(() => {
     case 'RGBPanel': return RGBPanel;
     case 'DynamicKeyPanel': return DynamicKeyPanel;
     case 'DebugPanel': return DebugPanel;
+    case 'SettingsPanel': return SettingsPanel;
     case 'OscilloscopePanel': return OscilloscopePanel;
     case 'MacroPanel': return MacroPanel;
     case 'ScriptPanel': return ScriptPanel;
@@ -544,11 +551,9 @@ const totalLayers = computed(() => {
           <n-button @click="applyCommand" :disabled="!isReady">
             {{ t('toolbar_apply') }}
           </n-button>
-
-          <n-dropdown :disabled="!isReady" @select="handleAdvancedMenu" trigger="hover" placement="bottom-start" :options="advanced_options">
-            <n-button :disabled="!isReady">{{ t('toolbar_advance') }}</n-button>
-          </n-dropdown>
-        
+          <n-button @click="controller?.flash();" :disabled="!isReady">
+            {{ t('toolbar_device_flash_configuration') }}
+          </n-button>        
           <n-button tertiary :focusable="false" :type="versionStatusType">
             {{ displayVersion }}
           </n-button>
@@ -665,6 +670,7 @@ const totalLayers = computed(() => {
                 v-model:scriptBytecode="scriptBytecode"
                 v-model:oscilloscopeSelectedKeys="oscilloscopeSelectedKeys"
                 v-model:macros="macros"
+                v-model:keyboardConfig="keyboardConfig"
                 :controller="controller"
                 :readme-markdown="readmeMarkdown"/>
               </Transition>

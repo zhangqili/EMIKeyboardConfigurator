@@ -1,4 +1,4 @@
-import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction, IFeature, Feature, ScriptLevel, Keycode} from "./../../interface";
+import { AdvancedKeyToBytes, DynamicKey, DynamicKeyModTap, DynamicKeyMutex, DynamicKeyStroke4x4, DynamicKeyToggleKey, DynamicKeyType, IDynamicKey, KeyboardController, getEMIPathIdentifier, KeyboardKeycode, IAdvancedKey, IRGBBaseConfig, IRGBConfig, FirmwareVersion, MacroAction, IMacroAction, IFeature, Feature, ScriptLevel, Keycode, KeyboardKeyEvent, KeyboardConfigCode} from "./../../interface";
 import semver, { SemVer } from 'semver';
 
 enum PacketCode {
@@ -212,7 +212,7 @@ export class LibampKeyboardController extends KeyboardController {
             result = true;
         }
         if (result) {
-            this.request_config();
+            this.request();
             this.device.addEventListener("inputreport", this.handleInputReport);
             navigator.hid.addEventListener('disconnect', this.handleDeviceDisconnect);
         }
@@ -402,7 +402,7 @@ export class LibampKeyboardController extends KeyboardController {
                 this.packet_process_dynamic_key(buf);
                 break;
             case PacketData.PacketDataProfileIndex:
-                this.packet_process_config_index(buf);
+                this.packet_process_profile_index(buf);
                 break;
             case PacketData.PacketDataConfig:
                 this.packet_process_config(buf);
@@ -665,7 +665,7 @@ export class LibampKeyboardController extends KeyboardController {
       }
     }
 
-    packet_process_config_index(buf : Uint8Array)
+    packet_process_profile_index(buf : Uint8Array)
     {
       let dataView = new DataView(buf.buffer);
       if (buf[0] == PacketCode.PacketCodeGet) {
@@ -675,6 +675,61 @@ export class LibampKeyboardController extends KeyboardController {
 
     packet_process_config(buf : Uint8Array)
     {
+        if (buf[0] === PacketCode.PacketCodeGet) {
+            // GET: 接收来自下位机的数据并更新本地 config
+            const length = buf[2];
+            for (let i = 0; i < length; i++) {
+                const index = buf[4 + i * 2];
+                const value = buf[5 + i * 2] > 0;
+                
+                switch (index) {
+                    case KeyboardConfigCode.KeyboardConfigDebug:
+                        this.config.debug = value;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigNkro:
+                        this.config.nkro = value;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigWinlock:
+                        this.config.winlock = value;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigContinousPoll:
+                        this.config.continuous_poll = value;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigEnableReport:
+                        this.config.enable_report = value;
+                        break;
+                }
+            }
+        }
+        else if (buf[0] === PacketCode.PacketCodeSet) {
+            // SET: 根据本地 config 填充即将发送给下位机的 Buffer
+            const length = buf[2];
+            for (let i = 0; i < length; i++) {
+                const index = buf[4 + i * 2];
+                let value = false;
+                
+                switch (index) {
+                    case KeyboardConfigCode.KeyboardConfigDebug:
+                        value = this.config.debug;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigNkro:
+                        value = this.config.nkro;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigWinlock:
+                        value = this.config.winlock;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigContinousPoll:
+                        value = this.config.continuous_poll;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigEnableReport:
+                        value = this.config.enable_report;
+                        break;
+                }
+                // 写入 boolean 对应的 0 或 1
+                buf[5 + i * 2] = value ? 1 : 0;
+            }
+        }
+        console.log(this.config);
     }
 
     packet_process_debug(buf : Uint8Array)
@@ -807,12 +862,13 @@ export class LibampKeyboardController extends KeyboardController {
         return this.device != undefined;
     }
 
-    fetch_config(): void {
+    fetch(): void {
         throw new Error('Method not implemented.');
     }
 
-    async save_config() {
+    async save() {
         console.log("Starting save config...");
+        await this.write_config();
         await this.write_advanced_keys();
         await this.write_rgb_configs();
         await this.write_keymap();
@@ -825,7 +881,7 @@ export class LibampKeyboardController extends KeyboardController {
             }
         }
     }
-    flash_config(): void {
+    flash(): void {
         let send_buf = new Uint8Array(63);
         let dataView = new DataView(send_buf.buffer);
         send_buf[0] = PacketCode.PacketCodeEvent;
@@ -866,9 +922,10 @@ export class LibampKeyboardController extends KeyboardController {
         let res = this.write(send_buf);
         console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
-    async request_config(): Promise<void> {
+    async request(): Promise<void> {
       try {
           await this.request_version();
+          await this.read_config();
           if (this.feature.advanced_key_flag) {
             await this.read_advanced_keys();
           }
@@ -1312,6 +1369,54 @@ export class LibampKeyboardController extends KeyboardController {
         console.log("Macros read complete");
     }
 
+    async write_config() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeSet;
+        this.txBuffer[1] = PacketData.PacketDataConfig;
+        
+        // 我们要写入的配置数量
+        const numConfigs = KeyboardConfigCode.KeyboardConfigNum; 
+        this.txBuffer[2] = numConfigs;
+        this.txBuffer[3] = 0; // reserved
+
+        // 预填充 Index
+        for (let i = 0; i < numConfigs; i++) {
+            this.txBuffer[4 + i * 2] = i; 
+        }
+
+        // 调用刚才写好的处理函数，它会根据上面填入的 index 将对应的数据值填入 Buffer
+        this.packet_process_config(this.txBuffer);
+
+        try {
+            await this.enqueueCommand(this.txBuffer);
+            console.debug("Sent Keyboard Config");
+        } catch (e) {
+            console.error("Failed to send Keyboard Config", e);
+        }
+    }
+
+    async read_config() {
+        this.txBuffer.fill(0);
+        this.txBuffer[0] = PacketCode.PacketCodeGet;
+        this.txBuffer[1] = PacketData.PacketDataConfig;
+        
+        const numConfigs = KeyboardConfigCode.KeyboardConfigNum;
+        this.txBuffer[2] = numConfigs;
+        this.txBuffer[3] = 0; // reserved
+
+        // 告诉下位机我们要查询哪几个 Index 的配置
+        for (let i = 0; i < numConfigs; i++) {
+            this.txBuffer[4 + i * 2] = i; 
+        }
+
+        try {
+            const res = await this.enqueueCommand(this.txBuffer);
+            this.packet_process_config(res);
+            console.debug("Read Keyboard Config");
+        } catch (e) {
+            console.error("Failed to read Keyboard Config", e);
+        }
+    }
     get_profile_num(): number {
         return this.profile_number;
     }
@@ -1336,7 +1441,7 @@ export class LibampKeyboardController extends KeyboardController {
         try {
             await this.enqueueCommand(this.txBuffer, 1000);
             console.log("MCU confirmed switch. Requesting data...");
-            await this.request_config();
+            await this.request();
             
         } catch (e) {
             console.error("Config switch failed or timed out:", e);
@@ -1442,14 +1547,14 @@ export class LibampKeyboardController extends KeyboardController {
         this.script_bytecode = bytecode;
     }
 
-    async emit(event: number, keycode: number, id: number, is_virtual: boolean, use_keymap: boolean) {
+    async emit(event : KeyboardKeyEvent, use_keymap: boolean) {
         this.txBuffer.fill(0);
         const dataView = new DataView(this.txBuffer.buffer);
         this.txBuffer[0] = PacketCode.PacketCodeEvent;
-        this.txBuffer[1] = event;
-        dataView.setUint16(2, keycode ,true);
-        dataView.setUint16(4, id ,true);
-        this.txBuffer[6] = is_virtual ? 1 : 0;
+        this.txBuffer[1] = event.event;
+        dataView.setUint16(2, event.keycode ,true);
+        dataView.setUint16(4, event.key_id ,true);
+        this.txBuffer[6] = event.is_virtual ? 1 : 0;
         this.txBuffer[7] = use_keymap ? 1 : 0;
 
         try {

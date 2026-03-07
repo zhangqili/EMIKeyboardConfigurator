@@ -4,6 +4,8 @@ import Key from "./Key.vue";
 import * as kle from "@ijprest/kle-serial";
 import { KeyConfig } from "@/apis/utils";
 import LayoutSubSelector from "./LayoutSubSelector.vue";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: 'select', id: number): void
@@ -91,14 +93,31 @@ watch(() => props.layout_labels, (newLabels) => {
       </template>
     </n-card>
 
-    <n-card 
-      v-if="props.layout_labels[0].length != 0" 
-      style="position: absolute; top: 10x; right: 10px; max-width: 300px; z-index: 10;"
+    <div 
+      v-if="props.layout_labels && props.layout_labels.length > 0 && props.layout_labels[0].length != 0" 
+      style="position: absolute; top: 16px; right: 16px; z-index: 10;"
     >
-      <n-flex vertical>
-        <LayoutSubSelector v-for="(value,index) in props.layout_labels" v-model:selected-index="selectedIndices[index as number]" :labels="value"></LayoutSubSelector>
-      </n-flex>
-    </n-card>
+      <n-popover placement="bottom-end" trigger="hover" :show-arrow="false">
+        
+        <template #trigger>
+          <n-button secondary>
+            {{ t("keyboard_render_edit_layout") }}
+          </n-button>
+        </template>
+
+        <div style="width: 240px;">
+          <n-flex vertical>
+            <LayoutSubSelector 
+              v-for="(value, index) in props.layout_labels" 
+              :key="index"
+              v-model:selected-index="selectedIndices[index as number]" 
+              :labels="value"
+            />
+          </n-flex>
+        </div>
+        
+      </n-popover>
+    </div>
   </div>
 </template>
 

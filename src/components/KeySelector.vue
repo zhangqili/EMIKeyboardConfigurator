@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, triggerRef } from 'vue';
 import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName } from "@/apis/utils"
-import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfig, MacroKeycode } from "emi-keyboard-controller"
+import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { values } from 'lodash';
@@ -106,10 +106,10 @@ const keyboard_config_control_options = [
     },
 ]
 
-const keyboard_config_options = Object.keys(KeyboardConfig).slice(0,4).map((key) => {
+const keyboard_config_options = Object.keys(KeyboardConfigCode).slice(0,4).map((key) => {
     return {
         value: key,
-        label: KeyboardConfigToKeyName[key as unknown as KeyboardConfig]
+        label: KeyboardConfigToKeyName[key as unknown as KeyboardConfigCode]
     };
 });
 
@@ -135,7 +135,7 @@ const midi_value = ref(0);
 const midi_note_value = ref(0);
 const macro_index = ref(0);
 const keyboard_config_control_value = ref(2);
-const keyboard_config_value = ref((KeyboardConfig.KeyboardConfigDebug as number).toString());
+const keyboard_config_value = ref((KeyboardConfigCode.KeyboardConfigDebug as number).toString());
 
 </script>
 <template>

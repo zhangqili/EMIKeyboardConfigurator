@@ -3,9 +3,7 @@
     "toolbar_disconnect": "断开连接",
     "toolbar_apply": "应用",
     "toolbar_advance": "高级",
-    "toolbar_device_flash_configuration": "保存配置至Flash",
-    "toolbar_device_reset": "重启设备",
-    "toolbar_device_factory_reset": "恢复设备出厂设置",
+    "toolbar_device_flash_configuration": "保存配置至板载Flash",
     "toolbar_settings": "设置",
     "toolbar_select_device": "选择设备",
 
@@ -18,6 +16,7 @@
     "main_tabs_script": "脚本",
     "main_tabs_debug": "调试",
     "main_tabs_oscilloscope": "示波器",
+    "main_tabs_settings": "设置",
     "main_tabs_about": "关于",
     
     "main_found_device": "连接成功",
@@ -36,6 +35,9 @@
     "main_new_version_title" : "检测到新版配置器",
     "main_new_version_content" : "",
     "main_refresh_now" : "立即刷新",
+
+    "main_offline_ready_title": "已就绪，可离线使用",
+    "main_offline_ready_content": "配置器已成功缓存。即使在没有网络的情况下，你也可以通过浏览器直接访问并配置你的键盘。",
 
     "key_tracker_desc" : "在这里按下按键",
 
@@ -188,6 +190,18 @@
     "oscilloscope_panel_enable_debug" : "启用调试",
     "oscilloscope_panel_buffer_length" : "缓冲大小",
     
+    "setting_basic":"基础功能", 
+    "setting_debug":"调试", 
+    "setting_nkro":"全键无冲(NKRO)", 
+    "setting_winlock":"锁定Win键", 
+    "setting_others":"杂项", 
+    "setting_continuous_poll":"连续回报", 
+    "setting_enable_report":"启用回报", 
+    "setting_device_reset": "重启设备",
+    "setting_device_factory_reset" : "恢复出厂设置",
+    "setting_device_reset_confirm": "确定要重启键盘吗？这会导致设备短暂断开连接。",
+    "setting_device_factory_reset_confirm": "确定要恢复出厂设置吗？所有保存在键盘上的配置将被彻底清空！",
+    
     "key" : "按键",
     "apply" : "应用",
     "apply_to_all" : "应用到所有按键",
@@ -205,6 +219,8 @@
     "layout" : "布局",
     "key_press" : "按下",
     "key_release" : "释放",
+    "keyboard_render_edit_layout" : "编辑布局",
+    "search" : "搜索",
 
     "dark" : "深色",
     "light" : "浅色"

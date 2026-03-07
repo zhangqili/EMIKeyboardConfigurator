@@ -132,6 +132,15 @@ export interface FirmwareVersion {
     patch: number;
     info: string;
 }
+
+export class KeyboardConfig {
+    debug : boolean = false;
+    nkro : boolean = false;
+    winlock : boolean = false;
+    continuous_poll : boolean = false;
+    enable_report : boolean = true;
+}
+
 // Interface for AdvancedKey
 export interface IAdvancedKey {
     state: boolean;
@@ -458,18 +467,19 @@ export enum KeyboardKeycode {
     KeyboardResetToDefault = 4,
     KeyboardRgbBrightnessUp = 5,
     KeyboardRgbBrightnessDown = 6,
-    KeyboardConfig0 = 0x10,
-    KeyboardConfig1 = 0x11,
-    KeyboardConfig2 = 0x12,
-    KeyboardConfig3 = 0x13,
+    KeyboardProfile0 = 0x10,
+    KeyboardProfile1 = 0x11,
+    KeyboardProfile2 = 0x12,
+    KeyboardProfile3 = 0x13,
     KeyboardConfigBase = 0x20,
 }
-export enum KeyboardConfig {
+export enum KeyboardConfigCode {
     KeyboardConfigDebug = 0,
     KeyboardConfigNkro = 1,
     KeyboardConfigWinlock = 2,
     KeyboardConfigContinousPoll = 3,
-    KeyboardConfigNum = 4,
+    KeyboardConfigEnableReport = 4,
+    KeyboardConfigNum = 5,
 }
 export enum LayerControlKeycode {
     LayerMomentary = 0,
@@ -834,13 +844,14 @@ export interface IKeyboardController{
     set_keymap(keymap : number[][]) : void;
     get_dynamic_keys(): IDynamicKey[];
     set_dynamic_keys(dynamic_keys: IDynamicKey[]): void;
+    get_config(): KeyboardConfig;
+    set_config(config: KeyboardConfig): void;
     reset_to_default() : void;
-    fetch_config() : void;
-    save_config() : void;
-    flash_config() : void;
+    fetch() : void;
+    save() : void;
+    flash() : void;
     system_reset() : void;
     factory_reset() : void;
-    request_config() : void;
     request_debug_at(ids: number[]) : void;
     start_debug() : void;
     stop_debug() : void;
@@ -859,7 +870,7 @@ export interface IKeyboardController{
     set_script_bytecode(bytecode : Uint8Array) : void;
     get_readme_markdown() : string;
     get_feature() : IFeature;
-    emit(event :number, keycode : number, id :number, is_virtual : boolean, use_keymap : boolean) : void;
+    emit(event : KeyboardKeyEvent, use_keymap : boolean) : void;
 }
 
 export interface IMacroAction {
@@ -882,14 +893,22 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     dynamic_keys!: IDynamicKey[];
     config_index!: number;
     path : string;
+    config : KeyboardConfig;
     private listeners: { [key: string]: EventListener[] } = {};
 
     constructor() {
         this.device = undefined;
+        this.config = new KeyboardConfig();
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
     }
-    emit(event: number, keycode: number, id: number, is_virtual: boolean, use_keymap: boolean): void {
+    get_config(): KeyboardConfig {
+        return this.config;
+    }
+    set_config(config: KeyboardConfig): void {
+        this.config = config;
+    }
+    emit(event : KeyboardKeyEvent, use_keymap : boolean): void {
         
     }
     get_script_source(): string {
@@ -1021,15 +1040,15 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.dynamic_keys = [];
         this.config_index = 0;
     }
-    fetch_config() : void
+    fetch() : void
     {
 
     }
-    save_config() : void
+    save() : void
     {
 
     }
-    flash_config() : void
+    flash() : void
     {
 
     }
@@ -1038,10 +1057,6 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
 
     }
     factory_reset() : void
-    {
-
-    }
-    request_config() : void
     {
 
     }

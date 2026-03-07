@@ -99,16 +99,16 @@ export async function disconnect_device(){
 }
 
 
-export async function fetch_config(){
-    return CONTROLLER.fetch_config();
+export async function fetch(){
+    return CONTROLLER.fetch();
 }
 
-export async function save_config(){
-    return CONTROLLER.save_config();
+export async function save(){
+    return CONTROLLER.save();
 }
 
-export async function flash_config(){
-    return CONTROLLER.flash_config();
+export async function flash(){
+    return CONTROLLER.flash();
 }
 
 export async function system_reset(){
@@ -193,6 +193,6 @@ export async function get_script_bytecode(){
 export async function set_script_bytecode(bytecode : Uint8Array ){
     return CONTROLLER.set_script_bytecode(bytecode);
 }
-export async function emit(event: number, keycode: number, id: number, is_virtual: boolean, use_keymap: boolean){
-    return CONTROLLER.emit(event , keycode, id, is_virtual, use_keymap);
+export async function emit(event: ekc.KeyboardKeyEvent, use_keymap: boolean){
+    return CONTROLLER.emit(event, use_keymap);
 }

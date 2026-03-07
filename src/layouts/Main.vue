@@ -22,35 +22,47 @@ const activeTheme = computed(() => (themeName.value === 'dark' ? darkTheme : nul
 import TabBar from '@/components/TabBar.vue'
 export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
-interface WorkspaceTab { 
-  id: string; 
-  title: string; 
-  deviceName: string; 
-  controller: SafeController; 
+interface WorkspaceTab {
+  id: string;
+  title: string;
+  deviceName: string;
+  controller: SafeController;
   status?: 'disconnected' | 'connected' | 'ready';
 }
 let tabIndex = 1;
 const tabs = ref<WorkspaceTab[]>([]);
 const currentTab = ref<string>('');
 
-const { needRefresh, updateServiceWorker } = useRegisterSW({
-  onRegistered(r) { 
+const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW({
+  onRegistered(r) {
     if (r) setInterval(() => r.update(), 60 * 60 * 1000); // 每小时检查一次更新
   },
-  onRegisterError(error: any) { 
-    console.error('Service Worker 注册失败', error); 
+  onRegisterError(error: any) {
+    console.error('Service Worker 注册失败', error);
   }
 });
 
 watch(needRefresh, (val) => {
   if (val) {
     const n = notification.info({
-      title: t('main_update_title') || '发现新版本',
-      content: t('main_update_content') || '配置器已有新版本可用，是否立即更新并重启？',
-      action: () => h(NFlex, { justify: 'end', style: 'gap: 8px' }, [
-        h(NButton, { type: 'primary', onClick: () => updateServiceWorker() }, { default: () => t('update') || '立即更新' })
-      ]),
+      title: t('main_new_version_title'),
+      content: t('main_new_version_content'),
+      action: () => [h(NButton, {
+        text: true, type: 'primary',
+        onClick: () => updateServiceWorker() 
+      }, { default: () => t('main_refresh_now') })],
       duration: 0
+    });
+  }
+});
+
+watch(offlineReady, (val) => {
+  if (val) {
+    notification.success({
+      title: t('main_offline_ready_title'),
+      content: t('main_offline_ready_content'),
+      duration: 5000,
+      keepAliveOnHover: true
     });
   }
 });
@@ -116,7 +128,7 @@ function handleReorder(fromIndex: number, toIndex: number) {
 function handleCloseTab(id: string) {
   const index = tabs.value.findIndex((t) => t.id === id);
   if (index !== -1) {
-    tabs.value[index].controller.disconnect(); 
+    tabs.value[index].controller.disconnect();
     tabs.value.splice(index, 1);
     if (currentTab.value === id && tabs.value.length > 0) {
       currentTab.value = tabs.value[Math.max(0, index - 1)].id;
@@ -129,15 +141,15 @@ let hotplugTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function checkHotplug() {
   if (!('hid' in navigator)) return;
-  
+
   for (const deviceObj of availableDevices.value) {
     const deviceName = deviceObj.key;
     const tempController = create_controller(deviceName);
     try {
-      const detected = await tempController.detect(true); 
+      const detected = await tempController.detect(true);
       const currentCount = detected ? detected.length : 0;
       const previousCount = lastPhysicalCounts.value[deviceName] || 0;
-      
+
       if (currentCount > previousCount) {
         const added = currentCount - previousCount;
         for (let i = 0; i < added; i++) { handleAddTab(deviceName); }
@@ -165,15 +177,24 @@ function triggerHotplugCheck() {
 onMounted(async () => {
   if (navigator.userAgent.toLowerCase().includes("linux") && localStorage.getItem('dontShowLinuxDetect') != 'true') {
     const linux_detect_notification = notification.warning({
-      title: t('main_linux_detect_title'), content: t('main_linux_detect_content'), duration: 5000, keepAliveOnHover: true,
-      action: () => [h(NButton, { text: true, type: 'primary', onClick: () => { localStorage.setItem('dontShowLinuxDetect', 'true'); linux_detect_notification.destroy(); } }, { default: () => t('dont_show_again') })]
+      title: t('main_linux_detect_title'),
+      content: t('main_linux_detect_content'), duration: 5000, keepAliveOnHover: true,
+      action: () => [h(NButton, {
+        text: true, type: 'primary',
+        onClick: () => { localStorage.setItem('dontShowLinuxDetect', 'true'); linux_detect_notification.destroy(); }
+      }, { default: () => t('dont_show_again') })]
     });
   }
 
   if (!('hid' in navigator) && localStorage.getItem('dontShowWebHIDDetect') != 'true') {
     const webhid_detect_notification = notification.warning({
-      title: t('main_webhid_detect_title'), content: t('main_webhid_detect_content'), duration: 5000, keepAliveOnHover: true,
-      action: () => [h(NButton, { text: true, type: 'primary', onClick: () => { localStorage.setItem('dontShowWebHIDDetect', 'true'); webhid_detect_notification.destroy(); } }, { default: () => t('dont_show_again') })]
+      title: t('main_webhid_detect_title'),
+      content: t('main_webhid_detect_content'), duration: 5000,
+      keepAliveOnHover: true,
+      action: () => [h(NButton, {
+        text: true, type: 'primary',
+        onClick: () => { localStorage.setItem('dontShowWebHIDDetect', 'true'); webhid_detect_notification.destroy(); }
+      }, { default: () => t('dont_show_again') })]
     });
   }
 
@@ -183,10 +204,10 @@ onMounted(async () => {
     const tempController = create_controller(label);
     try {
       const jsonStr = await tempController.get_layout_json();
-      devicesWithIcons.push({ 
-        label, 
-        key: label, 
-        icon: generateMiniLayoutSVGSync(jsonStr) 
+      devicesWithIcons.push({
+        label,
+        key: label,
+        icon: generateMiniLayoutSVGSync(jsonStr)
       });
     } catch (e) {
       devicesWithIcons.push({ label, key: label });
@@ -209,15 +230,9 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   <n-config-provider :theme="activeTheme">
     <n-global-style />
 
-      <div class="app-shell">
-          <TabBar 
-        :tabs="tabs" 
-        v-model:currentTab="currentTab" 
-        :availableDevices="availableDevices" 
-        @close="handleCloseTab" 
-        @add="handleAddTab" 
-        @reorder="handleReorder" 
-      />
+    <div class="app-shell">
+      <TabBar :tabs="tabs" v-model:currentTab="currentTab" :availableDevices="availableDevices" @close="handleCloseTab"
+        @add="handleAddTab" @reorder="handleReorder" />
 
       <div class="workspace-viewport">
         <DeviceWorkspace v-for="tab in tabs" :key="tab.id" v-show="currentTab === tab.id" :device-name="tab.deviceName"
@@ -246,7 +261,7 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   flex-direction: column;
 }
 
-.workspace-viewport > :first-child {
+.workspace-viewport> :first-child {
   flex: 1;
   height: 100%;
 }
