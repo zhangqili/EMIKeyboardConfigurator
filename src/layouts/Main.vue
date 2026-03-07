@@ -11,16 +11,19 @@ import DeviceWorkspace from '@/layouts/DeviceWorkspace.vue';
 import * as kle from "@ijprest/kle-serial";
 import { PlusFilled as PlusIcon, CloseOutlined as CloseIcon } from '@vicons/material'
 import WorkspaceTabComponent from '@/components/WorkspaceTab.vue';
+import TabBar from '@/components/TabBar.vue'
+import { setI18nLanguage } from "@/locales/i18n";
+export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
 const { t } = useI18n();
 const notification = useNotification();
 const store = useMainStore();
-const { themeName } = storeToRefs(store);
+const { themeName, lang } = storeToRefs(store);
 
 const availableDevices = ref<{ label: string; key: string; icon?: any }[]>([]);
 const activeTheme = computed(() => (themeName.value === 'dark' ? darkTheme : null));
-import TabBar from '@/components/TabBar.vue'
-export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
+
+if (navigator.language === "zh-CN") { lang.value = "zh"; setI18nLanguage('zh'); }
 
 interface WorkspaceTab {
   id: string;

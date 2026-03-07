@@ -197,7 +197,7 @@ function handleDragEnd() {
   padding-right: 0px !important;
   margin-right: 0px !important;
   border-width: 0px !important;
-  transform: scale(0.9);
+  transform: scale(1);
 }
 
 .tab-list-container.is-dragging-mode > * {

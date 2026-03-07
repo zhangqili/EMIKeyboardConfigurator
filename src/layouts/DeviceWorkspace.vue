@@ -35,10 +35,9 @@ const props = defineProps<{
 const controller = computed(() => props.controller);
 const { t } = useI18n();
 const store = useMainStore();
-const { themeName } = storeToRefs(store);
+const { themeName, lang } = storeToRefs(store);
 const message = useMessage();
 
-const lang = ref<string>("");
 const isConnected = ref<boolean>(false);
 const advancedKey = ref<ekc.IAdvancedKey>(new ekc.AdvancedKey());
 const rgbBaseConfig = ref<ekc.IRGBBaseConfig>(new ekc.RGBBaseConfig());
@@ -490,8 +489,6 @@ function handleAdvancedMenu(key: string | number) {
     }
   }
 }
-
-if (navigator.language === "zh-CN") { lang.value = "zh"; handleLanguageMenu("zh"); }
 
 function handleLanguageMenu(key: string) { setI18nLanguage(key); }
 

@@ -9,8 +9,10 @@ export const useMainStore = defineStore('main',
     () => {
         // 所有这些属性都将自动推断出它们的类型
         const themeName = ref<string>('dark');
+        const lang = ref<string>("");
         return {
             themeName,
+            lang
         }
     }
   );
