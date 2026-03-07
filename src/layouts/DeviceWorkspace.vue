@@ -661,9 +661,8 @@ let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
       </n-layout-content>
     </n-layout>
     <div v-else class="empty-state-placeholder">
-      <n-empty :description="t('no_device_selected') || '请点击 + 号添加设备或等待检测'">
+      <n-empty>
         <template #extra>
-          <div style="color: #888; font-size: 12px;">使用 WebHID 连接您的可编程键盘</div>
         </template>
       </n-empty>
     </div>

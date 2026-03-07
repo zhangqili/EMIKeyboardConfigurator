@@ -60,5 +60,7 @@ declare module 'vue' {
     OsKeyMonitor: typeof import('./src/components/OsKeyMonitor.vue')['default']
     PlainKey: typeof import('./src/components/PlainKey.vue')['default']
     SmoothSpan: typeof import('./src/components/SmoothSpan.vue')['default']
+    TabBar: typeof import('./src/components/TabBar.vue')['default']
+    WorkspaceTab: typeof import('./src/components/WorkspaceTab.vue')['default']
   }
 }

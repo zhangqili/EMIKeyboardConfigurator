@@ -10,6 +10,7 @@ import { storeToRefs } from "pinia";
 import DeviceWorkspace from '@/layouts/DeviceWorkspace.vue';
 import * as kle from "@ijprest/kle-serial";
 import { PlusFilled as PlusIcon, CloseOutlined as CloseIcon } from '@vicons/material'
+import WorkspaceTabComponent from '@/components/WorkspaceTab.vue';
 
 const { t } = useI18n();
 const notification = useNotification();
@@ -18,13 +19,14 @@ const { themeName } = storeToRefs(store);
 
 const availableDevices = ref<{ label: string; key: string; icon?: any }[]>([]);
 const activeTheme = computed(() => (themeName.value === 'dark' ? darkTheme : null));
+import TabBar from '@/components/TabBar.vue'
 export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
-interface WorkspaceTab {
-  id: string;
-  title: string;
-  deviceName: string;
-  controller: SafeController;
+interface WorkspaceTab { 
+  id: string; 
+  title: string; 
+  deviceName: string; 
+  controller: SafeController; 
   status?: 'disconnected' | 'connected' | 'ready';
 }
 let tabIndex = 1;
@@ -32,11 +34,11 @@ const tabs = ref<WorkspaceTab[]>([]);
 const currentTab = ref<string>('');
 
 const { needRefresh, updateServiceWorker } = useRegisterSW({
-  onRegistered(r) {
+  onRegistered(r) { 
     if (r) setInterval(() => r.update(), 60 * 60 * 1000); // 每小时检查一次更新
   },
-  onRegisterError(error: any) {
-    console.error('Service Worker 注册失败', error);
+  onRegisterError(error: any) { 
+    console.error('Service Worker 注册失败', error); 
   }
 });
 
@@ -101,20 +103,20 @@ function create_controller(device: string): SafeController {
 
 function handleAddTab(deviceName: string) {
   const id = `tab-${tabIndex++}`;
-  tabs.value.push({
-    id, 
-    title: deviceName, 
-    deviceName, 
-    controller: create_controller(deviceName),
-    status: 'disconnected'
-  });
+  tabs.value.push({ id, title: deviceName, deviceName, controller: create_controller(deviceName), status: 'disconnected' });
   currentTab.value = id;
+}
+
+function handleReorder(fromIndex: number, toIndex: number) {
+  const draggedTab = tabs.value[fromIndex];
+  tabs.value.splice(fromIndex, 1);
+  tabs.value.splice(toIndex, 0, draggedTab);
 }
 
 function handleCloseTab(id: string) {
   const index = tabs.value.findIndex((t) => t.id === id);
   if (index !== -1) {
-    tabs.value[index].controller.disconnect();
+    tabs.value[index].controller.disconnect(); 
     tabs.value.splice(index, 1);
     if (currentTab.value === id && tabs.value.length > 0) {
       currentTab.value = tabs.value[Math.max(0, index - 1)].id;
@@ -127,15 +129,15 @@ let hotplugTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function checkHotplug() {
   if (!('hid' in navigator)) return;
-
+  
   for (const deviceObj of availableDevices.value) {
     const deviceName = deviceObj.key;
     const tempController = create_controller(deviceName);
     try {
-      const detected = await tempController.detect(true);
+      const detected = await tempController.detect(true); 
       const currentCount = detected ? detected.length : 0;
       const previousCount = lastPhysicalCounts.value[deviceName] || 0;
-
+      
       if (currentCount > previousCount) {
         const added = currentCount - previousCount;
         for (let i = 0; i < added; i++) { handleAddTab(deviceName); }
@@ -181,10 +183,10 @@ onMounted(async () => {
     const tempController = create_controller(label);
     try {
       const jsonStr = await tempController.get_layout_json();
-      devicesWithIcons.push({
-        label,
-        key: label,
-        icon: generateMiniLayoutSVGSync(jsonStr)
+      devicesWithIcons.push({ 
+        label, 
+        key: label, 
+        icon: generateMiniLayoutSVGSync(jsonStr) 
       });
     } catch (e) {
       devicesWithIcons.push({ label, key: label });
@@ -207,62 +209,20 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   <n-config-provider :theme="activeTheme">
     <n-global-style />
 
-    <div class="app-shell">
-
-      <div class="tab-bar-layout">
-        <n-flex :align="'center'" :wrap="false" style="gap: 6px; height: 40px;">
-          <TransitionGroup name="tab-list" tag="div" class="tab-list-container">
-
-            <n-button v-for="tab in tabs" size="large" :key="tab.id" :class="{ 'is-active': currentTab === tab.id }"
-              :secondary="currentTab === tab.id" :quaternary="currentTab !== tab.id" :focusable="false"
-              @click="currentTab = tab.id" @mousedown.middle.prevent @auxclick.middle.stop="handleCloseTab(tab.id)"
-              :type="tab.status === 'ready' ? 'success' : (tab.status === 'connected' ? 'warning' : 'default')"
-              class="tab-btn">
-              <n-flex :align="'center'" :wrap="false" style="gap: 8px;">
-                <component v-if="availableDevices.find(d => d.key === tab.deviceName)?.icon"
-                  :is="availableDevices.find(d => d.key === tab.deviceName)?.icon" />
-                <span>{{ tab.title }}</span>
-
-                <n-button circle quaternary :size="'tiny'" @click.stop="handleCloseTab(tab.id)">
-                  <template #icon>
-                    <n-icon>
-                      <CloseIcon />
-                    </n-icon>
-                  </template>
-                </n-button>
-              </n-flex>
-            </n-button>
-
-            <div key="add-button" class="add-btn-wrapper">
-              <n-dropdown trigger="hover" size="large" :options="availableDevices" @select="handleAddTab"
-                placement="bottom-start">
-                <n-button circle size="large" quaternary :focusable="false" class="add-tab-btn">
-                  <template #icon>
-                    <n-icon>
-                      <PlusIcon />
-                    </n-icon>
-                  </template>
-                </n-button>
-              </n-dropdown>
-            </div>
-
-          </TransitionGroup>
-
-        </n-flex>
-      </div>
+      <div class="app-shell">
+          <TabBar 
+        :tabs="tabs" 
+        v-model:currentTab="currentTab" 
+        :availableDevices="availableDevices" 
+        @close="handleCloseTab" 
+        @add="handleAddTab" 
+        @reorder="handleReorder" 
+      />
 
       <div class="workspace-viewport">
-        <DeviceWorkspace 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          v-show="currentTab === tab.id"
-          :device-name="tab.deviceName"
-          :controller="tab.controller"
-          @update-status="(s: any) => tab.status = s"/>
-        <DeviceWorkspace
-          v-if="tabs.length === 0"
-          device-name=""
-          :controller="undefined" />
+        <DeviceWorkspace v-for="tab in tabs" :key="tab.id" v-show="currentTab === tab.id" :device-name="tab.deviceName"
+          :controller="tab.controller" @update-status="(s: any) => tab.status = s" />
+        <DeviceWorkspace v-if="tabs.length === 0" device-name="" :controller="undefined" />
       </div>
     </div>
   </n-config-provider>
@@ -279,64 +239,6 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   padding: 0;
 }
 
-.tab-bar-layout {
-  flex: 0 0 auto;
-  padding: 6px 8px;
-  background-color: var(--n-color-embedded);
-  border-bottom: 1px solid var(--n-border-color);
-  overflow-x: auto;
-}
-
-/* 隐藏横向滚动条，更美观 */
-.tab-bar-layout::-webkit-scrollbar {
-  display: none;
-}
-
-/* 替代原本的 n-flex，避免 gap 属性干扰动画 */
-.tab-list-container {
-  display: flex;
-  align-items: center;
-  height: 40px;
-}
-
-/* 按钮基础样式：把间距全写在自身 margin 里，方便动画压缩 */
-.tab-btn {
-  padding: 0 8px 0 12px;
-  margin-right: 6px;
-  max-width: 250px;
-  overflow: hidden;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.add-btn-wrapper {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.tab-close-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  color: var(--n-text-color);
-  opacity: 0.5;
-  transition: all 0.2s;
-}
-
-.tab-close-icon:hover {
-  opacity: 1;
-  background-color: var(--n-border-color);
-}
-
-.add-tab-btn {
-  width: 32px;
-  height: 32px;
-}
-
 .workspace-viewport {
   flex: 1;
   min-height: 0;
@@ -344,33 +246,8 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
   flex-direction: column;
 }
 
-.workspace-viewport> :first-child {
+.workspace-viewport > :first-child {
   flex: 1;
   height: 100%;
-}
-
-.workspace-viewport>* {
-  flex: 1;
-  height: 100%;
-}
-
-.tab-list-move,
-.tab-list-enter-active,
-.tab-list-leave-active {
-  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-/* 进入和离开时：不仅透明度归零，把所有撑开体积的属性全压没！ */
-.tab-list-enter-from,
-.tab-list-leave-to {
-  opacity: 0;
-  max-width: 0px !important;
-  min-width: 0px !important;
-  padding-left: 0px !important;
-  padding-right: 0px !important;
-  margin-right: 0px !important;
-  border-width: 0px !important;
-  transform: scale(0.9);
-  /* 配合轻微缩小，效果更 Q 弹 */
 }
 </style>
