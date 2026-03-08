@@ -72,6 +72,19 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
+            <span style="color: var(--n-error-color);">{{ t('setting_enter_bootloader') || '进入Bootloader' }}</span>
+            <n-popconfirm @positive-click="controller.enter_bootloader()" :positive-text="t('confirm')" :negative-text="t('cancel')">
+              <template #trigger>
+                <n-button type="warning" ghost size="small">{{ t('confirm') || '执行' }}</n-button>
+              </template>
+              {{ t('setting_enter_bootloader_confirm') }}
+            </n-popconfirm>
+          </n-flex>
+        </n-card>
+      </n-grid-item>
+      <n-grid-item>
+        <n-card size="small" hoverable embedded>
+          <n-flex justify="space-between" align="center">
             <span>{{ t('setting_device_reset') || '重启设备' }}</span>
             <n-popconfirm @positive-click="controller.system_reset()" :positive-text="t('confirm')" :negative-text="t('cancel')">
               <template #trigger>

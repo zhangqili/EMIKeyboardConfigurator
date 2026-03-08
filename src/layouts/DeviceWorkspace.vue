@@ -316,6 +316,10 @@ function applyToSelectedKey(index: number) {
     case "KeymapPanel":
       if (keymap.value != undefined) keymap.value[currentLayerIndex.value][id] = keyBinding.value;
       break;
+    case "RGBPanel": {
+      rgbConfigs.value[id] = cloneDeep(rgbConfig.value);
+      break;
+    }
     case "DynamicKeyPanel":
       if (dynamicKey.value.type != ekc.DynamicKeyType.DynamicKeyNone) {
         switch (dynamicKey.value.type) {

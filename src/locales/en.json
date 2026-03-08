@@ -145,6 +145,8 @@
     "setting_device_reset": "Reboot device",
     "setting_device_reset_confirm": "Are you sure you want to reboot the keyboard? The device will disconnect briefly.",
     "setting_device_factory_reset_confirm": "Are you sure you want to factory reset? All saved configurations will be permanently erased!",
+    "setting_enter_bootloader": "Enter bootloader",
+    "setting_enter_bootloader_confirm": "Are you sure you want keyboard to enter bootloader? The device will disconnect.",
 
     "dynamic_key_panel_main_title" : "Create a new dynamic key",
     "dynamic_key_panel_sub_title" : "Existing dynamic key",

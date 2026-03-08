@@ -225,31 +225,21 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
         delete lastStateCache[k];
         hiddenKeys.value = hiddenKeys.value.filter(id => id !== k);
     });
+    if (isPolling.value && newKeys.length > 0) {
+        props.controller.request_debug_at(newKeys);
+    }
     if (!isRenderPending) {
         isRenderPending = true;
         requestAnimationFrame(renderCharts);
     }
 });
 
-// --- 请求循环 ---
-async function startRequestLoop() {
-    isPolling.value = true;
-    while (isPolling.value) {
-        try {
-            if (oscilloscopeSelectedKeys.value.length > 0) {
-                props.controller.request_debug_at(oscilloscopeSelectedKeys.value);
-            }
-        } catch (e) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        await new Promise(resolve => requestAnimationFrame(resolve));
-    }
-}
-
 async function togglePolling(val: boolean) {
     if (val){
         await props.controller.start_debug();
-        startRequestLoop();
+        if (oscilloscopeSelectedKeys.value.length > 0) {
+            props.controller.request_debug_at(oscilloscopeSelectedKeys.value);
+        }
     }
     else {
         await props.controller.stop_debug();
@@ -283,7 +273,12 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
             if (!rawDataCache[keyId]) rawDataCache[keyId] = [];
             if (!valueDataCache[keyId]) valueDataCache[keyId] = [];
             if (!stateAreasCache[keyId]) stateAreasCache[keyId] = [];
-
+            //if (rawDataCache[keyId].length > 0) {
+            //    const lastRawValue = rawDataCache[keyId][rawDataCache[keyId].length - 1][1];
+            //    if (lastRawValue === targetKey.raw) {
+            //        console.warn(`[ADC 采样冗余] Key ${keyId} 连续产生相同的 Raw 值: ${targetKey.raw} (Tick: ${numericTick})`);
+            //    }
+            //}
             rawDataCache[keyId].push([numericTick, targetKey.raw]);
             valueDataCache[keyId].push([numericTick, targetKey.value]);
 
@@ -343,11 +338,11 @@ function renderCharts() {
             id: `raw_${id}`,
             name: `Key ${id}`,
             type: 'line',
-            sampling: 'lttb',
             xAxisIndex: 0,
             yAxisIndex: 0,
             showSymbol: false,
             itemStyle: { color: color },
+            lineStyle: { width: 1 },
             data: isHidden ? [] : (rawDataCache[id] || []),
             markArea: isHidden ? undefined : {
                 silent: true,
@@ -368,11 +363,11 @@ function renderCharts() {
             id: `val_${id}`,
             name: `Key ${id}`,
             type: 'line',
-            sampling: 'lttb',
             xAxisIndex: 1,
             yAxisIndex: 1,
             showSymbol: false,
             itemStyle: { color: color },
+            lineStyle: { width: 1 },
             data: isHidden ? [] : (valueDataCache[id] || []),
             markArea: isHidden ? undefined : {
                 silent: true,

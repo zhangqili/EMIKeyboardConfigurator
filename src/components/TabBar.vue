@@ -99,6 +99,7 @@ function handleDragEnd() {
           :is-active="currentTab === tab.id"
           :is-dragging="draggedTabIndex === index"
           :status="tab.status"
+          @mousedown="$emit('update:currentTab', tab.id)"
           @select="$emit('update:currentTab', tab.id)"
           @close="$emit('close', tab.id)"
           @dragstart="handleDragStart(index, $event)"

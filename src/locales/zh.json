@@ -201,6 +201,8 @@
     "setting_device_factory_reset" : "恢复出厂设置",
     "setting_device_reset_confirm": "确定要重启键盘吗？这会导致设备短暂断开连接。",
     "setting_device_factory_reset_confirm": "确定要恢复出厂设置吗？所有保存在键盘上的配置将被彻底清空！",
+    "setting_enter_bootloader": "进入Bootloader",
+    "setting_enter_bootloader_confirm": "确定要让键盘进入Bootloader吗？这会导致设备断开连接。",
     
     "key" : "按键",
     "apply" : "应用",

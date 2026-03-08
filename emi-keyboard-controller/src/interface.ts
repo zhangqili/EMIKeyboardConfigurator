@@ -852,6 +852,7 @@ export interface IKeyboardController{
     flash() : void;
     system_reset() : void;
     factory_reset() : void;
+    enter_bootloader(): void;
     request_debug_at(ids: number[]) : void;
     start_debug() : void;
     stop_debug() : void;
@@ -901,6 +902,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.config = new KeyboardConfig();
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    enter_bootloader(): void {
+        
     }
     get_config(): KeyboardConfig {
         return this.config;
