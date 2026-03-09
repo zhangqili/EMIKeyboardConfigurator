@@ -104,7 +104,7 @@ function create_controller(device: string): SafeController {
   switch (device) {
     case "Trinity Pad": ctrl = new ekc.TrinityPadController(); break;
     case "Oholeo Keyboard": ctrl = new ekc.OholeoKeyboardController(); break;
-    case "Oholeo Keyboard v2": ctrl = new ekc.OholeoKeyboardV2Controller(); break;
+    case "Oholeo Keyboard V2": ctrl = new ekc.OholeoKeyboardV2Controller(); break;
     case "Zellia60 HE": ctrl = new ekc.Zellia60Controller(); break;
     case "Zellia80 HE": ctrl = new ekc.Zellia80Controller(); break;
     case "Zellia Starlight": ctrl = new ekc.ZelliaStarlightController(); break;

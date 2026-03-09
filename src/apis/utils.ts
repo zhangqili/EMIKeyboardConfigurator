@@ -387,6 +387,7 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardResetToDefault]: 'Reset to Default',
   [KeyboardKeycode.KeyboardRgbBrightnessUp]: 'Brightness Up',
   [KeyboardKeycode.KeyboardRgbBrightnessDown]: 'Brightness Down',
+  [KeyboardKeycode.KeyboardCalibrate]: "Calibrate",
   [KeyboardKeycode.KeyboardProfile0]: 'Profile 0',
   [KeyboardKeycode.KeyboardProfile1]: 'Profile 1',
   [KeyboardKeycode.KeyboardProfile2]: 'Profile 2',

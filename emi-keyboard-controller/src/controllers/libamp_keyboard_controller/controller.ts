@@ -892,6 +892,18 @@ export class LibampKeyboardController extends KeyboardController {
         let res = this.write(send_buf);
         console.debug("Wrote Save Command: {:?} byte(s)", res);
     }
+
+    calibrate(): void {
+        let send_buf = new Uint8Array(63);
+        let dataView = new DataView(send_buf.buffer);
+        send_buf[0] = PacketCode.PacketCodeEvent;
+        send_buf[1] = 0x01;
+        send_buf[2] = Keycode.KeyboardOperation;
+        send_buf[3] = KeyboardKeycode.KeyboardCalibrate;
+        send_buf[6] = 1;
+        let res = this.write(send_buf);
+        console.debug("Wrote Calibrate Command: {:?} byte(s)", res);
+    }
     system_reset(): void {
         let send_buf = new Uint8Array(63);
         send_buf[0] = PacketCode.PacketCodeEvent;

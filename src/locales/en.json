@@ -69,7 +69,7 @@
     "key_selector_macro" : "Macro",
     "key_selector_layer" : "Layer",
     "key_selector_keyboard" : "Keyboard",
-    "key_selector_keyboard_config" : "Keyboard Configuration",
+    "key_selector_keyboard_profile" : "Keyboard Configuration",
     "key_selector_user" : "User",
     "key_selector_transparent" : "Transparent",
 
@@ -147,6 +147,8 @@
     "setting_device_factory_reset_confirm": "Are you sure you want to factory reset? All saved configurations will be permanently erased!",
     "setting_enter_bootloader": "Enter bootloader",
     "setting_enter_bootloader_confirm": "Are you sure you want keyboard to enter bootloader? The device will disconnect.",
+    "setting_calibrate": "Calibrate",
+    "setting_calibrate_confirm": "Calibration will start in 1 second. Please do not touch the keyboard for 5 seconds.",
 
     "dynamic_key_panel_main_title" : "Create a new dynamic key",
     "dynamic_key_panel_sub_title" : "Existing dynamic key",

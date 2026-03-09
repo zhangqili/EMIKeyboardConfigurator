@@ -467,6 +467,7 @@ export enum KeyboardKeycode {
     KeyboardResetToDefault = 4,
     KeyboardRgbBrightnessUp = 5,
     KeyboardRgbBrightnessDown = 6,
+    KeyboardCalibrate = 7,
     KeyboardProfile0 = 0x10,
     KeyboardProfile1 = 0x11,
     KeyboardProfile2 = 0x12,
@@ -850,6 +851,7 @@ export interface IKeyboardController{
     fetch() : void;
     save() : void;
     flash() : void;
+    calibrate() : void;
     system_reset() : void;
     factory_reset() : void;
     enter_bootloader(): void;
@@ -902,6 +904,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         this.config = new KeyboardConfig();
         this.path = getEMIPathIdentifier();
         this.reset_to_default();
+    }
+    calibrate(): void {
+        
     }
     enter_bootloader(): void {
         

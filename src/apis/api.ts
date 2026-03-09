@@ -3,7 +3,7 @@ import * as ekc from "emi-keyboard-controller"
 const DEVICES = [
     "Trinity Pad",
     "Oholeo Keyboard",
-    "Oholeo Keyboard v2",
+    "Oholeo Keyboard V2",
     "Zellia80 HE",
     "Zellia60 HE",
     "Zellia Starlight",
@@ -22,7 +22,7 @@ function create_controller(device: string): ekc.KeyboardController {
     switch (device) {
         case "Trinity Pad": return new ekc.TrinityPadController();
         case "Oholeo Keyboard": return new ekc.OholeoKeyboardController();
-        case "Oholeo Keyboard v2": return new ekc.OholeoKeyboardV2Controller();
+        case "Oholeo Keyboard V2": return new ekc.OholeoKeyboardV2Controller();
         case "Zellia60 HE": return new ekc.Zellia60Controller();
         case "Zellia80 HE": return new ekc.Zellia80Controller();
         case "Zellia Starlight": return new ekc.ZelliaStarlightController();

@@ -69,7 +69,7 @@
     "key_selector_macro" : "宏",
     "key_selector_layer" : "层控制",
     "key_selector_keyboard" : "键盘控制",
-    "key_selector_keyboard_config" : "键盘配置",
+    "key_selector_keyboard_profile" : "键盘配置",
     "key_selector_user" : "用户指定",
     "key_selector_transparent" : "透明",
 
@@ -203,6 +203,8 @@
     "setting_device_factory_reset_confirm": "确定要恢复出厂设置吗？所有保存在键盘上的配置将被彻底清空！",
     "setting_enter_bootloader": "进入Bootloader",
     "setting_enter_bootloader_confirm": "确定要让键盘进入Bootloader吗？这会导致设备断开连接。",
+    "setting_calibrate": "校准键盘",
+    "setting_calibrate_confirm": "将在1秒后开始校准，5秒内请勿触动键盘",
     
     "key" : "按键",
     "apply" : "应用",
