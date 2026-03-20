@@ -33,7 +33,7 @@ export default defineConfig(async () => ({
       registerType: 'prompt',
       injectRegister: 'auto',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
         maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
       },
       manifest: {
