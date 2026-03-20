@@ -772,6 +772,11 @@ export class LibampKeyboardController extends KeyboardController {
             const infoBytes = buf.slice(16, 16 + infoLen);
             const decoder = new TextDecoder('utf-8');
             this.firmware_version.info = decoder.decode(infoBytes).replace(/\0/g, ''); // 去除可能的空字符
+            if (this.firmware_version.major == 0 &&
+                this.firmware_version.minor == 1
+            ) {
+                this.read_data();
+            }
             
             console.log("Firmware Version:", this.firmware_version);
         }
@@ -934,32 +939,34 @@ export class LibampKeyboardController extends KeyboardController {
         let res = this.write(send_buf);
         console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
     }
+    async read_data(): Promise<void> {
+        await this.read_config();
+        if (this.feature.advanced_key_flag) {
+          await this.read_advanced_keys();
+        }
+        if (this.feature.rgb_flag) {
+          await this.read_rgb_configs();
+        }
+        await this.read_keymap();
+        if (this.dynamic_keys.length > 0) {
+          await this.read_dynamic_keys();
+        }
+        if (this.macros.length > 0) {
+          await this.read_macros();
+        }
+        if (this.profile_number > 1) {
+          await this.read_config_index();
+        }
+        if (this.feature.script_level != ScriptLevel.Disable) {
+          await this.read_script_source();
+          await this.read_script_bytecode();
+        }
+        console.log("Config loaded successfully");
+        this.dispatchEvent(new Event('updateData'));
+    }
     async request(): Promise<void> {
       try {
           await this.request_version();
-          await this.read_config();
-          if (this.feature.advanced_key_flag) {
-            await this.read_advanced_keys();
-          }
-          if (this.feature.rgb_flag) {
-            await this.read_rgb_configs();
-          }
-          await this.read_keymap();
-          if (this.dynamic_keys.length > 0) {
-            await this.read_dynamic_keys();
-          }
-          if (this.macros.length > 0) {
-            await this.read_macros();
-          }
-          if (this.profile_number > 1) {
-            await this.read_config_index();
-          }
-          if (this.feature.script_level != ScriptLevel.Disable) {
-            await this.read_script_source();
-            await this.read_script_bytecode();
-          }
-          console.log("Config loaded successfully");
-          this.dispatchEvent(new Event('updateData'));
       } catch (e) {
           console.error("Error loading config:", e);
       }
