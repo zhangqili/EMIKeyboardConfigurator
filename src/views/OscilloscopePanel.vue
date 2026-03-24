@@ -22,30 +22,30 @@ const store = useMainStore();
 const { themeName } = storeToRefs(store);
 
 interface KeyboardContext {
-  keyboardKeys: Ref<KeyConfig[]>;
-  advancedKeys: Ref<ekc.IAdvancedKey[]>;
-  rgbConfigs: Ref<ekc.IRGBConfig[]>;
-  keymap: Ref<number[][]>;
-  dynamicKeys: Ref<ekc.IDynamicKey[]>;
-  currentLayerIndex: Ref<number>;
-  tabSelection: Ref<string | null>;
+    keyboardKeys: Ref<KeyConfig[]>;
+    advancedKeys: Ref<ekc.IAdvancedKey[]>;
+    rgbConfigs: Ref<ekc.IRGBConfig[]>;
+    keymap: Ref<number[][]>;
+    dynamicKeys: Ref<ekc.IDynamicKey[]>;
+    currentLayerIndex: Ref<number>;
+    tabSelection: Ref<string | null>;
 }
 
-const { 
-  advancedKeys,
-  rgbConfigs, 
-  keymap, 
-  currentLayerIndex, 
-  tabSelection,
-  dynamicKeys
+const {
+    advancedKeys,
+    rgbConfigs,
+    keymap,
+    currentLayerIndex,
+    tabSelection,
+    dynamicKeys
 } = inject<KeyboardContext>('keyboardContext')!;
 
 const props = defineProps<{
     controller: ekc.KeyboardController;
 }>();
 
-const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys",{ 
-  default: []
+const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys", {
+    default: []
 });
 
 // --- 状态控制 ---
@@ -65,11 +65,11 @@ function toggleKeyVisibility(id: number) {
         requestAnimationFrame(renderCharts);
     }
 }
-const keyOptions = computed(()=>{
-    return Array.from({ length: keymap.value[0] != undefined ? keymap.value[0].length : 0}, (_, i) => ({ label: `Key ${i}`, value: i }));
+const keyOptions = computed(() => {
+    return Array.from({ length: keymap.value[0] != undefined ? keymap.value[0].length : 0 }, (_, i) => ({ label: `Key ${i}`, value: i }));
 });
 
-const windowSize = ref(8000); 
+const windowSize = ref(8000);
 let latestTick = 0;
 let isRenderPending = false;
 // --- 数据缓存字典 ---
@@ -92,14 +92,14 @@ const chartOption = shallowRef({
     tooltip: {
         trigger: 'axis',
         transitionDuration: 0, // 取消跟随鼠标的延迟动画
-        axisPointer: { 
-            type: 'line', 
+        axisPointer: {
+            type: 'line',
             animation: false,
             lineStyle: { type: 'dashed', color: '#999' } // 鼠标虚线样式
         },
         formatter: (params: any[]) => {
             if (!params.length) return '';
-            
+
             // 获取当前鼠标所在位置的 tick (X轴数值) 和数据索引
             const tick = params[0].value[0];
             const dataIndex = params[0].dataIndex;
@@ -116,7 +116,7 @@ const chartOption = shallowRef({
             // 遍历所有选中的按键，提取当前 tick 下的 State, Raw 和 Value
             oscilloscopeSelectedKeys.value.forEach((id, index) => {
                 if (hiddenKeys.value.includes(id)) return;
-                
+
                 const color = lineColors[index % lineColors.length];
                 let rawVal = '-';
                 let valVal = '-';
@@ -146,14 +146,14 @@ const chartOption = shallowRef({
                 // --- 2. 获取 State 状态 ---
                 if (stateCache) {
                     // 判断当前的 tick 是否落在任何一个高亮区间内
-                    isPressed = stateCache.some(area => 
+                    isPressed = stateCache.some(area =>
                         tick >= area.start && (area.end === null || tick <= area.end)
                     );
                 }
 
                 // 状态的视觉样式：按下时显示绿色加粗的 ON，松开时显示灰色的 OFF
-                const stateHtml = isPressed 
-                    ? `<span style="color: #18a058; font-weight: bold;">ON</span>` 
+                const stateHtml = isPressed
+                    ? `<span style="color: #18a058; font-weight: bold;">ON</span>`
                     : `<span style="color: #777;">OFF</span>`;
 
                 html += `<tr>
@@ -171,8 +171,8 @@ const chartOption = shallowRef({
         }
     },
     grid: [
-        { left: 60, right: 40, top: '4%', height: '40%' },   // 上半部分 Raw
-        { left: 60, right: 40, top: '44%', height: '40%' }   // 下半部分 Value
+        { left: 60, right: 40, top: '4%', bottom: '52%' },   // 上半部分 Raw
+        { left: 60, right: 40, top: '50%', bottom: 55 }   // 下半部分 Value
     ],
     xAxis: [
         {
@@ -195,7 +195,9 @@ const chartOption = shallowRef({
             gridIndex: 0,
             type: 'value',
             name: 'Raw',
-            splitLine: { show: true }
+            splitLine: { show: true },
+            min: 0, // 强制底部物理边缘等于当前视图内的最小数据值
+            max: 'dataMax'  // 强制顶部物理边缘等于当前视图内的最大数据值
         },
         {
             gridIndex: 1,
@@ -208,8 +210,68 @@ const chartOption = shallowRef({
         }
     ],
     dataZoom: [
-        { id: 'dz-inside', type: 'inside', xAxisIndex: [0, 1] },
-        { id: 'dz-slider', type: 'slider', xAxisIndex: [0, 1], bottom: 15, height: 24 } 
+        // --- X 轴缩放 (原有) ---
+        {
+            id: 'dz-inside', 
+            type: 'inside', 
+            xAxisIndex: [0, 1],
+            zoomOnMouseWheel: 'ctrl',
+            moveOnMouseWheel: false,
+        },
+        {
+            id: 'dz-slider', 
+            type: 'slider', 
+            xAxisIndex: [0, 1], 
+            bottom: 15,
+            height: 20,              // 稍微调窄一点，看起来更精致
+            filterMode: 'none',
+            showDataShadow: false,   // 【核心】：关闭滚动条里的背景波形
+            showDetail: false,       // 关闭两端的文字提示
+            handleSize: '100%',                      // 让拖拽手柄填满高度
+        },
+// --- Y 轴交互逻辑: 上半部分 Raw ---
+        { 
+            id: 'dz-y-inside-raw', 
+            type: 'inside', 
+            yAxisIndex: 0,
+            zoomOnMouseWheel: 'alt',  // 按住 Alt 缩放 Y 轴
+            moveOnMouseWheel: 'shift',  // 【新增】显式禁止 Y 轴响应普通滚轮平移，防止与 X 轴平移冲突
+            filterMode: 'none'
+        },
+        { 
+            id: 'dz-y-slider-raw', 
+            type: 'slider', 
+            yAxisIndex: 0, 
+            right: 15, 
+            top: '4%',
+            bottom: '52%',
+            width: 16,               // 调窄垂直滚动条
+            filterMode: 'none',
+            showDataShadow: false,   // 【核心】：关闭背景波形
+            showDetail: false,       // 关闭文字提示
+        },
+
+        // --- Y 轴交互逻辑: 下半部分 Value ---
+        { 
+            id: 'dz-y-inside-val', 
+            type: 'inside', 
+            yAxisIndex: 1,
+            zoomOnMouseWheel: 'alt',  
+            moveOnMouseWheel: 'shift',  
+            filterMode: 'none'
+        },
+        { 
+            id: 'dz-y-slider-val', 
+            type: 'slider', 
+            yAxisIndex: 1, 
+            right: 15, 
+            top: '50%', 
+            bottom: 55,
+            width: 16,               // 调窄垂直滚动条
+            filterMode: 'none',
+            showDataShadow: false,   // 【核心】：关闭背景波形
+            showDetail: false,       // 关闭文字提示
+        }
     ],
     series: []
 });
@@ -235,7 +297,7 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
 });
 
 async function togglePolling(val: boolean) {
-    if (val){
+    if (val) {
         await props.controller.start_debug();
         if (oscilloscopeSelectedKeys.value.length > 0) {
             props.controller.request_debug_at(oscilloscopeSelectedKeys.value);
@@ -248,7 +310,7 @@ async function togglePolling(val: boolean) {
             isRenderPending = true;
             requestAnimationFrame(renderCharts);
         }
-    } 
+    }
 }
 watch(themeName, () => {
     // nextTick 确保 Vue-ECharts 已经完成了旧图表的销毁和新图表的挂载
@@ -265,6 +327,9 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
     latestTick = numericTick;
     const minHistoryTick = numericTick - windowSize.value;
 
+    // 设定一个缓冲余量，避免频繁触发数组重构 (额外保留 500 个点)
+    const bufferLimit = windowSize.value + 500;
+
     updatedKeys.forEach(keyId => {
         if (!oscilloscopeSelectedKeys.value.includes(keyId)) return;
 
@@ -273,118 +338,93 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
             if (!rawDataCache[keyId]) rawDataCache[keyId] = [];
             if (!valueDataCache[keyId]) valueDataCache[keyId] = [];
             if (!stateAreasCache[keyId]) stateAreasCache[keyId] = [];
-            //if (rawDataCache[keyId].length > 0) {
-            //    const lastRawValue = rawDataCache[keyId][rawDataCache[keyId].length - 1][1];
-            //    if (lastRawValue === targetKey.raw) {
-            //        console.warn(`[ADC 采样冗余] Key ${keyId} 连续产生相同的 Raw 值: ${targetKey.raw} (Tick: ${numericTick})`);
-            //    }
-            //}
+
+            // 追加新数据
             rawDataCache[keyId].push([numericTick, targetKey.raw]);
             valueDataCache[keyId].push([numericTick, targetKey.value]);
 
             // --- 状态边缘检测与区间记录 ---
-            // 兼容 state 和 report_state 两种命名
             const isPressed = targetKey.state || (targetKey as any).report_state;
             const lastState = lastStateCache[keyId] || false;
 
             if (isPressed && !lastState) {
-                // 刚刚按下：开启一个新的高亮区间（end 为 null 代表持续中）
                 stateAreasCache[keyId].push({ start: numericTick, end: null });
             } else if (!isPressed && lastState) {
-                // 刚刚松开：闭合最近的一个区间
                 const areas = stateAreasCache[keyId];
                 if (areas.length > 0 && areas[areas.length - 1].end === null) {
                     areas[areas.length - 1].end = numericTick;
                 }
             }
-            // 更新上一帧状态
             lastStateCache[keyId] = !!isPressed;
-            let rawDrop = 0;
-            while (rawDataCache[keyId].length > rawDrop && rawDataCache[keyId][rawDrop][0] < minHistoryTick) {
-                rawDrop++;
-            }
-            if (rawDrop > 0) rawDataCache[keyId].splice(0, rawDrop);
 
-            let valDrop = 0;
-            while (valueDataCache[keyId].length > valDrop && valueDataCache[keyId][valDrop][0] < minHistoryTick) {
-                valDrop++;
+            // --- 性能优化：批量截断数组 (Amortized Slicing) ---
+            // 只有当数组长度超过 bufferLimit 时，才进行一次截断操作
+            if (rawDataCache[keyId].length > bufferLimit) {
+                // 直接保留最后 windowSize 个元素，这是最高效的 JS 数组截断方式
+                rawDataCache[keyId] = rawDataCache[keyId].slice(-windowSize.value);
             }
-            if (valDrop > 0) valueDataCache[keyId].splice(0, valDrop);
 
-            let stateDrop = 0;
-            while (stateAreasCache[keyId].length > stateDrop) {
-                const firstArea = stateAreasCache[keyId][stateDrop];
-                if (firstArea.end !== null && firstArea.end < minHistoryTick) {
-                    stateDrop++;
-                } else {
-                    break;
-                }
+            if (valueDataCache[keyId].length > bufferLimit) {
+                valueDataCache[keyId] = valueDataCache[keyId].slice(-windowSize.value);
             }
-            if (stateDrop > 0) stateAreasCache[keyId].splice(0, stateDrop);
+
+            // stateAreas 同样进行批量清理
+            if (stateAreasCache[keyId].length > 50) { // markArea 通常不会太多，稍微堆积一点再清理
+                stateAreasCache[keyId] = stateAreasCache[keyId].filter(area =>
+                    area.end === null || area.end >= minHistoryTick
+                );
+            }
         }
     });
 }
+const seriesCache: Record<string, any> = {};
 
 function renderCharts() {
     const maxTick = latestTick;
     const minTick = latestTick - windowSize.value;
 
-    const currentLegendData = oscilloscopeSelectedKeys.value.map(id => `Key ${id}`);
-    // 动态生成包含 markArea 的 Series (Raw)
-    const rawSeries = oscilloscopeSelectedKeys.value.map((id, index) => {
-        const color = lineColors[index % lineColors.length];
-        const isHidden = hiddenKeys.value.includes(id);
-        return {
-            id: `raw_${id}`,
-            name: `Key ${id}`,
-            type: 'line',
-            xAxisIndex: 0,
-            yAxisIndex: 0,
-            showSymbol: false,
-            itemStyle: { color: color },
-            lineStyle: { width: 1 },
-            data: isHidden ? [] : (rawDataCache[id] || []),
-            markArea: isHidden ? undefined : {
-                silent: true,
-                itemStyle: { opacity: 0.25 },
-                data: (stateAreasCache[id] || []).map(area => [
-                    { xAxis: area.start },
-                    { xAxis: area.end !== null ? area.end : maxTick } 
-                ])
-            }
-        };
-    });
+    const seriesData: any[] = [];
 
-    // 动态生成包含 markArea 的 Series (Value)
-    const valueSeries = oscilloscopeSelectedKeys.value.map((id, index) => {
+    oscilloscopeSelectedKeys.value.forEach((id, index) => {
         const color = lineColors[index % lineColors.length];
         const isHidden = hiddenKeys.value.includes(id);
-        return {
-            id: `val_${id}`,
-            name: `Key ${id}`,
-            type: 'line',
-            xAxisIndex: 1,
-            yAxisIndex: 1,
-            showSymbol: false,
-            itemStyle: { color: color },
-            lineStyle: { width: 1 },
-            data: isHidden ? [] : (valueDataCache[id] || []),
-            markArea: isHidden ? undefined : {
-                silent: true,
-                itemStyle: { opacity: 0.25 },
-                data: (stateAreasCache[id] || []).map(area => [
-                    { xAxis: area.start },
-                    { xAxis: area.end !== null ? area.end : maxTick }
-                ])
-            }
-        };
+
+        const markAreaData = isHidden ? [] : (stateAreasCache[id] || []).map(area => [
+            { xAxis: area.start },
+            { xAxis: area.end !== null ? area.end : maxTick }
+        ]);
+
+        // 复用或创建 Raw Series
+        const rawId = `raw_${id}`;
+        if (!seriesCache[rawId]) {
+            seriesCache[rawId] = {
+                id: rawId, name: `Key ${id}`, type: 'line', xAxisIndex: 0, yAxisIndex: 0,
+                showSymbol: false, itemStyle: { color }, lineStyle: { width: 1 },
+                //sampling: 'lttb', // 开启降采样，极大地提升高频数据渲染性能
+            };
+        }
+        seriesCache[rawId].data = isHidden ? [] : rawDataCache[id];
+        seriesCache[rawId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
+        seriesData.push(seriesCache[rawId]);
+
+        // 复用或创建 Value Series
+        const valId = `val_${id}`;
+        if (!seriesCache[valId]) {
+            seriesCache[valId] = {
+                id: valId, name: `Key ${id}`, type: 'line', xAxisIndex: 1, yAxisIndex: 1,
+                showSymbol: false, itemStyle: { color }, lineStyle: { width: 1 },
+                //sampling: 'lttb', // 开启降采样
+            };
+        }
+        seriesCache[valId].data = isHidden ? [] : valueDataCache[id];
+        seriesCache[valId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
+        seriesData.push(seriesCache[valId]);
     });
 
     const updateOption: any = {
-        series: [...rawSeries, ...valueSeries],
+        series: seriesData,
         tooltip: {
             backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.7)' : 'rgba(255, 255, 255, 0.85)',
-
             borderColor: themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             borderWidth: 1,
         }
@@ -405,15 +445,18 @@ function renderCharts() {
             { min: 'dataMin', max: 'dataMax' }
         ];
     }
-    
+
     const chart = chartRef.value?.chart || chartRef.value;
+    // 使用纯净的引用更新，关闭不需要的过度动画
     if (chart && typeof chart.setOption === 'function') {
-        chart.setOption(updateOption, { replaceMerge: ['series'] }); 
+        chart.setOption(updateOption, {
+            replaceMerge: ['series'],
+            lazyUpdate: true // 让 ECharts 决定最佳的更新时机
+        });
     }
-    
+
     isRenderPending = false;
 }
-
 // --- 事件监听 ---
 const handleDebugDataUpdated = (event: Event) => {
     const customEvent = event as CustomEvent;
@@ -445,7 +488,7 @@ function clearWaveform() {
         if (stateAreasCache[id]) stateAreasCache[id].length = 0; // 新增清理
         if (lastStateCache[id]) lastStateCache[id] = false;     // 新增清理
     });
-    
+    for (const key in seriesCache) delete seriesCache[key];
     // 强制清理视图
     if (chartRef.value?.chart) {
         const emptySeries = oscilloscopeSelectedKeys.value.flatMap(id => [
@@ -472,26 +515,26 @@ function clearWaveform() {
 
             <n-flex :align="'center'" :size="8" :wrap="false">
                 <span style="white-space: nowrap;">{{ t('oscilloscope_panel_buffer_length') }}</span>
-                <n-input-number  v-model:value="windowSize" :min="8000" :step="8000"/>
+                <n-input-number v-model:value="windowSize" :min="8000" :step="8000" />
             </n-flex>
 
             <n-button @click="clearWaveform">{{ t('clear') }}</n-button>
             <div style="margin-left: auto; display: flex; gap: 16px; align-items: center; padding-right: 12px;">
-                <div v-for="(id, index) in oscilloscopeSelectedKeys" :key="id" 
-                     style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;"
-                     @click="toggleKeyVisibility(id)">
+                <div v-for="(id, index) in oscilloscopeSelectedKeys" :key="id"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;"
+                    @click="toggleKeyVisibility(id)">
 
-                    <div :style="{ 
-                        width: '12px', 
-                        height: '12px', 
-                        borderRadius: '50%', 
+                    <div :style="{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
                         backgroundColor: hiddenKeys.includes(id) ? 'transparent' : lineColors[index % lineColors.length],
                         border: `2px solid ${lineColors[index % lineColors.length]}`,
                         transition: 'background-color 0.2s'
                     }"></div>
 
-                    <span :style="{ 
-                        color: hiddenKeys.includes(id) ? '#777' : (themeName === 'dark' ? '#ccc' : '#333'), 
+                    <span :style="{
+                        color: hiddenKeys.includes(id) ? '#777' : (themeName === 'dark' ? '#ccc' : '#333'),
                         fontSize: '13px',
                         textDecoration: hiddenKeys.includes(id) ? 'line-through' : 'none',
                         transition: 'color 0.2s'
@@ -500,13 +543,7 @@ function clearWaveform() {
             </div>
         </n-flex>
 
-        <v-chart 
-            ref="chartRef" 
-            :theme="themeName" 
-            :option="chartOption"
-            :update-options="{ replaceMerge: ['series'] }" 
-            autoresize 
-            style="width: 100%; height: 100%; flex: 1" 
-        />
+        <v-chart ref="chartRef" :theme="themeName" :option="chartOption" :update-options="{ replaceMerge: ['series'] }"
+            autoresize style="width: 100%; height: 100%; flex: 1" />
     </n-card>
 </template>

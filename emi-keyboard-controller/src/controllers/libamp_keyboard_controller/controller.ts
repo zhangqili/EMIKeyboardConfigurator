@@ -37,6 +37,7 @@ interface PendingRequest {
     resolve: (data: Uint8Array) => void;
     reject: (reason: any) => void;
     expectedCode: PacketCode | number;
+    expectedType: PacketData | number;
     timer: number;
 }
 
@@ -141,13 +142,15 @@ export class LibampKeyboardController extends KeyboardController {
     }
     private async sendAndWait(buf: Uint8Array, timeout: number = 200): Promise<Uint8Array> {
         const expectedCode = buf[0];
+        const expectedType = buf[1];
 
         return new Promise((resolve, reject) => {
             // 3. 设置超时
             const timer = window.setTimeout(() => {
                 // 双重检查，确保超时的是当前这个请求
                 if (this.pendingRequest && 
-                    this.pendingRequest.expectedCode === expectedCode) {
+                    this.pendingRequest.expectedCode === expectedCode&&
+                    this.pendingRequest.expectedType === expectedType) {
                     
                     this.pendingRequest = null;
                     reject(new Error(`Timeout waiting for packet: Code ${expectedCode}`));
@@ -159,6 +162,7 @@ export class LibampKeyboardController extends KeyboardController {
                 resolve,
                 reject,
                 expectedCode, // 自动填入
+                expectedType,
                 timer
             };
 
@@ -1460,7 +1464,7 @@ export class LibampKeyboardController extends KeyboardController {
         try {
             await this.enqueueCommand(this.txBuffer, 1000);
             console.log("MCU confirmed switch. Requesting data...");
-            await this.request();
+            //await this.request();
             
         } catch (e) {
             console.error("Config switch failed or timed out:", e);
