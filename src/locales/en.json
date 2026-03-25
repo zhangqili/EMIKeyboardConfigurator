@@ -133,7 +133,9 @@
     "debug_panel_others" : "Others",
 
     "oscilloscope_panel_enable_debug" : "Enable debug",
-    "oscilloscope_panel_buffer_length" : "Buffer Length",
+    "oscilloscope_panel_buffer_length" : "Buffer length",
+    "oscilloscope_panel_measuring_tool" : "Measuring tool",
+    "oscilloscope_panel_exit_measuring" : "Exit measuring",
 
     "setting_basic":"Basic", 
     "setting_debug":"Debug", 

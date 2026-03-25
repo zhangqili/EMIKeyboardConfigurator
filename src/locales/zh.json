@@ -189,6 +189,8 @@
 
     "oscilloscope_panel_enable_debug" : "启用调试",
     "oscilloscope_panel_buffer_length" : "缓冲大小",
+    "oscilloscope_panel_measuring_tool" : "测量工具",
+    "oscilloscope_panel_exit_measuring" : "退出测量",
     
     "setting_basic":"基础功能", 
     "setting_debug":"调试", 

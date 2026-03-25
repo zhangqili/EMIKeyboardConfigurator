@@ -9,13 +9,13 @@ import { storeToRefs } from 'pinia';
 import { connect, use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
-import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent } from 'echarts/components';
+import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
 import * as ekc from 'emi-keyboard-controller'
 import { KeyConfig } from '@/apis/utils';
 
 // 引入 LegendComponent 以便显示图例区分不同按键
-use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent]);
+use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent]);
 
 const { t } = useI18n();
 const store = useMainStore();
@@ -65,6 +65,162 @@ function toggleKeyVisibility(id: number) {
         requestAnimationFrame(renderCharts);
     }
 }
+const isMeasuring = ref(false);
+const measurePoints = ref<Record<number, {x: number, y: number}[]>>({ 0: [], 1: [] });
+const hoverPoint = ref<{x: number, y: number, gridIndex: number} | null>(null);
+const isHoveringPoint = ref(false);
+const dragInfo = ref<{ gridIndex: number, pointIndex: number } | null>(null);
+let isDraggingAction = false;       // 用于区分“点击”和“拖拽结束”，防止事件冲突
+
+watch([isHoveringPoint, dragInfo], ([hovering, drag]) => {
+    const chart = chartRef.value?.chart;
+    if (chart) {
+        const disabled = hovering || drag !== null;
+        chart.setOption({
+            dataZoom: [
+                { id: 'dz-inside', disabled },
+                { id: 'dz-y-inside-raw', disabled },
+                { id: 'dz-y-inside-val', disabled }
+            ]
+        });
+    }
+});
+async function toggleMeasureMode() {
+    isMeasuring.value = !isMeasuring.value;
+    
+    // 如果开启测量时正在轮询，自动暂停波形以便于点击测量
+    if (isMeasuring.value && isPolling.value) {
+        await togglePolling(false);
+    }
+    
+    // 关闭测量时清空画线
+    if (!isMeasuring.value) {
+        measurePoints.value = { 0: [], 1: [] };
+        hoverPoint.value = null;
+    }
+    
+    if (!isRenderPending) {
+        isRenderPending = true;
+        requestAnimationFrame(renderCharts);
+    }
+}
+
+// 1. 鼠标【按下】：检测是否点在了已有光标点上
+function handleChartMouseDown(params: any) {
+    if (!isMeasuring.value) return;
+    const chart = chartRef.value?.chart;
+    if (!chart) return;
+
+    const pointInPixel = [params.offsetX, params.offsetY];
+    let gridIndex = -1;
+    if (chart.containPixel({ gridIndex: 0 }, pointInPixel)) gridIndex = 0;
+    else if (chart.containPixel({ gridIndex: 1 }, pointInPixel)) gridIndex = 1;
+
+    if (gridIndex === -1) return;
+
+    const pts = measurePoints.value[gridIndex];
+    const THRESHOLD = 15;
+    for (let i = 0; i < pts.length; i++) {
+        const ptPixel = chart.convertToPixel({ gridIndex }, [pts[i].x, pts[i].y]);
+        if (Math.hypot(ptPixel[0] - pointInPixel[0], ptPixel[1] - pointInPixel[1]) < THRESHOLD) {
+            dragInfo.value = { gridIndex, pointIndex: i };
+            isDraggingAction = false; 
+            return;
+        }
+    }
+}
+
+// 2. 鼠标【移动】：处理拖拽与悬停
+function handleChartMouseMove(params: any) {
+    if (!isMeasuring.value) return;
+    const chart = chartRef.value?.chart;
+    if (!chart) return;
+
+    const pointInPixel = [params.offsetX, params.offsetY];
+
+    // 场景 A：拖拽中
+    if (dragInfo.value !== null) {
+        isDraggingAction = true;
+        const gridIndex = dragInfo.value.gridIndex;
+        if (!chart.containPixel({ gridIndex }, pointInPixel)) return;
+
+        const pointInGrid = chart.convertFromPixel({ gridIndex }, pointInPixel);
+        measurePoints.value[gridIndex][dragInfo.value.pointIndex] = { x: pointInGrid[0], y: pointInGrid[1] };
+        if (!isRenderPending) { isRenderPending = true; requestAnimationFrame(renderCharts); }
+        return; 
+    }
+
+    let gridIndex = -1;
+    if (chart.containPixel({ gridIndex: 0 }, pointInPixel)) gridIndex = 0;
+    else if (chart.containPixel({ gridIndex: 1 }, pointInPixel)) gridIndex = 1;
+
+    // 【新增】：检测是否悬停，更新给 Watcher 使用
+    let foundHover = false;
+    if (gridIndex !== -1) {
+        const pts = measurePoints.value[gridIndex];
+        for (let i = 0; i < pts.length; i++) {
+            const ptPixel = chart.convertToPixel({ gridIndex }, [pts[i].x, pts[i].y]);
+            if (Math.hypot(ptPixel[0] - pointInPixel[0], ptPixel[1] - pointInPixel[1]) < 15) {
+                foundHover = true;
+                break;
+            }
+        }
+    }
+    isHoveringPoint.value = foundHover;
+
+    if (gridIndex === -1) {
+        if (hoverPoint.value) { hoverPoint.value = null; requestAnimationFrame(renderCharts); }
+        return;
+    }
+
+    // 场景 B：绘制悬浮点
+    if (measurePoints.value[gridIndex].length < 2 && !foundHover) {
+        const pointInGrid = chart.convertFromPixel({ gridIndex }, pointInPixel);
+        hoverPoint.value = { x: pointInGrid[0], y: pointInGrid[1], gridIndex };
+        if (!isRenderPending) { isRenderPending = true; requestAnimationFrame(renderCharts); }
+    } else if (hoverPoint.value) {
+        hoverPoint.value = null;
+        if (!isRenderPending) { isRenderPending = true; requestAnimationFrame(renderCharts); }
+    }   
+}
+
+// 3. 鼠标【抬起】：结束拖拽
+function handleChartMouseUp() {
+    if (dragInfo.value !== null) {
+        dragInfo.value = null; 
+        setTimeout(() => { isDraggingAction = false; }, 50);
+        // (禁用恢复的工作已自动交给 watch 完成)
+    }
+}
+
+// 4. 鼠标【点击】：放置或重置测量点
+function handleChartClick(params: any) {
+    if (!isMeasuring.value) return;
+    if (isDraggingAction) return; // 【核心拦截】如果刚刚进行的是拖拽操作，则忽略此次点击！
+
+    const chart = chartRef.value?.chart;
+    if (!chart) return;
+
+    const pointInPixel = [params.offsetX, params.offsetY];
+    let gridIndex = -1;
+    if (chart.containPixel({ gridIndex: 0 }, pointInPixel)) gridIndex = 0;
+    else if (chart.containPixel({ gridIndex: 1 }, pointInPixel)) gridIndex = 1;
+
+    if (gridIndex === -1) return;
+
+    const pointInGrid = chart.convertFromPixel({ gridIndex }, pointInPixel);
+    const pts = measurePoints.value[gridIndex];
+
+    if (pts.length >= 2) {
+        measurePoints.value[gridIndex] = [{ x: pointInGrid[0], y: pointInGrid[1] }];
+    } else {
+        measurePoints.value[gridIndex].push({ x: pointInGrid[0], y: pointInGrid[1] });
+    }
+
+    hoverPoint.value = null;
+    if (!isRenderPending) { isRenderPending = true; requestAnimationFrame(renderCharts); }
+}
+
 const keyOptions = computed(() => {
     return Array.from({ length: keymap.value[0] != undefined ? keymap.value[0].length : 0 }, (_, i) => ({ label: `Key ${i}`, value: i }));
 });
@@ -93,9 +249,8 @@ const chartOption = shallowRef({
         trigger: 'axis',
         transitionDuration: 0, // 取消跟随鼠标的延迟动画
         axisPointer: {
-            type: 'line',
+            type: 'cross',
             animation: false,
-            lineStyle: { type: 'dashed', color: '#999' } // 鼠标虚线样式
         },
         formatter: (params: any[]) => {
             if (!params.length) return '';
@@ -180,7 +335,10 @@ const chartOption = shallowRef({
             type: 'value',
             scale: true,
             splitLine: { show: false },
-            axisLabel: { show: false } // 隐藏上半部分的刻度数字，显得更简洁
+            axisLabel: { show: false },
+            axisPointer: {
+                label: { show: false } 
+            }
         },
         {
             gridIndex: 1, // 绑定到下半部分
@@ -217,6 +375,7 @@ const chartOption = shallowRef({
             xAxisIndex: [0, 1],
             zoomOnMouseWheel: 'ctrl',
             moveOnMouseWheel: false,
+            filterMode: 'none'
         },
         {
             id: 'dz-slider', 
@@ -420,7 +579,51 @@ function renderCharts() {
         seriesCache[valId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
         seriesData.push(seriesCache[valId]);
     });
+    if (isMeasuring.value) {
+        [0, 1].forEach(grid => {
+            const fixedPts = measurePoints.value[grid];
+            
+            // 组装要绘制的点（包括固定点和当前鼠标的临时跟随点）
+            const renderPts = [...fixedPts];
+            if (fixedPts.length === 1 && hoverPoint.value?.gridIndex === grid) {
+                renderPts.push({ x: hoverPoint.value.x, y: hoverPoint.value.y });
+            }
 
+            if (renderPts.length === 0) return;
+
+            const measureSeries: any = {
+                id: `measure_series_${grid}`,
+                name: 'Measure',
+                type: 'line',
+                xAxisIndex: grid,
+                yAxisIndex: grid,
+                symbol: 'path://M-1,-1 L1,1 M1,-1 L-1,1', // 准星形状
+                symbolSize: 16,
+                tooltip: { show: false },
+                // 【核心修复 2】：为两个点分配不同的原点颜色 (青色 和 橙色)
+                data: renderPts.map((p, i) => ({
+                    value: [p.x, p.y],
+                    itemStyle: { color: i === 0 ? '#00e5ff' : '#ffaa00' } 
+                })),
+                markLine: {
+                    silent: true, animation: false, symbol: ['none', 'none'],
+                    label: { show: false }, // 彻底关闭画布内的文字渲染
+                    data: []
+                },
+                z: 999 
+            };
+
+            // 用 xAxis 和 yAxis 画出纵贯全局的十字线！
+            renderPts.forEach((p, index) => {
+                const color = index === 0 ? '#00e5ff' : '#ffaa00';
+                measureSeries.markLine.data.push(
+                    { xAxis: p.x, lineStyle: { type: 'dashed', width: 1, color } },
+                    { yAxis: p.y, lineStyle: { type: 'dashed', width: 1, color } }
+                );
+            });
+            seriesData.push(measureSeries);
+        });
+    }
     const updateOption: any = {
         series: seriesData,
         tooltip: {
@@ -519,6 +722,11 @@ function clearWaveform() {
             </n-flex>
 
             <n-button @click="clearWaveform">{{ t('clear') }}</n-button>
+            
+            <n-button :type="isMeasuring ? 'info' : 'default'" @click="toggleMeasureMode">
+                {{ isMeasuring ? t('oscilloscope_panel_exit_measuring') : t('oscilloscope_panel_measuring_tool') }}
+            </n-button>
+            
             <div style="margin-left: auto; display: flex; gap: 16px; align-items: center; padding-right: 12px;">
                 <div v-for="(id, index) in oscilloscopeSelectedKeys" :key="id"
                     style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;"
@@ -543,7 +751,52 @@ function clearWaveform() {
             </div>
         </n-flex>
 
-        <v-chart ref="chartRef" :theme="themeName" :option="chartOption" :update-options="{ replaceMerge: ['series'] }"
-            autoresize style="width: 100%; height: 100%; flex: 1" />
+        <div style="position: relative; flex: 1; width: 100%; height: 100%;">
+            
+            <div v-if="isMeasuring && measurePoints[0].length === 2"
+                 :style="{
+                     position: 'absolute', top: '16px', left: '80px', zIndex: 10, pointerEvents: 'none',
+                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                     padding: '8px 12px', borderRadius: '6px', backdropFilter: 'blur(4px)',
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                 }">
+                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '6px' }">Raw Measurement</div>
+                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
+                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[0][1].x - measurePoints[0][0].x).toFixed(0) }}</span> Ticks
+                 </div>
+                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
+                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[0][1].y - measurePoints[0][0].y).toFixed(0) }}</span>
+                 </div>
+            </div>
+
+            <div v-if="isMeasuring && measurePoints[1].length === 2"
+                 :style="{
+                     position: 'absolute', top: '52%', left: '80px', zIndex: 10, pointerEvents: 'none',
+                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                     padding: '8px 12px', borderRadius: '6px', backdropFilter: 'blur(4px)',
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                 }">
+                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '6px' }">Value Measurement</div>
+                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
+                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[1][1].x - measurePoints[1][0].x).toFixed(0) }}</span> Ticks
+                 </div>
+                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
+                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[1][1].y - measurePoints[1][0].y).toFixed(3) }}</span>
+                 </div>
+            </div>
+
+            <v-chart ref="chartRef" :theme="themeName" :option="chartOption" :update-options="{ replaceMerge: ['series'] }"
+                @zr:click="handleChartClick"
+                @zr:mousedown="handleChartMouseDown"
+                @zr:mousemove="handleChartMouseMove"
+                @zr:mouseup="handleChartMouseUp"
+                autoresize 
+                :style="{ 
+                    cursor: isMeasuring ? (isHoveringPoint || dragInfo !== null ? 'move' : 'crosshair') : 'default', 
+                    width: '100%', height: '100%' 
+                }" />
+        </div>
     </n-card>
 </template>
