@@ -38,9 +38,9 @@ const rgbBaseConfig = defineModel<ekc.IRGBBaseConfig>('rgbBaseConfig', { default
 const rgbConfig = defineModel<ekc.IRGBConfig>('rgbConfig', { default: new ekc.RGBConfig() });
 
 const base_speed = computed<number>({
-  get: () => (Math.round(rgbBaseConfig.value.speed * 1000)),
+  get: () => (Math.round(rgbBaseConfig.value.speed)),
   set: (value: number) => {
-    rgbBaseConfig.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
+    rgbBaseConfig.value.speed = isNaN(value) ? 0 : Math.round(value);
   },
 });
 
@@ -93,9 +93,9 @@ const base_brightness = computed<number>({
 });
 
 const speed = computed<number>({
-  get: () => (Math.round(rgbConfig.value.speed * 1000)),
+  get: () => (Math.round(rgbConfig.value.speed)),
   set: (value: number) => {
-    rgbConfig.value.speed = isNaN(value) ? 0 : Math.round(value) / 1000;
+    rgbConfig.value.speed = isNaN(value) ? 0 : Math.round(value);
   },
 });
 
@@ -205,7 +205,7 @@ function applyRainbowEffect() {
     rgbConfigs.value[key.id].rgb.green = real_color.g;
     rgbConfigs.value[key.id].rgb.blue = real_color.b;
     rgbConfigs.value[key.id].mode = rgbConfig.value.mode;
-    rgbConfigs.value[key.id].speed = isNaN(speed.value) ? 0 : Math.round(speed.value) / 1000;
+    rgbConfigs.value[key.id].speed = isNaN(speed.value) ? 0 : Math.round(speed.value);
   });
 }
 

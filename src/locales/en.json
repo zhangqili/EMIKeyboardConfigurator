@@ -39,6 +39,9 @@
     "main_offline_ready_title": "Ready for Offline Use",
     "main_offline_ready_content": "The configurator has been cached. You can now access and configure your keyboard without an internet connection.",
 
+    "main_other_detect_title": "Another configurator tab detected",
+    "main_other_detect_content": "Please close other instances to avoid conflicts.",
+
     "key_tracker_desc" : "Press any key here",
 
     "key_selector_normal" : "Normal",
@@ -224,6 +227,7 @@
     "key_release" : "Release",
     "keyboard_render_edit_layout" : "Edit layout",
     "search" : "Search",
+    "exit" : "Exit",
 
     "dark" : "Dark",
     "light" : "Light"

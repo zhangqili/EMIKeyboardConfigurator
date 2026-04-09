@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode, ScriptLevel, MacroAction, detectHIDDevice } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig,ConsumerKeycode, ScriptLevel, MacroAction, detectHIDDevice } from '../../interface';
 
 import layout from './keyboard_layout.json?raw';
 import markdown from './README.md?raw';
@@ -58,7 +58,7 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
                 green: 55,
                 blue: 252,
             },
-            speed: 0.02
+            speed: 20
         }));
         this.keymap = [
                 [

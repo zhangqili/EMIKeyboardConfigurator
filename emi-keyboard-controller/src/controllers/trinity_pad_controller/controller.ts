@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, MouseKeycode, LayerControlKeycode, KeyboardController, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, DynamicKey, IDynamicKey, RGBBaseConfig, ScriptLevel, MacroAction, detectHIDDevice } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, MouseKeycode, LayerControlKeycode, KeyboardController, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, DynamicKey, IDynamicKey, RGBBaseConfig, ScriptLevel, MacroAction, detectHIDDevice } from './../../interface';
 
 const layout = `[["0","1","2","3"]]`;
 
@@ -56,7 +56,7 @@ export class TrinityPadController  extends LibampKeyboardController {
                 green: 55,
                 blue: 252,
             },
-            speed: 0.02
+            speed: 20
         }));
         this.keymap = [
             [

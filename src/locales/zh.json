@@ -39,6 +39,9 @@
     "main_offline_ready_title": "已就绪，可离线使用",
     "main_offline_ready_content": "配置器已成功缓存。即使在没有网络的情况下，你也可以通过浏览器直接访问并配置你的键盘。",
 
+    "main_other_detect_title": "检测到另一个浏览器标签页打开了配置器",
+    "main_other_detect_content": "请关闭其他配置器以避免冲突",
+
     "key_tracker_desc" : "在这里按下按键",
 
     "key_selector_normal" : "普通",
@@ -227,6 +230,7 @@
     "key_release" : "释放",
     "keyboard_render_edit_layout" : "编辑布局",
     "search" : "搜索",
+    "exit" : "退出",
 
     "dark" : "深色",
     "light" : "浅色"

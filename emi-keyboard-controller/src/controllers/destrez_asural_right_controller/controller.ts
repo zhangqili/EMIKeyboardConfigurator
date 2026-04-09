@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, detectHIDDevice } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, detectHIDDevice } from '../../interface';
 
 const layout = `[["^\\n6","%\\n5","$\\n4","#\\n3","@\\n2","!\\n1",{"w":1.75},"~\\n\`"],["Y","T","R","E","W","Q",{"w":1.5},"Tab"],[{"a":7},"",{"a":4},"G","F","A","S","D",{"w":1.75},"Caps Lock"],[{"a":7},"",{"a":4},"B","V","C","X","Z",{"w":1.75},"Shift"],[{"a":7,"w":2},"","",{"a":4,"w":1.25},"Alt","Esc",{"w":1.25},"Win",{"w":1.25},"Ctrl"]]`;
 
@@ -55,7 +55,7 @@ export class DestrezAsuralRightController extends LibampKeyboardController {
                 green: 55,
                 blue: 252,
             },
-            speed: 0.02
+            speed: 20
         }));
         this.keymap = [
                 [

@@ -86,7 +86,7 @@ const labels = computed(() => {
       if(rgbConfigs.value[props.id])
       {
         labels[0] = rgbModeDisplayMap[rgbConfigs.value[props.id].mode];
-        labels[6] = `${Math.round(rgbConfigs.value[props.id].speed * 1000)}\t`;
+        labels[6] = `${Math.round(rgbConfigs.value[props.id].speed)}\t`;
         labels[9] = rgbToHex(rgbConfigs.value[props.id].rgb);
       }
       break;

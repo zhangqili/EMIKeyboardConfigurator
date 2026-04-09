@@ -239,10 +239,10 @@ export class DynamicKeyStroke4x4 implements IDynamicKeyStroke4x4{
         this.target_keys_location = [];
         this.bindings = [0,0,0,0];
         this.key_control = [0,0,0,0];
-        this.press_begin_distance = 0.25;
-        this.press_fully_distance = 0.75;
-        this.release_begin_distance = 0.75;
-        this.release_fully_distance = 0.25;
+        this.press_begin_distance = 0.25*65535;
+        this.press_fully_distance = 0.75*65535;
+        this.release_begin_distance = 0.75*65535;
+        this.release_fully_distance = 0.25*65535;
     }
     get_primary_binding(): number {
         return this.bindings[0];
@@ -795,7 +795,7 @@ export class RGBConfig implements IRGBConfig {
           green: 55,
           blue: 252
         };
-        this.speed = 0.02;
+        this.speed = 20;
     }
 }
 
@@ -819,7 +819,7 @@ export class RGBBaseConfig implements IRGBBaseConfig {
           green: 0,
           blue: 0
         };
-        this.speed = 0.02;
+        this.speed = 20;
         this.direction = 0;
         this.density = 0;
         this.brightness = 255;
@@ -1121,34 +1121,6 @@ export class KeyboardKeyEvent {
     {
     }
 }
-
-export function AdvancedKeyToBytes(key : IAdvancedKey): Uint8Array {
-    const bytes = new Uint8Array(48); // 总共 45 字节
-    bytes[0] = key.mode; // 写入 mode (1 字节)
-    bytes[1] = key.calibration_mode;
-    const fields = [
-        key.activation_value,
-        key.deactivation_value,
-        key.trigger_distance,
-        key.release_distance,
-        key.trigger_speed,
-        key.release_speed,
-        key.upper_deadzone,
-        key.lower_deadzone,
-        key.upper_bound,
-        key.lower_bound,
-    ];
-
-    let offset = 4; // 从第 2 个字节开始写入
-    const dataView = new DataView(bytes.buffer);
-
-    for (let field of fields) {
-      dataView.setFloat32(offset, field, true); // 以小端序写入每个 f32 字段
-      offset += 4; // 每个 f32 占用 4 个字节
-    }
-
-    return bytes;
-  }
 
   export interface HIDFilter {
   vendorId: number;

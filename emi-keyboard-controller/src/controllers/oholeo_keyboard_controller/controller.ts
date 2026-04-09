@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKeyToBytes, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, MacroAction, detectHIDDevice } from './../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, MacroAction, detectHIDDevice } from './../../interface';
 
 import layout from './keyboard_layout.json?raw';
 import markdown from './README.md?raw';
@@ -56,7 +56,7 @@ export class OholeoKeyboardController extends LibampKeyboardController {
                 green: 55,
                 blue: 252,
             },
-            speed: 0.02
+            speed: 20
         }));
         this.keymap = [
                 [
@@ -78,7 +78,7 @@ export class OholeoKeyboardController extends LibampKeyboardController {
                     Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardReboot << 8),       Keycode.KeyTransparent,                                 Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
                     Keycode.KeyUser | (16 << 8),                                Keycode.KeyTransparent,                                 Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardSave << 8),    0xFE | (((2<<6) | (0x20 + 0)) << 8),   Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardFactoryReset << 8),Keycode.KeyTransparent,                                 Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
                     Keycode.KeyTransparent,                                                                                             Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardCalibrate << 8),                                     Keycode.KeyUser | (1 << 8),                             Keycode.KeyUser | (0 << 8), Keycode.KeyUser | (0xFF << 8),  Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent,
-                    Keycode.KeyTransparent,                                     0xFE | (((2<<6) | (0x20 + 2)) << 8),                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, 
+                    Keycode.KeyTransparent,                                     0xFE | (((2<<6) | (0x20 + 2)) << 8),                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardBootloader << 8),     Keycode.KeyTransparent,         Keycode.KeyTransparent, 
                 ],
                 Array(64).fill(Keycode.KeyTransparent),
                 Array(64).fill(Keycode.KeyTransparent)
