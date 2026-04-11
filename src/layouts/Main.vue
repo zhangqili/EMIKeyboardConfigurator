@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, h, watch, onBeforeUnmount } from "vue";
-import { NTabs, NTab, useNotification, NButton, NDropdown, NConfigProvider, NGlobalStyle, NLayout, darkTheme, NEmpty, NIcon, NFlex, NSpace } from 'naive-ui';
+import { ref, onMounted, computed, h, watch, onBeforeUnmount} from "vue";
+import { NTabs, NTab, useNotification, NButton, NDropdown, NConfigProvider, NGlobalStyle, NLayout, darkTheme, NEmpty, NIcon, NFlex } from 'naive-ui';
 import { useI18n } from "vue-i18n";
 import * as apis from '@/apis/api';
 import { useRegisterSW } from 'virtual:pwa-register/vue';
@@ -13,7 +13,7 @@ import { PlusFilled as PlusIcon, CloseOutlined as CloseIcon } from '@vicons/mate
 import WorkspaceTabComponent from '@/components/WorkspaceTab.vue';
 import TabBar from '@/components/TabBar.vue'
 import { setI18nLanguage } from "@/locales/i18n";
-const channel = new BroadcastChannel('app_duplicate_check_channel');
+//const channel = new BroadcastChannel('app_duplicate_check_channel');
 export type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
 const { t } = useI18n();
@@ -247,6 +247,7 @@ onMounted(async () => {
     (navigator as any).hid.addEventListener('connect', triggerHotplugCheck);
     (navigator as any).hid.addEventListener('disconnect', triggerHotplugCheck);
   }
+/*
   channel.onmessage = (event) => {
     if (event.data === 'ping') {
       channel.postMessage('pong');
@@ -259,10 +260,11 @@ onMounted(async () => {
   };
 
   channel.postMessage('ping');
+*/
 });
 
 onBeforeUnmount(() => {
-  channel.close();
+  //channel.close();
 });
 
 const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value));

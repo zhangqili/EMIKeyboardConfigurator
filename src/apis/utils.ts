@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode, GamepadKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 import createMqjsCompiler from '@/wasm/mqjs_wasm';
 import wasmBinaryUrl from '@/wasm/mqjs_wasm.wasm?url';
@@ -346,6 +346,8 @@ export const keyCodeToKeyName: { [key in Keycode]: string } = {
   [Keycode.MIDICollection]: 'MIDI',
   [Keycode.MIDINote]: 'MIDI Note',
   [Keycode.MacroCollection]: 'Macro',
+  [Keycode.ScriptCollection]: 'Script',
+  [Keycode.GamepadCollection]: 'Gamepad',
   [Keycode.KeyUser]: 'User',
   [Keycode.KeyboardOperation]: 'Keyboard',
   [Keycode.KeyTransparent]: '∇',
@@ -418,6 +420,35 @@ export const JoystickKeycodeToKeyName: { [key in JoystickKeycode]: string } = {
   [JoystickKeycode.JoystickWhole]: 'Whole',
   [JoystickKeycode.JoystickWholeInvert]: 'Whole Invert',
 };
+
+export const GamepadKeycodeToKeyName: { [key in GamepadKeycode]: string } = {
+  [GamepadKeycode.GamepadUp]: "Up",
+  [GamepadKeycode.GamepadDown]: "Down",
+  [GamepadKeycode.GamepadLeft]: "Left",
+  [GamepadKeycode.GamepadRight]: "Right",
+  [GamepadKeycode.GamepadStart]: "Start",
+  [GamepadKeycode.GamepadBack]: "Back",
+  [GamepadKeycode.GamepadLT]: "LT",
+  [GamepadKeycode.GamepadRT]: "RT",
+  [GamepadKeycode.GamepadLB]: "LB",
+  [GamepadKeycode.GamepadRB]: "RB",
+  [GamepadKeycode.GamepadGuide]: "Guide",
+  [GamepadKeycode.GamepadUndefined]: "Undefined",
+  [GamepadKeycode.GamepadA]: "A",
+  [GamepadKeycode.GamepadB]: "B",
+  [GamepadKeycode.GamepadX]: "X",
+  [GamepadKeycode.GamepadY]: "Y",
+  [GamepadKeycode.GamepadLeftXPositive]: "LeftXPositive",
+  [GamepadKeycode.GamepadLeftXNegaitve]: "LeftXNegaitve",
+  [GamepadKeycode.GamepadLeftYPositive]: "LeftYPositive",
+  [GamepadKeycode.GamepadLeftYNegaitve]: "LeftYNegaitve",
+  [GamepadKeycode.GamepadRightXPositive]: "RightXPositive",
+  [GamepadKeycode.GamepadRightXNegative]: "RightXNegative",
+  [GamepadKeycode.GamepadRightYPositive]: "RightYPositive",
+  [GamepadKeycode.GamepadRightYNegative]: "RightYNegative",
+  [GamepadKeycode.GamepadLTAnalog]: "LTAnalog",
+  [GamepadKeycode.GamepadRTAnalog]: "RTAnalog"
+}
 
 export const DynamicKeyToKeyName: { [key in DynamicKeyType]: string } = {
   [DynamicKeyType.DynamicKeyNone]: "None",
@@ -703,8 +734,8 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
   var code = (keycode) & 0xFF;
   if (code < Keycode.ExSel || code == Keycode.KeyTransparent) 
   {
-    mainString = keyCodeToKeyName[code as Keycode];
-    subString = keyBindingModifierToString(keycode);
+    subString = keyCodeToKeyName[code as Keycode];
+    mainString = keyBindingModifierToString(keycode);
   }
   else
   {
@@ -755,6 +786,14 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
       case Keycode.JoystickCollection:
         subString = "Joystick";
         mainString = JoystickKeycodeToKeyName[((modifier >> 5) & 0x0F) as LayerControlKeycode] + ((modifier) & 0x1F).toString();
+        break;
+      case Keycode.ScriptCollection:
+        subString = "Script";
+        mainString = "";
+        break;
+      case Keycode.GamepadCollection:
+        subString = "Gamepad";
+        mainString = GamepadKeycodeToKeyName[modifier as GamepadKeycode];
         break;
       case Keycode.MIDICollection:
         subString = "MIDI";

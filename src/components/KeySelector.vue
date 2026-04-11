@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, triggerRef } from 'vue';
-import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName } from "@/apis/utils"
-import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode } from "emi-keyboard-controller"
+import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName, GamepadKeycodeToKeyName } from "@/apis/utils"
+import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode, GamepadKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { values } from 'lodash';
@@ -349,6 +349,32 @@ const keyboard_config_value = ref((KeyboardConfigCode.KeyboardConfigDebug as num
                                 <n-input-number @update:value="handleJoystickNumber" v-model:value="joystick_value" max="15" min="0"></n-input-number>
                             </n-gi>
                         </n-grid>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing :title="t('key_selector_script')">
+                        <n-flex vertical>
+                            <n-flex>
+                                <n-button
+                                :type="((binding & 0xFF) == Keycode.ScriptCollection && ((binding >> 8) & 0xFF) == 0) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick(Keycode.ScriptCollection)">
+                                {{ 'Script' }}</n-button>
+                            </n-flex>
+                        </n-flex>
+                    </n-thing>
+                </n-list-item>
+                <n-list-item>
+                    <n-thing :title="t('key_selector_gamepad')">
+                        <n-flex vertical>
+                            <n-flex>
+                                <n-button v-for="(key, code) in Object.keys(GamepadKeycode)
+                                //.filter(key => isNaN(Number(key)))
+                                .slice(0, 26)"
+                                :type="((binding & 0xFF) == Keycode.GamepadCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
+                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.GamepadCollection)">
+                                {{ GamepadKeycodeToKeyName[key as unknown as GamepadKeycode] }}</n-button>
+                            </n-flex>
+                        </n-flex>
                     </n-thing>
                 </n-list-item>
                 <n-list-item>

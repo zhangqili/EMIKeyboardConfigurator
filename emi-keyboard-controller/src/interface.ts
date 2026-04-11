@@ -426,6 +426,8 @@ export enum Keycode {
     MIDICollection = 0xab,
     MIDINote = 0xac,
     MacroCollection = 0xad,
+    ScriptCollection = 0xae,
+    GamepadCollection = 0xaf,
     KeyUser = 0xFD,
     KeyboardOperation = 0xFE,
     KeyTransparent = 0xFF,
@@ -740,6 +742,34 @@ export enum MacroKeycode {
     MacroBegin                           = 0xf,
 }
 
+export enum GamepadKeycode {
+    GamepadUp,
+    GamepadDown,
+    GamepadLeft,
+    GamepadRight,
+    GamepadStart,
+    GamepadBack,
+    GamepadLT,
+    GamepadRT,
+    GamepadLB,
+    GamepadRB,
+    GamepadGuide,
+    GamepadUndefined,
+    GamepadA,
+    GamepadB,
+    GamepadX,
+    GamepadY,
+    GamepadLeftXPositive = 32,
+    GamepadLeftXNegaitve = 33,
+    GamepadLeftYPositive = 34,
+    GamepadLeftYNegaitve = 35,
+    GamepadRightXPositive = 36,
+    GamepadRightXNegative = 37,
+    GamepadRightYPositive = 38,
+    GamepadRightYNegative = 39,
+    GamepadLTAnalog = 40,
+    GamepadRTAnalog = 41,
+}
 
 // Generic color interfaces
 export interface Srgb {
