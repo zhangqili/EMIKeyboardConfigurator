@@ -1,4 +1,4 @@
-import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode, GamepadKeycode} from "emi-keyboard-controller";
+import { Keycode, KeyMode, KeyModifier, MouseKeycode, KeyboardKeycode, RGBMode, Srgb, LayerControlKeycode, DynamicKeyType, IDynamicKey, IDynamicKeyMutex, DynamicKeyMutex, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode, GamepadKeycode, ScriptKeycode} from "emi-keyboard-controller";
 import * as kle from "@ijprest/kle-serial";
 import createMqjsCompiler from '@/wasm/mqjs_wasm';
 import wasmBinaryUrl from '@/wasm/mqjs_wasm.wasm?url';
@@ -390,6 +390,7 @@ export const KeyboardOperationToKeyName: { [key in KeyboardKeycode]: string } = 
   [KeyboardKeycode.KeyboardRgbBrightnessUp]: 'Brightness Up',
   [KeyboardKeycode.KeyboardRgbBrightnessDown]: 'Brightness Down',
   [KeyboardKeycode.KeyboardCalibrate]: "Calibrate",
+  [KeyboardKeycode.KeyboardRecovery]: 'Recovery',
   [KeyboardKeycode.KeyboardProfile0]: 'Profile 0',
   [KeyboardKeycode.KeyboardProfile1]: 'Profile 1',
   [KeyboardKeycode.KeyboardProfile2]: 'Profile 2',
@@ -420,6 +421,15 @@ export const JoystickKeycodeToKeyName: { [key in JoystickKeycode]: string } = {
   [JoystickKeycode.JoystickWhole]: 'Whole',
   [JoystickKeycode.JoystickWholeInvert]: 'Whole Invert',
 };
+
+export const ScriptKeycodeToKeyName: { [key in ScriptKeycode]: string } = {
+  [ScriptKeycode.ScriptWatch]: "Watch",
+  [ScriptKeycode.ScriptStart]: "Start",
+  [ScriptKeycode.ScriptStop]: "Stop",
+  [ScriptKeycode.ScriptSuspend]: "Suspend",
+  [ScriptKeycode.ScriptRestart]: "Restart",
+  [ScriptKeycode.ScriptToggle]: "Toggle"
+}
 
 export const GamepadKeycodeToKeyName: { [key in GamepadKeycode]: string } = {
   [GamepadKeycode.GamepadUp]: "Up",
@@ -789,7 +799,7 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
         break;
       case Keycode.ScriptCollection:
         subString = "Script";
-        mainString = "";
+        mainString = ScriptKeycodeToKeyName[modifier as ScriptKeycode];
         break;
       case Keycode.GamepadCollection:
         subString = "Gamepad";
@@ -870,7 +880,7 @@ export class KeyConfig extends kle.Key {
 
 
 export const demoScriptSource = 
-`// Code outside functions runs once at startup/boot.
+`// Code outside functions runs once when script starts.
 // Register keys to monitor (e.g., Key ID 2)
 keyboard.watch(2);
 

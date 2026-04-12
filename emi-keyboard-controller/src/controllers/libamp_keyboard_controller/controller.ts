@@ -1517,10 +1517,12 @@ export class LibampKeyboardController extends KeyboardController {
         // 将字符串编码为 UTF-8 字节流
         const encoder = new TextEncoder();
         const data = encoder.encode(sourceCode);
-        console.log("script source",data);
+        const dataWithNull = new Uint8Array(data.length + 1);
+        dataWithNull.set(data);
+        console.log("script source",dataWithNull);
         
         // 假设 PacketData.PacketDataScriptSource = 0x0C
-        await this._set_large_data(0x0C, data); 
+        await this._set_large_data(0x0C, dataWithNull); 
     }
 
     // 获取脚本源码

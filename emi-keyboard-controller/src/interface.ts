@@ -470,6 +470,7 @@ export enum KeyboardKeycode {
     KeyboardRgbBrightnessUp = 5,
     KeyboardRgbBrightnessDown = 6,
     KeyboardCalibrate = 7,
+    KeyboardRecovery = 8,
     KeyboardProfile0 = 0x10,
     KeyboardProfile1 = 0x11,
     KeyboardProfile2 = 0x12,
@@ -740,6 +741,15 @@ export enum MacroKeycode {
     MacroPlayingStop                    = 0x8,
     MacroPlayingPause                   = 0x9,
     MacroBegin                           = 0xf,
+}
+
+export enum ScriptKeycode {
+    ScriptWatch,
+    ScriptStart,
+    ScriptStop,
+    ScriptSuspend,
+    ScriptRestart,
+    ScriptToggle
 }
 
 export enum GamepadKeycode {
