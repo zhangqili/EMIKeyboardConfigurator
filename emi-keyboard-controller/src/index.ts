@@ -8,3 +8,4 @@ export * from "./controllers/zellia_starlight_controller/controller"
 export * from "./controllers/ansi_104_sample_controller/controller"
 export * from "./controllers/destrez_asural_left_controller/controller";
 export * from "./controllers/destrez_asural_right_controller/controller";
+export * from "./controllers/open28s_controller/controller";

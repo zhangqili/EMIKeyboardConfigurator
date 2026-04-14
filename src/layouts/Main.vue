@@ -111,6 +111,7 @@ function create_controller(device: string): SafeController {
     case "Zellia Starlight": ctrl = new ekc.ZelliaStarlightController(); break;
     case "Destrez Asural Left": ctrl = new ekc.DestrezAsuralLeftController(); break;
     case "Destrez Asural Right": ctrl = new ekc.DestrezAsuralRightController(); break;
+    case "Open28S": ctrl = new ekc.Open28SController(); break;
     case "ANSI 104 Sample": ctrl = new ekc.ANSI104SampleController(); break;
     default: ctrl = new ekc.ANSI104SampleController();
   }

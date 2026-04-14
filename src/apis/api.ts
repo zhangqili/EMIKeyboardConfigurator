@@ -9,6 +9,7 @@ const DEVICES = [
     "Zellia Starlight",
     "Destrez Asural Left",
     "Destrez Asural Right",
+    "Open28S",
     "ANSI 104 Sample",
 ];
 
@@ -28,6 +29,7 @@ function create_controller(device: string): ekc.KeyboardController {
         case "Zellia Starlight": return new ekc.ZelliaStarlightController();
         case "Destrez Asural Left": return new ekc.DestrezAsuralLeftController();
         case "Destrez Asural Right": return new ekc.DestrezAsuralRightController();
+        case "Open28S": return new ekc.Open28SController(); break;
         case "ANSI 104 Sample": return new ekc.ANSI104SampleController();
         default: return new ekc.ANSI104SampleController();;
     }
