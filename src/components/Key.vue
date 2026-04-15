@@ -368,13 +368,8 @@ const tooltipContent = computed(() => {
   line-height: 1em;
 }
 
-.keylabel.textsize1 {
-  font-size: 8px;
-  line-height: 1em;
-}
-
 .keylabel.textsize2 {
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1em;
 }
 

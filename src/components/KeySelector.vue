@@ -371,7 +371,7 @@ const keyboard_config_value = ref((KeyboardConfigCode.KeyboardConfigDebug as num
                             <n-flex>
                                 <n-button v-for="(key, code) in Object.keys(GamepadKeycode)
                                 //.filter(key => isNaN(Number(key)))
-                                .slice(0, 26)"
+                                .slice(0, 28)"
                                 :type="((binding & 0xFF) == Keycode.GamepadCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
                                 @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.GamepadCollection)">
                                 {{ GamepadKeycodeToKeyName[key as unknown as GamepadKeycode] }}</n-button>

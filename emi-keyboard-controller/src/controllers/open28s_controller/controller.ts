@@ -1,5 +1,5 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
-import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, detectHIDDevice } from '../../interface';
+import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, KeyboardKeycode, LayerControlKeycode, KeyboardController, DynamicKey, DynamicKeyType, DynamicKeyStroke4x4, DynamicKeyModTap, DynamicKeyToggleKey, DynamicKeyMutex, IDynamicKey, IDynamicKeyStroke4x4, IDynamicKeyModTap, IDynamicKeyToggleKey, IDynamicKeyMutex, RGBBaseConfig, detectHIDDevice, GamepadKeycode } from '../../interface';
 
 import layout from './keyboard_layout.json?raw';
 export class Open28SController extends LibampKeyboardController {
@@ -50,18 +50,29 @@ export class Open28SController extends LibampKeyboardController {
         this.rgb_configs = [];
         this.keymap = [
                 [
-                    Keycode.Escape/*0*/,    Keycode.Key1/*1*/,  Keycode.Key2/*2*/,  Keycode.Key3/*3*/,  Keycode.Key4/*4*/,  Keycode.Key5/*5*/,  Keycode.Key6/*6*/,  Keycode.Key7/*7*/,  Keycode.Key8/*8*/,  Keycode.Key9/*9*/,  Keycode.Key0/*10*/,     Keycode.Minus/*11*/,        Keycode.Equal/*12*/,        Keycode.Backspace/*13*/,
-                    Keycode.Tab/*14*/,      Keycode.Q/*15*/,    Keycode.W/*16*/,    
+                    Keycode.GamepadCollection | (GamepadKeycode.GamepadUp<<8)/*0*/, Keycode.GamepadCollection | (GamepadKeycode.GamepadRight<<8)/*1*/,     Keycode.GamepadCollection | (GamepadKeycode.GamepadDown<<8)/*2*/,     Keycode.GamepadCollection | (GamepadKeycode.GamepadA<<8)/*3*/,     Keycode.NoEvent/*4*/,     
+                    Keycode.NoEvent/*5*/,     Keycode.GamepadCollection | (GamepadKeycode.GamepadB<<8)/*6*/,     Keycode.GamepadCollection | (GamepadKeycode.GamepadLB<<8)/*7*/,     Keycode.GamepadCollection | (GamepadKeycode.GamepadRT<<8)/*8*/,     Keycode.GamepadCollection | (GamepadKeycode.GamepadLeft<<8)/*9*/,     Keycode.NoEvent/*10*/,        
+                    Keycode.GamepadCollection | (GamepadKeycode.GamepadX<<8)/*11*/,        Keycode.NoEvent/*12*/,        Keycode.NoEvent/*13*/,
+                    Keycode.GamepadCollection | (GamepadKeycode.GamepadY<<8)/*14*/,        Keycode.GamepadCollection | (GamepadKeycode.GamepadRB<<8)/*15*/,    Keycode.GamepadCollection | (GamepadKeycode.GamepadLT<<8)/*16*/,    
+                    Keycode.GamepadCollection | (GamepadKeycode.GamepadLS<<8)/*17*/,    Keycode.GamepadCollection | (GamepadKeycode.GamepadRS<<8)/*18*/,    Keycode.GamepadCollection | (GamepadKeycode.GamepadStart<<8)/*19*/,    Keycode.GamepadCollection | (GamepadKeycode.GamepadBack<<8)/*20*/,    
+                    Keycode.NoEvent/*21*/,    Keycode.NoEvent/*22*/,    Keycode.NoEvent/*23*/,    Keycode.NoEvent/*24*/,        Keycode.NoEvent/*25*/,
                 ],
                 [ 
-                    Keycode.Grave,          Keycode.F1, Keycode.F2, Keycode.F3, Keycode.F4, Keycode.F5, Keycode.F6, Keycode.F7, Keycode.F8, Keycode.F9, Keycode.F10, Keycode.F11, Keycode.F12, Keycode.Backspace,
-                    Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, 
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,
                 ],
-                [ 
-                    Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardBootloader << 8),  Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardProfile0 << 8), Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardProfile1 << 8), Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardProfile2 << 8),     Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardProfile3 << 8), Keycode.KeyTransparent,     Keycode.KeyTransparent,         Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyTransparent, Keycode.KeyboardOperation | (KeyboardKeycode.KeyboardResetToDefault << 8),
-                    Keycode.KeyTransparent,                                     Keycode.KeyTransparent,                                 Keycode.KeyTransparent,                 ],
-                Array(17).fill(Keycode.KeyTransparent),
-                Array(17).fill(Keycode.KeyTransparent)
+                [
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,Keycode.KeyTransparent,
+                    Keycode.KeyTransparent,
+                ],
         ];
         this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
     }
