@@ -5,6 +5,7 @@ import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycod
 import { SelectOption, useMessage } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { values } from 'lodash';
+import KeyButtonGroup from './KeyButtonGroup.vue';
 
 const { t } = useI18n();
 const message = useMessage();
@@ -219,441 +220,245 @@ const syncRightScroll = () => {
         <div ref="scrollContainerRef" id="key-selector-scroll-container" style="flex: 1; height: 100%;">
             <n-scrollbar id="left-key-scrollbar" @scroll="syncRightScroll">
                 <n-list vertical clickable>
-                    <n-list-item id="key_selector_modifiers">
-                        <n-thing :title="t('key_selector_modifiers')">
-                            <n-space vertical>
-                                <n-button @click="() => { binding = binding & 0xFF; }">
-                                    Clear</n-button>
-                                <n-button-group>
-                                    <n-button v-for="(key, index) in Object.keys(KeyModifier)
-                                        .slice(1, 9)" @click="handleKeyModifierClick(key)"
-                                        :type="(((binding >> 8) & 0xFF & (key as unknown as number)) > 0) ? 'primary' : ''">
-                                        {{ keyModifierToKeyName[key as unknown as KeyModifier] }}</n-button>
-                                </n-button-group>
-                            </n-space>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_event">
-                        <n-thing :title="t('key_selector_event')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.NoEvent, Keycode.ErrorUndefined + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-
-                    <n-list-item id="key_selector_alphabet">
-                        <n-thing :title="t('key_selector_alphabet')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.A, Keycode.Z + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_numbertic">
-                        <n-thing :title="t('key_selector_numbertic')">
-                            <n-button-group>
-                                <n-button v-for="(key, code) in Object.keys(Keycode)
-                                    //.filter(key => isNaN(Number(key)))
-                                    .slice(Keycode.Key1, Keycode.Key0 + 1)"
-                                    :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                    @click="handleKeycodeClick(key)">
-                                    {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                            </n-button-group>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_control">
-                        <n-thing :title="t('key_selector_control')">
-                            <n-button-group>
-                                <n-button v-for="(key, code) in Object.keys(Keycode)
-                                    //.filter(key => isNaN(Number(key)))
-                                    .slice(Keycode.Enter, Keycode.Tab + 1)"
-                                    :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                    @click="handleKeycodeClick(key)">
-                                    {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                            </n-button-group>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_symbols">
-                        <n-thing :title="t('key_selector_symbols')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.Spacebar, Keycode.Slash + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_function">
-                        <n-thing :title="t('key_selector_function')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.CapsLock, Keycode.Pause + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_navigation">
-                        <n-thing :title="t('key_selector_navigation')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.Insert, Keycode.UpArrow + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_keypad">
-                        <n-thing :title="t('key_selector_keypad')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.NumLock, Keycode.KeypadDot + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_additional_symbols_and_keys">
-                        <n-thing :title="t('key_selector_additional_symbols_and_keys')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.NonUsBackslash, Keycode.KeypadEqual + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_extended_function">
-                        <n-thing :title="t('key_selector_extended_function')">
-                            <n-button-group>
-                                <n-button v-for="(key, code) in Object.keys(Keycode)
-                                    //.filter(key => isNaN(Number(key)))
-                                    .slice(Keycode.F13, Keycode.F24 + 1)"
-                                    :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                    @click="handleKeycodeClick(key)">
-                                    {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                            </n-button-group>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_media_and_system_control">
-                        <n-thing :title="t('key_selector_media_and_system_control')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.Execute, Keycode.VolumeDown + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_locking">
-                        <n-thing :title="t('key_selector_locking')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.LockingCapsLock, Keycode.LockingScrollLock + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_international">
-                        <n-thing :title="t('key_selector_international')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.KeypadComma, Keycode.Lang9 + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_additional_command_and_editing">
-                        <n-thing :title="t('key_selector_additional_command_and_editing')">
-                            <n-button v-for="(key, code) in Object.keys(Keycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(Keycode.AlternateErase, Keycode.ExSel + 1)"
-                                :type="((binding & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleKeycodeClick(key)">
-                                {{ keyCodeToKeyName[key as unknown as Keycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_mouse">
-                        <n-thing :title="t('key_selector_mouse')">
-                            <n-button v-for="(key, code) in Object.keys(MouseKeycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelRight + 5)"
-                                :type="((binding & 0xFF) == Keycode.MouseCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MouseCollection)">
-                                {{ MouseKeycodeToKeyName[key as unknown as MouseKeycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_consumer">
-                        <n-thing :title="t('key_selector_consumer')">
-                            <n-button v-for="(key, code) in Object.keys(ConsumerKeycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(0, 0x31)"
-                                :type="((binding & 0xFF) == Keycode.ConsumerCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.ConsumerCollection)">
-                                {{ ConsumerKeyToKeyName[key as unknown as ConsumerKeycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_system">
-                        <n-thing :title="t('key_selector_system')">
-                            <n-button v-for="(key, code) in Object.keys(SystemRawKeycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(0, 5)"
-                                :type="((binding & 0xFF) == Keycode.SystemCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.SystemCollection)">
-                                {{ SystemKeyToKeyName[key as unknown as SystemRawKeycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_joystick">
-                        <n-thing :title="t('key_selector_joystick')">
-                            <n-button :type="((binding & 0xFF) == Keycode.JoystickCollection) ? 'primary' : ''"
-                                @click="handleKeycodeClick(Keycode.JoystickCollection)">
-                                {{ keyCodeToKeyName[Keycode.JoystickCollection] }}</n-button>
-                            <n-grid :cols="4">
-                                <n-gi :span="1">
-                                    <n-select :options="joystick_options" @update:value="handleJoystickControl"
-                                        v-model:value="joystick_collection_value"></n-select>
-                                </n-gi>
-                                <n-gi :span="3">
-                                    <n-input-number @update:value="handleJoystickNumber" v-model:value="joystick_value"
-                                        max="15" min="0"></n-input-number>
-                                </n-gi>
-                            </n-grid>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_script">
-                        <n-thing :title="t('key_selector_script')">
-                            <n-flex vertical>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(ScriptKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(0, 6)"
-                                        :type="((binding & 0xFF) == Keycode.ScriptCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.ScriptCollection)">
-                                        {{ ScriptKeycodeToKeyName[key as unknown as ScriptKeycode] }}</n-button>
-                                </n-flex>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_gamepad">
-                        <n-thing :title="t('key_selector_gamepad')">
-                            <n-flex vertical>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(GamepadKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(0, 28)"
-                                        :type="((binding & 0xFF) == Keycode.GamepadCollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.GamepadCollection)">
-                                        {{ GamepadKeycodeToKeyName[key as unknown as GamepadKeycode] }}</n-button>
-                                </n-flex>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_midi">
-                        <n-thing :title="t('key_selector_midi')">
-                            <n-flex vertical>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.On, MIDIKeycode.Toggle + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.NoteC0, MIDIKeycode.NoteB0 + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.NoteC1, MIDIKeycode.NoteB1 + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.NoteC2, MIDIKeycode.NoteB2 + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.NoteC3, MIDIKeycode.NoteB3 + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.NoteC4, MIDIKeycode.NoteB4 + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.OctaveN2, MIDIKeycode.OctaveUp + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.TransposeN6, MIDIKeycode.TransposeUp + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.Velocity0, MIDIKeycode.VelocityUp + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.Channel1, MIDIKeycode.ChannelUp + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                                <n-flex>
-                                    <n-button v-for="(key, code) in Object.keys(MIDIKeycode)
-                                        //.filter(key => isNaN(Number(key)))
-                                        .slice(MIDIKeycode.AllNotesOff, MIDIKeycode.PitchBendUp + 1)"
-                                        :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == (key as unknown as number)) ? 'primary' : ''"
-                                        @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.MIDICollection)">
-                                        {{ MIDIKeyToKeyName[key as unknown as MIDIKeycode] }}</n-button>
-                                </n-flex>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_midi_note">
-                        <n-thing :title="t('key_selector_midi_note')">
-                            <n-button :type="((binding & 0xFF) == Keycode.MIDINote) ? 'primary' : ''"
-                                @click="handleKeycodeClick(Keycode.MIDINote)">
-                                {{ keyCodeToKeyName[Keycode.MIDINote] }}</n-button>
-                            <n-flex>
-                                <n-grid :cols="4">
-                                    <n-gi :span="1">
-                                        <n-select :options="midi_note_options" @update:value="handleMIDINote"
-                                            v-model:value="midi_note_value"></n-select>
-                                    </n-gi>
-                                    <n-gi :span="3">
-                                        <n-input-number @update:value="handleMIDINoteNumber" v-model:value="midi_value"
-                                            max="10" min="0"></n-input-number>
-                                    </n-gi>
-                                </n-grid>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_macro">
-                        <n-thing :title="t('key_selector_macro')">
-                            <n-button v-for="(key, code) in Object.keys(MacroKeycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(MacroKeycode.MacroRecordingStart, MacroKeycode.MacroPlayingPause + 1)"
-                                :type="((binding & 0xFF) == Keycode.MacroCollection && ((binding >> 12) & 0xF) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleFullKeycodeClick(((key as unknown as number) << 12) | (macro_index & 0x0f) << 8 | Keycode.MacroCollection)">
-                                {{ MacroKeycodeToKeyName[key as unknown as MacroKeycode] }}</n-button>
-                            <n-flex>
-                                <n-grid :cols="4">
-                                    <n-gi :span="4">
-                                        <n-input-number @update:value="handleMacroIndex" v-model:value="macro_index"
-                                            max="3" min="0"></n-input-number>
-                                    </n-gi>
-                                </n-grid>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_layer">
-                        <n-thing :title="t('key_selector_layer')">
-                            <n-button :type="((binding & 0xFF) == Keycode.LayerControl) ? 'primary' : ''"
-                                @click="handleKeycodeClick(Keycode.LayerControl)">
-                                {{ keyCodeToKeyName[Keycode.LayerControl] }}</n-button>
-                            <n-flex>
-                                <n-grid :cols="4">
-                                    <n-gi :span="1">
-                                        <n-select :options="layer_options" @update:value="handleLayerControl"
-                                            v-model:value="layer_control_value"></n-select>
-                                    </n-gi>
-                                    <n-gi :span="3">
-                                        <n-input-number @update:value="handleLayerNumber" v-model:value="layer_value"
-                                            max="15" min="0"></n-input-number>
-                                    </n-gi>
-                                </n-grid>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_keyboard">
-                        <n-thing :title="t('key_selector_keyboard')">
-                            <n-button v-for="(key, code) in Object.keys(KeyboardKeycode)
-                                //.filter(key => isNaN(Number(key)))
-                                .slice(0, 13)"
-                                :type="((binding & 0xFF) == Keycode.KeyboardOperation && (((binding >> 8) & 0x3F) < 0x20) && ((binding >> 8) & 0x3F) == (key as unknown as number)) ? 'primary' : ''"
-                                @click="handleFullKeycodeClick((key as unknown as number) << 8 | Keycode.KeyboardOperation)">
-                                {{ KeyboardOperationToKeyName[key as unknown as KeyboardKeycode] }}</n-button>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_keyboard_profile">
-                        <n-thing :title="t('key_selector_keyboard_profile')">
-                            <n-button
-                                :type="(((binding & 0xFF) == Keycode.KeyboardOperation) && (((binding >> 8) & 0x3F) >= KeyboardKeycode.KeyboardConfigBase)) ? 'primary' : ''"
-                                @click="{ handleFullKeycodeClick((keyboard_config_control_value << 14) | (Number(keyboard_config_value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation); console.log(keyboard_config_control_value, keyboard_config_value) }">
-                                {{ "Keyboard Profile" }}</n-button>
-                            <n-flex>
-                                <n-grid :cols="4">
-                                    <n-gi :span="1">
-                                        <n-select :options="keyboard_config_control_options"
-                                            @update:value="handleKeyboardConfigControl"
-                                            v-model:value="keyboard_config_control_value"></n-select>
-                                    </n-gi>
-                                    <n-gi :span="3">
-                                        <n-select :options="keyboard_config_options"
-                                            @update:value="handleKeyboardConfig" v-model:value="keyboard_config_value"
-                                            max="15" min="0"></n-select>
-                                    </n-gi>
-                                </n-grid>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_user">
-                        <n-thing :title="t('key_selector_user')">
-                            <n-button :type="((binding & 0xFF) == Keycode.KeyUser) ? 'primary' : ''"
-                                @click="handleKeycodeClick(Keycode.KeyUser)">
-                                {{ keyCodeToKeyName[Keycode.KeyUser] }}</n-button>
-                            <n-flex>
-                                <n-input-number @update:value="handleUserNumber" max="255" min="0"></n-input-number>
-                            </n-flex>
-                        </n-thing>
-                    </n-list-item>
-                    <n-list-item id="key_selector_transparent">
-                        <n-thing :title="t('key_selector_transparent')">
-                            <n-button :type="((binding & 0xFF) == Keycode.KeyTransparent) ? 'primary' : ''"
-                                @click="handleFullKeycodeClick(Keycode.KeyTransparent)">
-                                Transparent</n-button>
-                        </n-thing>
-                    </n-list-item>
+                    <KeyButtonGroup id="key_selector_modifiers" :title="t('key_selector_modifiers')">
+                      <n-space vertical>
+                        <n-button @click="() => { binding = binding & 0xFF; }">Clear</n-button>
+                        <n-button-group>
+                          <n-button 
+                            v-for="key in Object.keys(KeyModifier).slice(1, 9)" 
+                            :key="key"
+                            @click="handleKeyModifierClick(key)"
+                            :type="(((binding >> 8) & 0xFF & Number(key)) > 0) ? 'primary' : ''"
+                          >
+                            {{ keyModifierToKeyName[Number(key) as KeyModifier] }}
+                          </n-button>
+                        </n-button-group>
+                      </n-space>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_event" :title="t('key_selector_event')"
+                      :keys="Object.keys(Keycode).slice(Keycode.NoEvent, Keycode.ErrorUndefined + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_alphabet" :title="t('key_selector_alphabet')"
+                      :keys="Object.keys(Keycode).slice(Keycode.A, Keycode.Z + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_numbertic" :title="t('key_selector_numbertic')"
+                      :keys="Object.keys(Keycode).slice(Keycode.Key1, Keycode.Key0 + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_control" :title="t('key_selector_control')"
+                      :keys="Object.keys(Keycode).slice(Keycode.Enter, Keycode.Tab + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_symbols" :title="t('key_selector_symbols')"
+                      :keys="Object.keys(Keycode).slice(Keycode.Spacebar, Keycode.Slash + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_function" :title="t('key_selector_function')"
+                      :keys="Object.keys(Keycode).slice(Keycode.CapsLock, Keycode.Pause + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_navigation" :title="t('key_selector_navigation')"
+                      :keys="Object.keys(Keycode).slice(Keycode.Insert, Keycode.UpArrow + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_keypad" :title="t('key_selector_keypad')"
+                      :keys="Object.keys(Keycode).slice(Keycode.NumLock, Keycode.KeypadDot + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_additional_symbols_and_keys" :title="t('key_selector_additional_symbols_and_keys')"
+                      :keys="Object.keys(Keycode).slice(Keycode.NonUsBackslash, Keycode.KeypadEqual + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_extended_function" :title="t('key_selector_extended_function')"
+                      :keys="Object.keys(Keycode).slice(Keycode.F13, Keycode.F24 + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_media_and_system_control" :title="t('key_selector_media_and_system_control')"
+                      :keys="Object.keys(Keycode).slice(Keycode.Execute, Keycode.VolumeDown + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_locking" :title="t('key_selector_locking')"
+                      :keys="Object.keys(Keycode).slice(Keycode.LockingCapsLock, Keycode.LockingScrollLock + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_international" :title="t('key_selector_international')"
+                      :keys="Object.keys(Keycode).slice(Keycode.KeypadComma, Keycode.Lang9 + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_additional_command_and_editing" :title="t('key_selector_additional_command_and_editing')"
+                      :keys="Object.keys(Keycode).slice(Keycode.AlternateErase, Keycode.ExSel + 1)"
+                      :active-fn="(k) => (binding & 0xFF) == Number(k)"
+                      :label-fn="(k) => keyCodeToKeyName[Number(k) as Keycode]"
+                      @click-key="handleKeycodeClick" />
+                
+                    <KeyButtonGroup id="key_selector_mouse" :title="t('key_selector_mouse')"
+                      :keys="Object.keys(MouseKeycode).slice(MouseKeycode.MouseLButton, MouseKeycode.MouseWheelRight + 5)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.MouseCollection && ((binding >> 8) & 0xFF) == Number(k)"
+                      :label-fn="(k) => MouseKeycodeToKeyName[Number(k) as MouseKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.MouseCollection)" />
+                
+                    <KeyButtonGroup id="key_selector_consumer" :title="t('key_selector_consumer')"
+                      :keys="Object.keys(ConsumerKeycode).slice(0, 0x31)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.ConsumerCollection && ((binding >> 8) & 0xFF) == Number(k)"
+                      :label-fn="(k) => ConsumerKeyToKeyName[Number(k) as ConsumerKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.ConsumerCollection)" />
+                
+                    <KeyButtonGroup id="key_selector_system" :title="t('key_selector_system')"
+                      :keys="Object.keys(SystemRawKeycode).slice(0, 5)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.SystemCollection && ((binding >> 8) & 0xFF) == Number(k)"
+                      :label-fn="(k) => SystemKeyToKeyName[Number(k) as SystemRawKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.SystemCollection)" />
+                
+                    <KeyButtonGroup id="key_selector_script" :title="t('key_selector_script')"
+                      :keys="Object.keys(ScriptKeycode).slice(0, 6)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.ScriptCollection && ((binding >> 8) & 0xFF) == Number(k)"
+                      :label-fn="(k) => ScriptKeycodeToKeyName[Number(k) as ScriptKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.ScriptCollection)" />
+                
+                    <KeyButtonGroup id="key_selector_gamepad" :title="t('key_selector_gamepad')"
+                      :keys="Object.keys(GamepadKeycode).slice(0, 28)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.GamepadCollection && ((binding >> 8) & 0xFF) == Number(k)"
+                      :label-fn="(k) => GamepadKeycodeToKeyName[Number(k) as GamepadKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.GamepadCollection)" />
+                
+                    <KeyButtonGroup id="key_selector_keyboard" :title="t('key_selector_keyboard')"
+                      :keys="Object.keys(KeyboardKeycode).slice(0, 13)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.KeyboardOperation && (((binding >> 8) & 0x3F) < 0x20) && ((binding >> 8) & 0x3F) == Number(k)"
+                      :label-fn="(k) => KeyboardOperationToKeyName[Number(k) as KeyboardKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.KeyboardOperation)" />
+                
+                    <KeyButtonGroup id="key_selector_joystick" :title="t('key_selector_joystick')">
+                      <n-button :type="((binding & 0xFF) == Keycode.JoystickCollection) ? 'primary' : ''" @click="handleKeycodeClick(Keycode.JoystickCollection)">
+                        {{ keyCodeToKeyName[Keycode.JoystickCollection] }}
+                      </n-button>
+                      <n-grid :cols="4" style="width: 100%; margin-top: 8px;">
+                        <n-gi :span="1">
+                          <n-select :options="joystick_options" @update:value="handleJoystickControl" v-model:value="joystick_collection_value"></n-select>
+                        </n-gi>
+                        <n-gi :span="3">
+                          <n-input-number @update:value="handleJoystickNumber" v-model:value="joystick_value" max="15" min="0"></n-input-number>
+                        </n-gi>
+                      </n-grid>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_midi" :title="t('key_selector_midi')">
+                      <n-flex vertical style="gap: 8px; margin-top: 8px;">
+                        <n-flex v-for="sliceArgs in [
+                          [MIDIKeycode.On, MIDIKeycode.Toggle + 1],
+                          [MIDIKeycode.NoteC0, MIDIKeycode.NoteB0 + 1],
+                          [MIDIKeycode.NoteC1, MIDIKeycode.NoteB1 + 1],
+                          [MIDIKeycode.NoteC2, MIDIKeycode.NoteB2 + 1],
+                          [MIDIKeycode.NoteC3, MIDIKeycode.NoteB3 + 1],
+                          [MIDIKeycode.NoteC4, MIDIKeycode.NoteB4 + 1],
+                          [MIDIKeycode.OctaveN2, MIDIKeycode.OctaveUp + 1],
+                          [MIDIKeycode.TransposeN6, MIDIKeycode.TransposeUp + 1],
+                          [MIDIKeycode.Velocity0, MIDIKeycode.VelocityUp + 1],
+                          [MIDIKeycode.Channel1, MIDIKeycode.ChannelUp + 1],
+                          [MIDIKeycode.AllNotesOff, MIDIKeycode.PitchBendUp + 1]
+                        ]" :key="sliceArgs[0]">
+                          <n-button v-for="key in Object.keys(MIDIKeycode).slice(sliceArgs[0], sliceArgs[1])" :key="key"
+                            :type="((binding & 0xFF) == Keycode.MIDICollection && ((binding >> 8) & 0xFF) == Number(key)) ? 'primary' : ''"
+                            @click="handleFullKeycodeClick(Number(key) << 8 | Keycode.MIDICollection)">
+                            {{ MIDIKeyToKeyName[Number(key) as MIDIKeycode] }}
+                          </n-button>
+                        </n-flex>
+                      </n-flex>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_midi_note" :title="t('key_selector_midi_note')">
+                      <n-button :type="((binding & 0xFF) == Keycode.MIDINote) ? 'primary' : ''" @click="handleKeycodeClick(Keycode.MIDINote)">
+                        {{ keyCodeToKeyName[Keycode.MIDINote] }}
+                      </n-button>
+                      <n-grid :cols="4" style="width: 100%; margin-top: 8px;">
+                        <n-gi :span="1">
+                          <n-select :options="midi_note_options" @update:value="handleMIDINote" v-model:value="midi_note_value"></n-select>
+                        </n-gi>
+                        <n-gi :span="3">
+                          <n-input-number @update:value="handleMIDINoteNumber" v-model:value="midi_value" max="10" min="0"></n-input-number>
+                        </n-gi>
+                      </n-grid>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_macro" :title="t('key_selector_macro')">
+                      <n-button v-for="key in Object.keys(MacroKeycode).slice(MacroKeycode.MacroRecordingStart, MacroKeycode.MacroPlayingPause + 1)" :key="key"
+                        :type="((binding & 0xFF) == Keycode.MacroCollection && ((binding >> 12) & 0xF) == Number(key)) ? 'primary' : ''"
+                        @click="handleFullKeycodeClick((Number(key) << 12) | (macro_index & 0x0f) << 8 | Keycode.MacroCollection)">
+                        {{ MacroKeycodeToKeyName[Number(key) as MacroKeycode] }}
+                      </n-button>
+                      <n-input-number style="width: 100%; margin-top: 8px;" @update:value="handleMacroIndex" v-model:value="macro_index" max="3" min="0"></n-input-number>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_layer" :title="t('key_selector_layer')">
+                      <n-button :type="((binding & 0xFF) == Keycode.LayerControl) ? 'primary' : ''" @click="handleKeycodeClick(Keycode.LayerControl)">
+                        {{ keyCodeToKeyName[Keycode.LayerControl] }}
+                      </n-button>
+                      <n-grid :cols="4" style="width: 100%; margin-top: 8px;">
+                        <n-gi :span="1">
+                          <n-select :options="layer_options" @update:value="handleLayerControl" v-model:value="layer_control_value"></n-select>
+                        </n-gi>
+                        <n-gi :span="3">
+                          <n-input-number @update:value="handleLayerNumber" v-model:value="layer_value" max="15" min="0"></n-input-number>
+                        </n-gi>
+                      </n-grid>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_keyboard_profile" :title="t('key_selector_keyboard_profile')">
+                      <n-button
+                        :type="(((binding & 0xFF) == Keycode.KeyboardOperation) && (((binding >> 8) & 0x3F) >= KeyboardKeycode.KeyboardConfigBase)) ? 'primary' : ''"
+                        @click="handleFullKeycodeClick((keyboard_config_control_value << 14) | (Number(keyboard_config_value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation)">
+                        Keyboard Profile
+                      </n-button>
+                      <n-grid :cols="4" style="width: 100%; margin-top: 8px;">
+                        <n-gi :span="1">
+                          <n-select :options="keyboard_config_control_options" @update:value="handleKeyboardConfigControl" v-model:value="keyboard_config_control_value"></n-select>
+                        </n-gi>
+                        <n-gi :span="3">
+                          <n-select :options="keyboard_config_options" @update:value="handleKeyboardConfig" v-model:value="keyboard_config_value"></n-select>
+                        </n-gi>
+                      </n-grid>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_user" :title="t('key_selector_user')">
+                      <n-button :type="((binding & 0xFF) == Keycode.KeyUser) ? 'primary' : ''" @click="handleKeycodeClick(Keycode.KeyUser)">
+                        {{ keyCodeToKeyName[Keycode.KeyUser] }}
+                      </n-button>
+                      <n-input-number style="width: 100%; margin-top: 8px;" @update:value="handleUserNumber" max="255" min="0"></n-input-number>
+                    </KeyButtonGroup>
+                
+                    <KeyButtonGroup id="key_selector_transparent" :title="t('key_selector_transparent')">
+                      <n-button :type="((binding & 0xFF) == Keycode.KeyTransparent) ? 'primary' : ''" @click="handleFullKeycodeClick(Keycode.KeyTransparent)">
+                        Transparent
+                      </n-button>
+                    </KeyButtonGroup>
                 </n-list>
                 <n-back-top :right="220" />
             </n-scrollbar>
