@@ -168,7 +168,7 @@ onBeforeUnmount(() => { handleMouseLeave(); });
         />
       </n-flex>
       
-      <n-card style="height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+      <n-card style="height: 80px; display: flex; align-items: center; justify-content: center;">
         <span style="font-size: 14px;">{{ t('key_tracker_desc') }}</span>
       </n-card>
       

@@ -239,10 +239,10 @@ export class DynamicKeyStroke4x4 implements IDynamicKeyStroke4x4{
         this.target_keys_location = [];
         this.bindings = [0,0,0,0];
         this.key_control = [0,0,0,0];
-        this.press_begin_distance = 0.25*65535;
-        this.press_fully_distance = 0.75*65535;
-        this.release_begin_distance = 0.75*65535;
-        this.release_fully_distance = 0.25*65535;
+        this.press_begin_distance = 0.25;
+        this.press_fully_distance = 0.75;
+        this.release_begin_distance = 0.75;
+        this.release_fully_distance = 0.25;
     }
     get_primary_binding(): number {
         return this.bindings[0];

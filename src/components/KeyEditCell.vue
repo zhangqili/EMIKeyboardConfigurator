@@ -60,12 +60,11 @@ const displayKeyName = computed(() => {
            <n-button circle text @click="showModal = false" style="font-size: 20px;">✕</n-button>
         </template>
 
-        <div style="flex: 1; overflow: hidden; padding: 12px;">
-           <n-scrollbar>
-            <KeyTracker v-model:binding="internalBinding"></KeyTracker>
-            <n-divider></n-divider>
-            <KeySelector v-model:binding="internalBinding" />
-           </n-scrollbar>
+        <div style="flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column;" >
+
+            <KeyTracker v-model:binding="internalBinding" style="flex-shrink: 0;"></KeyTracker>
+            <KeySelector v-model:binding="internalBinding" style="flex: 1; min-height: 0;"/>
+
         </div>
 
         <template #footer>
