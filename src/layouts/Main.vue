@@ -32,7 +32,12 @@ interface WorkspaceTab {
   deviceName: string;
   controller: SafeController;
   status?: 'disconnected' | 'connected' | 'ready';
+  // 新增：标识是否为演示模式
+  isDemo?: boolean;
+  // 新增：记录该标签页绑定的物理设备索引
+  physicalIndex?: number;
 }
+
 let tabIndex = 1;
 const tabs = ref<WorkspaceTab[]>([]);
 const currentTab = ref<string>('');
@@ -118,9 +123,52 @@ function create_controller(device: string): SafeController {
   return ctrl as SafeController;
 }
 
-function handleAddTab(deviceName: string) {
+// 重构：支持指定演示模式和物理设备索引，并完美隔离物理连接
+function handleAddTab(deviceName: string, isDemo: boolean = false, physicalIndex: number = 0) {
   const id = `tab-${tabIndex++}`;
-  tabs.value.push({ id, title: deviceName, deviceName, controller: create_controller(deviceName), status: 'disconnected' });
+  const ctrl = create_controller(deviceName);
+
+  if (isDemo) {
+    // 演示模式：完全阻断设备探测与连接
+    ctrl.detect = async () => [];
+    ctrl.connect = async () => false;
+  } else {
+    // 物理模式：拦截 detect 方法
+    const originalDetect = ctrl.detect.bind(ctrl);
+    ctrl.detect = async (silent?: boolean) => {
+      // 1. 强制使用静默模式 (传入 true，等同于 navigator.hid.getDevices()) 
+      // 获取当前所有已授权并在电脑上插着的该型号设备
+      const devs: any[] = await originalDetect(true); 
+      
+      // 2. 如果成功拿到，并且数量能覆盖当前标签页的物理索引
+      if (devs && devs.length > physicalIndex) {
+        // 直接返回与此标签页对应的这唯一一个设备！
+        // 因为返回的数组里只有 1 个设备，DeviceWorkspace.vue 中的 connect(d[0]) 就会直接秒连，彻底不再弹窗！
+        return [devs[physicalIndex]];
+      }
+      
+      // 3. 只有在静默获取不到（比如设备还没授权）时，才按原样执行可能会弹窗的操作
+      const fallbackDevs = await originalDetect(silent);
+      if (fallbackDevs && fallbackDevs.length > 0) {
+        return fallbackDevs;
+      }
+
+      return [];
+    };
+  }
+
+  // UI区分显示：演示模式增加后缀
+  const displayTitle = isDemo ? `${deviceName} ${'('+t('demo')+')'}` : deviceName;
+
+  tabs.value.push({ 
+    id, 
+    title: displayTitle, 
+    deviceName, 
+    controller: ctrl, 
+    status: 'disconnected',
+    isDemo,
+    physicalIndex
+  });
   currentTab.value = id;
 }
 
@@ -157,10 +205,14 @@ async function checkHotplug() {
 
       if (currentCount > previousCount) {
         const added = currentCount - previousCount;
-        for (let i = 0; i < added; i++) { handleAddTab(deviceName); }
+        for (let i = 0; i < added; i++) { 
+          // 热插拔：传入 isDemo=false，并赋予其专门的 physicalIndex
+          handleAddTab(deviceName, false, previousCount + i); 
+        }
       } else if (currentCount < previousCount) {
         const removed = previousCount - currentCount;
-        const existingTabs = tabs.value.filter(t => t.deviceName === deviceName);
+        // 移除设备时，只处理真实的物理标签页，忽略演示标签页
+        const existingTabs = tabs.value.filter(t => t.deviceName === deviceName && !t.isDemo);
         for (let i = 0; i < removed; i++) {
           if (existingTabs.length > i) {
             handleCloseTab(existingTabs[existingTabs.length - 1 - i].id);
@@ -277,11 +329,11 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
 
     <div class="app-shell">
       <TabBar :tabs="tabs" v-model:currentTab="currentTab" :availableDevices="availableDevices" @close="handleCloseTab"
-        @add="handleAddTab" @reorder="handleReorder" />
+        @add="(name) => handleAddTab(name, true)" @reorder="handleReorder" />
 
       <div class="workspace-viewport">
         <DeviceWorkspace v-for="tab in tabs" :key="tab.id" v-show="currentTab === tab.id" :device-name="tab.deviceName"
-          :controller="tab.controller" @update-status="(s: any) => tab.status = s" />
+          :controller="tab.controller" :is-demo="tab.isDemo" @update-status="(s: any) => tab.status = s" />
         <DeviceWorkspace v-if="tabs.length === 0" device-name="" :controller="undefined" />
       </div>
     </div>

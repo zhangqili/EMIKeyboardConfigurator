@@ -6,6 +6,7 @@ defineProps<{
   icon?: any;
   isActive: boolean;
   isDragging: boolean;
+  closable?: boolean;
   status?: 'disconnected' | 'connected' | 'ready';
 }>();
 
@@ -19,14 +20,15 @@ defineEmits(['select', 'close', 'dragstart', 'dragend']);
       'is-active': isActive,
       'is-dragging': isDragging,
       'status-ready': status === 'ready',
-      'status-connected': status === 'connected'
+      'status-connected': status === 'connected',
+      'no-close': !closable
     }"
     draggable="true"
     @dragstart="$emit('dragstart', $event)"
     @dragend="$emit('dragend', $event)"
     @click="$emit('select')" 
     @mousedown.middle.prevent 
-    @auxclick.middle.stop="$emit('close')"
+    @auxclick.middle.stop="closable &&$emit('close')"
   >
     <n-flex :align="'center'" :wrap="false" style="gap: 8px; pointer-events: none;">
       
@@ -34,6 +36,7 @@ defineEmits(['select', 'close', 'dragstart', 'dragend']);
       <span>{{ title }}</span>
 
       <div 
+        v-if="closable"
         draggable="true" 
         @dragstart.prevent.stop 
         style="pointer-events: auto; display: flex; align-items: center;"
@@ -93,5 +96,12 @@ defineEmits(['select', 'close', 'dragstart', 'dragend']);
   transition: none !important; 
   /* 防止在移动时遮挡鼠标指针触发多余事件 */
   pointer-events: none !important;
+}
+.custom-tab-btn {
+  padding: 0 12px; 
+}
+
+.custom-tab-btn:not(.no-close) {
+  padding: 0 4px 0 12px;
 }
 </style>

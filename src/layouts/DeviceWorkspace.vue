@@ -29,7 +29,8 @@ type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
 const props = defineProps<{ 
   deviceName: string;
-  controller?: SafeController; 
+  controller?: SafeController;
+  isDemo?: boolean; 
 }>();
 
 const controller = computed(() => props.controller);
@@ -541,12 +542,12 @@ const totalLayers = computed(() => {
 
           <n-button 
             @click="connectCommand" 
-            :disabled="!isConnected && !controller" 
+            :disabled="(!isConnected && !controller) || isDemo" 
             :type="isConnected ? 'error' : 'primary'" 
             :secondary="isConnected"
             style="transition: all 0.3s;"
           >
-            <SmoothSpan :text="isConnected ? t('toolbar_disconnect') : t('toolbar_connect')" />
+            <SmoothSpan :text="isDemo ? t('demo_mode', '演示模式') : (isConnected ? t('toolbar_disconnect') : t('toolbar_connect'))" />
           </n-button>
         
           <n-button @click="applyCommand" :disabled="!isReady">

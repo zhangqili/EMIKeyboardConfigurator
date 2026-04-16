@@ -230,6 +230,8 @@
     "keyboard_render_edit_layout" : "Edit layout",
     "search" : "Search",
     "exit" : "Exit",
+    "demo" : "Demo",
+    "demo_mode" : "Demo mode",
 
     "dark" : "Dark",
     "light" : "Light"
