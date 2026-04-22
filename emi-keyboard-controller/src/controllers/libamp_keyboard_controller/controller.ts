@@ -115,6 +115,7 @@ export class LibampKeyboardController extends KeyboardController {
     };
     script_source : string = "";
     script_bytecode : Uint8Array = new Uint8Array();
+    private logBuffer: string = "";
 
     constructor() {
         super();
@@ -381,11 +382,52 @@ export class LibampKeyboardController extends KeyboardController {
         return resultBuffer;
     }
 
+    private emitLog(message: string) {
+        const prefix = "[Keyboard Console]";
+        console.log(`${prefix} ${message}`);
+        // 抛出事件给前端 UI
+        this.dispatchEvent(new CustomEvent('deviceLog', {
+            detail: message
+        }));
+    }
+
+    packet_process_log(buf: Uint8Array) {
+        const dataView = new DataView(buf.buffer);
+        
+        // buf[0] 是 PacketCodeLog (0x03)
+        const length = dataView.getUint16(2, true);
+
+        if (length > 0 && length <= 60) {
+            const stringBytes = buf.subarray(4, 4 + length);
+            const decoder = new TextDecoder('utf-8');
+            const messageFragment = decoder.decode(stringBytes);
+
+            // 把新收到的碎片拼接到缓冲区
+            this.logBuffer += messageFragment;
+
+            // 检查缓冲区里有没有换行符 '\n'
+            let newlineIndex;
+            while ((newlineIndex = this.logBuffer.indexOf('\n')) !== -1) {
+                // 提取出完整的一行 (不包含 \n)
+                // 使用 replace 顺手干掉可能存在的 Windows 风格回车符 \r
+                const completeLine = this.logBuffer.substring(0, newlineIndex).replace(/\r$/, '');
+                
+                // 把打印过的内容从缓冲区里切掉，留下没打印的剩余部分
+                this.logBuffer = this.logBuffer.substring(newlineIndex + 1);
+
+                // 统一输出这完整的一行
+                this.emitLog(completeLine);
+            }
+        }
+    }
     
     packet_process(buf: Uint8Array)
     {
         switch (buf[0])
         {
+        case PacketCode.PacketCodeLog:
+            this.packet_process_log(buf);
+            break;
         case PacketCode.PacketCodeGet:
         case PacketCode.PacketCodeSet:
             switch (buf[1])
@@ -711,6 +753,9 @@ export class LibampKeyboardController extends KeyboardController {
                     case KeyboardConfigCode.KeyboardConfigEnableReport:
                         this.config.enable_report = value;
                         break;
+                    case KeyboardConfigCode.KeyboardConfigConsole:
+                        this.config.console = value;
+                        break;
                 }
             }
         }
@@ -736,6 +781,9 @@ export class LibampKeyboardController extends KeyboardController {
                         break;
                     case KeyboardConfigCode.KeyboardConfigEnableReport:
                         value = this.config.enable_report;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigConsole:
+                        value = this.config.console;
                         break;
                 }
                 // 写入 boolean 对应的 0 或 1

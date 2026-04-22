@@ -404,6 +404,7 @@ export const KeyboardConfigToKeyName: { [key in KeyboardConfigCode]: string } = 
   [KeyboardConfigCode.KeyboardConfigWinlock]: 'Winlock',
   [KeyboardConfigCode.KeyboardConfigContinousPoll]: 'Continous poll',
   [KeyboardConfigCode.KeyboardConfigEnableReport]: 'Enable Report',
+  [KeyboardConfigCode.KeyboardConfigConsole]: 'Console',
   [KeyboardConfigCode.KeyboardConfigNum]: 'Num',
 };
 

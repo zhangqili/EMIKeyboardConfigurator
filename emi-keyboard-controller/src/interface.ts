@@ -139,6 +139,7 @@ export class KeyboardConfig {
     winlock : boolean = false;
     continuous_poll : boolean = false;
     enable_report : boolean = true;
+    console : boolean = false;
 }
 
 // Interface for AdvancedKey
@@ -483,6 +484,7 @@ export enum KeyboardConfigCode {
     KeyboardConfigWinlock = 2,
     KeyboardConfigContinousPoll = 3,
     KeyboardConfigEnableReport = 4,
+    KeyboardConfigConsole = 4,
     KeyboardConfigNum = 5,
 }
 export enum LayerControlKeycode {

@@ -72,6 +72,15 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
+            <span>{{ t('setting_console') || '控制台' }}</span>
+            <n-switch v-model:value="keyboardConfig.console" @update:value="syncConfig" />
+          </n-flex>
+        </n-card>
+      </n-grid-item>
+
+      <n-grid-item>
+        <n-card size="small" hoverable embedded>
+          <n-flex justify="space-between" align="center">
             <span style="color: var(--n-error-color);">{{ t('setting_calibrate') || '校准' }}</span>
             <n-popconfirm @positive-click="controller.calibrate()" :positive-text="t('confirm')" :negative-text="t('cancel')">
               <template #trigger>

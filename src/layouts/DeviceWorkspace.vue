@@ -24,6 +24,7 @@ import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "@/locales/i18n";
 import SmoothSpan from '@/components/SmoothSpan.vue';
 import SettingsPanel from '@/views/SettingsPanel.vue';
+import ConsolePanel from '@/views/ConsolePanel.vue';
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -104,6 +105,10 @@ const enableTransition = ref(false);
 const keyboardContentRef = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 const splitBuffer = 4;
+const keyboardLogs = ref<string>("");
+const clearLogs = () => {
+  keyboardLogs.value = "";
+};
 
 onMounted(async () => {
   if (controller.value) {
@@ -130,6 +135,13 @@ onMounted(async () => {
     await getController();
     renderKeyboardFromJson(layout_json);
     controller.value.addEventListener('updateData', (event: Event) => { updateData(); });
+    controller.value.addEventListener('deviceLog', (event: any) => {
+      keyboardLogs.value += `${event.detail}\n`;
+      const lines = keyboardLogs.value.split('\n');
+      if (lines.length > 5000) {
+        keyboardLogs.value = lines.slice(-5000).join('\n');
+      }
+    });
   }
 });
 
@@ -474,6 +486,7 @@ const menuOptions = computed(() => {
     opts.push({ label: t('main_tabs_debug'), key: 'DebugPanel' });
     opts.push({ label: t('main_tabs_oscilloscope'), key: 'OscilloscopePanel' });
   }
+  opts.push({ label: t('main_tabs_console'), key: 'ConsolePanel' });
   opts.push({ label: t('main_tabs_settings'), key: 'SettingsPanel' });
   opts.push({ label: t('main_tabs_about'), key: 'AboutPanel' });
   return opts;
@@ -512,6 +525,7 @@ const currentPanel = computed(() => {
     case 'OscilloscopePanel': return OscilloscopePanel;
     case 'MacroPanel': return MacroPanel;
     case 'ScriptPanel': return ScriptPanel;
+    case 'ConsolePanel': return ConsolePanel;
     case 'AboutPanel': return AboutPanel;
     default: return null;
   }
@@ -674,7 +688,9 @@ const totalLayers = computed(() => {
                 v-model:macros="macros"
                 v-model:keyboardConfig="keyboardConfig"
                 :controller="controller"
-                :readme-markdown="readmeMarkdown"/>
+                :readme-markdown="readmeMarkdown"
+                :logs="keyboardLogs"
+                @clear="clearLogs"/>
               </Transition>
             </div>
           </template>
