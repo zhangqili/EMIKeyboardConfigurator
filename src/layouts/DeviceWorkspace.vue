@@ -24,6 +24,8 @@ import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "@/locales/i18n";
 import SmoothSpan from '@/components/SmoothSpan.vue';
 import SettingsPanel from '@/views/SettingsPanel.vue';
+import { PlusFilled as PlusIcon } from '@vicons/material';
+import { KeyboardOff as KeyboardOffIcon } from '@vicons/tabler';
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -284,7 +286,7 @@ async function getController() {
 
   controller.value.addEventListener('deviceDisconnected', async () => {
     isConnected.value = false;
-    message.error(t('device_disconnected') || '设备已断开连接');
+    message.error(t('device_disconnected'));
   });
 }
 
@@ -682,10 +684,40 @@ const totalLayers = computed(() => {
       </n-layout-content>
     </n-layout>
     <div v-else class="empty-state-placeholder">
-      <n-empty>
-        <template #extra>
+      <n-card style="width: auto; max-width: 480px;">
+        <n-empty :description="t('no_keyboard_connected')">
+          <template #icon>
+            <n-icon>
+              <KeyboardOffIcon />
+            </n-icon>
+          </template>
+          <template #extra>
+          </template>
+        </n-empty>
+        <template #action>
+        <div style="text-align: left; margin-top: 16px;">
+          <h3 style="font-size: 16px; font-weight: 600; color: var(--n-text-color);">
+            {{ t('how_to_connect_title') }}
+          </h3>
+          <ol>
+              <li>{{ t('connect_step_1') }}</li>
+                <li>
+                  {{ t('connect_step_2_prefix') }}
+                  <b><n-icon style="vertical-align: -0.15em;"><PlusIcon /></n-icon></b>
+                  {{ t('connect_step_2_suffix') }}
+                </li>
+                <li>{{ t('connect_step_3') }}</li>
+                <li>
+                  {{ t('connect_step_4_prefix') }}
+                  <b>{{ t('authorize') }}</b>
+                  {{ t('connect_step_4_suffix') }}
+                </li>
+                <li>{{ t('connect_step_5') }}</li>
+                <li>{{ t('connect_step_6') }}</li>
+          </ol>
+        </div>
         </template>
-      </n-empty>
+      </n-card>
     </div>
   </n-layout>
 </template>

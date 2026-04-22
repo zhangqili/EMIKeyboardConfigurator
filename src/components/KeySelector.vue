@@ -217,7 +217,9 @@ const syncRightScroll = () => {
 </script>
 <template>
     <div style="display: flex; height: 100%; width: 100%; overflow: hidden;"  @wheel.stop>
-        <div ref="scrollContainerRef" id="key-selector-scroll-container" style="flex: 1; height: 100%;">
+        
+        <div ref="scrollContainerRef" id="key-selector-scroll-container" style="flex: 1; height: 100%; position: relative;">
+            
             <n-scrollbar id="left-key-scrollbar" @scroll="syncRightScroll">
                 <n-list vertical clickable>
                     <KeyButtonGroup id="key_selector_modifiers" :title="t('key_selector_modifiers')">
@@ -460,9 +462,18 @@ const syncRightScroll = () => {
                       </n-button>
                     </KeyButtonGroup>
                 </n-list>
-                <n-back-top :right="220" />
-            </n-scrollbar>
+                
+                </n-scrollbar>
+            
+                <n-back-top 
+                        to="#key-selector-scroll-container"  listen-to="#left-key-scrollbar .n-scrollbar-container"
+                        style="
+                            position: absolute; 
+                        " 
+                    />
+            
         </div>
+
         <div ref="rightPanelRef" style="width: 180px; flex-shrink: 0; overflow-y: auto;">
             <n-scrollbar>
                 <div @click="handleAnchorClick">

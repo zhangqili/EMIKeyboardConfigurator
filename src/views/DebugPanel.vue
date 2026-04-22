@@ -228,7 +228,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
                 <n-form-item :label="t('debug_panel_key_event')">                    
                   <n-select 
                     v-model:value="debugEvent.event"
-                    :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
+                    :options="[{ label: t('key_press'), value: 3 }, { label: t('key_release'), value: 1 }]"
                     style="width: 320px;"
                   />
                 </n-form-item>

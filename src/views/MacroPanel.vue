@@ -20,7 +20,7 @@ const MAX_MACRO_LENGTH = 128;
 const isInternalUpdate = ref(false);
 // ... (宏数据管理逻辑保持不变) ...
 const macroOptions = [0, 1, 2, 3].map(i => ({
-  label: `${t('key_selector_macro') || 'Macro'} ${i}`,
+  label: `${t('key_selector_macro')} ${i}`,
   value: i
 }));
 const currentMacroIndex = ref(0);
@@ -154,12 +154,12 @@ watch(macros, () => {
 // ... (排序相关逻辑保持不变) ...
 const sortOrder = ref<'asc' | 'desc'>('asc');
 const columnsConfig = computed(() => [
-  { title: t('macro_panel_tick') || 'Delay', width: '1fr', align: 'left' },
-  { title: t('macro_panel_is_virtual') || 'Virtual', width: '60px', align: 'center' },
+  { title: t('macro_panel_tick'), width: '1fr', align: 'left' },
+  { title: t('macro_panel_is_virtual'), width: '60px', align: 'center' },
   { title: t('macro_panel_key_id'), width: '1fr', align: 'left' },
   { title: t('macro_panel_event'), width: '1fr', align: 'left' },
   { title: t('macro_panel_binding'), width: '54px', align: 'left' },
-  { title: t('action') || 'Action', width: '70px', align: 'center' }
+  { title: t('action'), width: '70px', align: 'center' }
 ]);
 const gridStyle = computed(() => ({
   '--grid-cols': columnsConfig.value.map(c => c.width).join(' '),
@@ -261,14 +261,14 @@ function handleClear() {
             </div>
             <div style="display: flex; gap: 8px;">
               <n-button size="small" type="warning" secondary @click="handleClear">
-                {{ t('clear') || 'Clear' }}
+                {{ t('clear')}}
               </n-button>
               <n-button size="small" secondary @click="toggleSort">
                 <template #icon>
                   <span v-if="sortOrder === 'asc'" style="font-size: 12px;">▼</span>
                   <span v-else style="font-size: 12px;">▲</span>
                 </template>
-                {{ sortOrder === 'asc' ? (t('sort_asc') || 'Delay Asc') : (t('sort_desc') || 'Delay Desc') }}
+                {{ sortOrder === 'asc' ? (t('sort_asc')) : (t('sort_desc')) }}
               </n-button>
             </div>
           </div>
@@ -323,7 +323,7 @@ function handleClear() {
                       <n-select 
                         v-model:value="row.event.event" 
                         size="small" 
-                        :options="[{ label: t('key_press') || 'Press', value: 3 }, { label: t('key_release') || 'Release', value: 1 }]"
+                        :options="[{ label: t('key_press'), value: 3 }, { label: t('key_release'), value: 1 }]"
                         :disabled="row.event.keycode === 0"
                       />
                     </div>
@@ -332,7 +332,7 @@ function handleClear() {
                       <div style="height: 40px; display: flex; align-items: center;">
                         <div style="height: 54px;" 
                              :style="(row.event.keycode === 0 && isListFull) ? { pointerEvents: 'none', opacity: 0.5, filter: 'grayscale(1)' } : {}"
-                             :title="(row.event.keycode === 0 && isListFull) ? (t('macro_full') || 'Max length reached') : ''"
+                             :title="(row.event.keycode === 0 && isListFull) ? (t('macro_full')) : ''"
                         >
                             <KeyEditCell 
                               :value="row.event.keycode" :x="0"
@@ -344,7 +344,7 @@ function handleClear() {
 
                     <div class="center-cell">
                       <n-button v-if="row.event.keycode !== 0" type="error" size="tiny" quaternary @click="deleteRow(row)">
-                        {{ t('delete') || 'Del' }}
+                        {{ t('delete') }}
                       </n-button>
                       <span v-else-if="isListFull" style="font-size: 10px; color: #999;">
                         END

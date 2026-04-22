@@ -42,6 +42,10 @@
     "main_other_detect_title": "检测到另一个浏览器标签页打开了配置器",
     "main_other_detect_content": "请关闭其他配置器以避免冲突",
 
+    "main_auth_success": "授权成功",
+    "main_auth_cancelled": "已取消授权",
+    "main_auth_failed": "授权失败",
+
     "key_tracker_desc" : "在这里按下按键",
 
     "key_selector_normal" : "普通",
@@ -213,6 +217,16 @@
     "setting_calibrate": "校准键盘",
     "setting_calibrate_confirm": "将在1秒后开始校准，5秒内请勿触动键盘",
     
+    "no_keyboard_connected": "未检测到键盘",
+    "how_to_connect_title": "如何连接您的键盘？",
+    "connect_step_1": "请确保键盘工作正常并且已通过数据线正确连接至电脑。",
+    "connect_step_2_prefix": "点击顶部标签页栏的 ",
+    "connect_step_2_suffix": " 按钮。",
+    "connect_step_3": "在弹出的下拉列表中，找到您的键盘型号。",
+    "connect_step_4_prefix": "将鼠标移动至对应设备名称，点击 ",
+    "connect_step_4_suffix": "。",
+    "connect_step_5": "在浏览器弹出的窗口中选中您的键盘，点击“连接”完成授权。",
+    "connect_step_6": "授权成功后系统将自动打开设备标签页，点击左上角的“连接”按钮即可开始配置。",
     "key" : "按键",
     "apply" : "应用",
     "apply_to_all" : "应用到所有按键",
@@ -235,6 +249,7 @@
     "exit" : "退出",
     "demo" : "演示",
     "demo_mode" : "演示模式",
+    "authorize" : "授权",
 
     "dark" : "深色",
     "light" : "浅色"

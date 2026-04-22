@@ -15,6 +15,7 @@ const props = defineProps<{
   availableDevices: any[];
 }>();
 
+// 注意：这里我们定义 add 事件会传递两个参数 (name, mode)
 const emit = defineEmits(['update:currentTab', 'close', 'add', 'reorder']);
 
 // 实时过滤设备列表
@@ -26,9 +27,8 @@ const filteredDevices = computed(() => {
   );
 });
 
-// 选择设备后触发事件，并重置面板状态
-function handleSelect(key: string) {
-  emit('add', key);
+function handleSelect(key: string, mode: 'authorize' | 'demo') {
+  emit('add', key, mode);
   isPopoverVisible.value = false;
   searchQuery.value = ''; // 清空搜索记录
 }
@@ -99,7 +99,8 @@ function handleDragEnd() {
           :is-active="currentTab === tab.id"
           :is-dragging="draggedTabIndex === index"
           :status="tab.status"
-          :closable="tab.isDemo"  @mousedown="$emit('update:currentTab', tab.id)"
+          :closable="tab.isDemo"  
+          @mousedown="$emit('update:currentTab', tab.id)"
           @select="$emit('update:currentTab', tab.id)"
           @close="$emit('close', tab.id)"
           @dragstart="handleDragStart(index, $event)"
@@ -109,9 +110,9 @@ function handleDragEnd() {
         <div key="add-button" class="add-btn-wrapper" style="cursor: default;">
           <n-popover 
             placement="bottom-start" 
-            trigger="hover" 
+            trigger="click" 
             :show-arrow="false" 
-            style="padding: 0; width: 220px;" 
+            style="padding: 0; width: 240px;" 
             v-model:show="isPopoverVisible"
           >
             <template #trigger>
@@ -121,27 +122,36 @@ function handleDragEnd() {
             </template>
             
             <div style="padding: 8px; border-bottom: 1px solid var(--n-border-color);">
-              <n-input v-model:value="searchQuery" :placeholder="t('search')" size="small" clearable>
-                <template #prefix>
-                </template>
-              </n-input>
+              <n-input v-model:value="searchQuery" :placeholder="t('search')" size="small" clearable />
             </div>
             
             <n-scrollbar style="max-height: 240px;">
               <n-empty v-if="filteredDevices.length === 0" style="padding: 12px; text-align: center; opacity: 0.5; font-size: 13px;">
               </n-empty>
+              
               <div 
                 v-else
                 v-for="device in filteredDevices" 
                 :key="device.key" 
                 class="device-menu-item"
-                @click="handleSelect(device.key)"
               >
-                <div style="display: flex; align-items: center; justify-content: center; width: 24px; margin-right: 8px;">
-                  <component v-if="device.icon" :is="device.icon" />
+                <div class="device-info">
+                  <div class="device-icon-wrapper">
+                    <component v-if="device.icon" :is="device.icon" />
+                  </div>
+                  <span class="device-name">{{ device.label }}</span>
                 </div>
-                <span>{{ device.label }}</span>
+                
+                <div class="device-actions">
+                  <n-button size="tiny" type="primary" secondary @click.stop="handleSelect(device.key, 'authorize')">
+                    {{ t('authorize') }}
+                  </n-button>
+                  <n-button size="tiny" secondary @click.stop="handleSelect(device.key, 'demo')">
+                    {{ t('demo') }}
+                  </n-button>
+                </div>
               </div>
+
             </n-scrollbar>
           </n-popover>
         </div>
@@ -152,70 +162,80 @@ function handleDragEnd() {
 </template>
 
 <style scoped>
-/* 原有的布局和动画样式保持不变 */
-.tab-bar-layout {
-  flex: 0 0 auto;
-  padding: 6px 8px;
-  background-color: var(--n-color-embedded);
-  border-bottom: 1px solid var(--n-border-color);
-  overflow-x: auto;
-}
+/* 保持原有布局样式... */
+.tab-bar-layout { flex: 0 0 auto; padding: 6px 8px; background-color: var(--n-color-embedded); border-bottom: 1px solid var(--n-border-color); overflow-x: auto; }
+.tab-bar-layout::-webkit-scrollbar { display: none; }
+.tab-list-container { display: flex; align-items: center; height: 40px; }
+.add-btn-wrapper { display: flex; align-items: center; flex-shrink: 0; }
+.add-tab-btn { width: 32px; height: 32px; }
 
-.tab-bar-layout::-webkit-scrollbar {
-  display: none;
-}
-
-.tab-list-container {
-  display: flex;
-  align-items: center;
-  height: 40px;
-}
-
-.add-btn-wrapper {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.add-tab-btn {
-  width: 32px;
-  height: 32px;
-}
-
-/* 标签页添加、删除、重排动画 */
-.tab-list-move,
-.tab-list-enter-active,
-.tab-list-leave-active {
-  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.tab-list-enter-from,
-.tab-list-leave-to {
-  opacity: 0;
-  max-width: 0px !important;
-  min-width: 0px !important;
-  padding-left: 0px !important;
-  padding-right: 0px !important;
-  margin-right: 0px !important;
-  border-width: 0px !important;
-  transform: scale(1);
-}
-
-.tab-list-container.is-dragging-mode > * {
-  transition: none !important;
-}
-
+.tab-list-move, .tab-list-enter-active, .tab-list-leave-active { transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1); }
+.tab-list-enter-from, .tab-list-leave-to { opacity: 0; max-width: 0px !important; min-width: 0px !important; padding-left: 0px !important; padding-right: 0px !important; margin-right: 0px !important; border-width: 0px !important; transform: scale(1); }
+.tab-list-container.is-dragging-mode > * { transition: none !important; }
+/* 核心改动区：绝对定位悬浮 + 动态 Padding 过渡 */
 .device-menu-item {
+  position: relative; /* 为按钮的绝对定位提供参考系 */
   display: flex;
   align-items: center;
   padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
   color: var(--n-text-color);
   font-size: 14px;
 }
 
 .device-menu-item:hover {
   background-color: rgba(128, 128, 128, 0.1);
+}
+
+/* 核心改动区：极简 Flex 自适应布局 */
+.device-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  color: var(--n-text-color);
+  font-size: 14px;
+  cursor: default; /* 提升鼠标悬浮时的交互感 */
+}
+
+.device-menu-item:hover {
+  background-color: rgba(128, 128, 128, 0.1);
+}
+
+/* 文字信息容器 */
+.device-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0; /* 允许 flex 子元素内部截断 */
+}
+
+/* 保护图标不被长文字挤压变形 */
+.device-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  margin-right: 8px;
+  flex-shrink: 0; 
+}
+
+/* 名字过长时显示省略号 */
+.device-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 按钮组默认完全隐藏，不占空间 */
+.device-actions {
+  display: none;
+  gap: 6px;
+  flex-shrink: 0; /* 绝对保证按钮完整显示，不被长文字挤压 */
+  margin-left: 8px; /* 悬浮时，给左侧的省略号留出呼吸空间 */
+}
+
+/* 悬浮时瞬间显示按钮，Flexbox 自动计算宽度，多语言完美自适应！ */
+.device-menu-item:hover .device-actions {
+  display: flex;
 }
 </style>

@@ -27,7 +27,7 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span>{{ t('setting_nkro') || '全键无冲 (NKRO)' }}</span>
+            <span>{{ t('setting_nkro')}}</span>
             <n-switch v-model:value="keyboardConfig.nkro" @update:value="syncConfig" />
           </n-flex>
         </n-card>
@@ -36,7 +36,7 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span>{{ t('setting_winlock') || '锁定 Win 键' }}</span>
+            <span>{{ t('setting_winlock')}}</span>
             <n-switch v-model:value="keyboardConfig.winlock" @update:value="syncConfig" />
           </n-flex>
         </n-card>
@@ -45,7 +45,7 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span>{{ t('setting_debug') || '调试模式' }}</span>
+            <span>{{ t('setting_debug')}}</span>
             <n-switch v-model:value="keyboardConfig.debug" @update:value="syncConfig" />
           </n-flex>
         </n-card>
@@ -54,7 +54,7 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span>{{ t('setting_enable_report') || '启用数据上报' }}</span>
+            <span>{{ t('setting_enable_report')}}</span>
             <n-switch v-model:value="keyboardConfig.enable_report" @update:value="syncConfig" />
           </n-flex>
         </n-card>
@@ -63,7 +63,7 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span>{{ t('setting_continuous_poll') || '持续轮询' }}</span>
+            <span>{{ t('setting_continuous_poll')}}</span>
             <n-switch v-model:value="keyboardConfig.continuous_poll" @update:value="syncConfig" />
           </n-flex>
         </n-card>
@@ -72,10 +72,10 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span style="color: var(--n-error-color);">{{ t('setting_calibrate') || '校准' }}</span>
+            <span style="color: var(--n-error-color);">{{ t('setting_calibrate')}}</span>
             <n-popconfirm @positive-click="controller.calibrate()" :positive-text="t('confirm')" :negative-text="t('cancel')">
               <template #trigger>
-                <n-button type="warning" ghost size="small">{{ t('confirm') || '执行' }}</n-button>
+                <n-button type="warning" ghost size="small">{{ t('confirm')}}</n-button>
               </template>
               {{ t('setting_calibrate') }}
             </n-popconfirm>
@@ -85,10 +85,10 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span style="color: var(--n-error-color);">{{ t('setting_enter_bootloader') || '进入Bootloader' }}</span>
+            <span style="color: var(--n-error-color);">{{ t('setting_enter_bootloader')}}</span>
             <n-popconfirm @positive-click="controller.enter_bootloader()" :positive-text="t('confirm')" :negative-text="t('cancel')">
               <template #trigger>
-                <n-button type="warning" ghost size="small">{{ t('confirm') || '执行' }}</n-button>
+                <n-button type="warning" ghost size="small">{{ t('confirm') }}</n-button>
               </template>
               {{ t('setting_enter_bootloader_confirm') }}
             </n-popconfirm>
@@ -98,10 +98,10 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span>{{ t('setting_device_reset') || '重启设备' }}</span>
+            <span>{{ t('setting_device_reset') }}</span>
             <n-popconfirm @positive-click="controller.system_reset()" :positive-text="t('confirm')" :negative-text="t('cancel')">
               <template #trigger>
-                <n-button type="warning" ghost size="small">{{ t('confirm') || '执行' }}</n-button>
+                <n-button type="warning" ghost size="small">{{ t('confirm') }}</n-button>
               </template>
               {{ t('setting_device_reset_confirm') }}
             </n-popconfirm>
@@ -112,10 +112,10 @@ async function syncConfig() {
       <n-grid-item>
         <n-card size="small" hoverable embedded>
           <n-flex justify="space-between" align="center">
-            <span style="color: var(--n-error-color);">{{ t('setting_device_factory_reset') || '恢复出厂设置' }}</span>
+            <span style="color: var(--n-error-color);">{{ t('setting_device_factory_reset') }}</span>
             <n-popconfirm @positive-click="controller.factory_reset()" :positive-text="t('confirm')" :negative-text="t('cancel')">
               <template #trigger>
-                <n-button type="error" ghost size="small">{{ t('confirm') || '执行' }}</n-button>
+                <n-button type="error" ghost size="small">{{ t('confirm') }}</n-button>
               </template>
               {{ t('setting_device_factory_reset_confirm') }}
             </n-popconfirm>

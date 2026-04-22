@@ -42,6 +42,10 @@
     "main_other_detect_title": "Another configurator tab detected",
     "main_other_detect_content": "Please close other instances to avoid conflicts.",
 
+    "main_auth_success": "Authorization Successful",
+    "main_auth_cancelled": "Authorization Cancelled",
+    "main_auth_failed": "Authorization Failed",
+
     "key_tracker_desc" : "Press any key here",
 
     "key_selector_normal" : "Normal",
@@ -151,6 +155,7 @@
     "setting_enable_report":"Enable report", 
     "setting_device_reset": "Reboot device",
     "setting_device_reset_confirm": "Are you sure you want to reboot the keyboard? The device will disconnect briefly.",
+    "setting_device_factory_reset" : "Factory reset",
     "setting_device_factory_reset_confirm": "Are you sure you want to factory reset? All saved configurations will be permanently erased!",
     "setting_enter_bootloader": "Enter bootloader",
     "setting_enter_bootloader_confirm": "Are you sure you want keyboard to enter bootloader? The device will disconnect.",
@@ -206,6 +211,17 @@
     "macro_panel_binding" : "Binding",
     "macro_panel_action" : "Actions",
 
+    "no_keyboard_connected": "No keyboard detected",
+    "how_to_connect_title": "How to connect your keyboard?",
+    "connect_step_1": "Ensure the keyboard is working properly and is correctly connected to the computer via a data cable.",
+    "connect_step_2_prefix": "Click the ",
+    "connect_step_2_suffix": " button in the top tab bar.",
+    "connect_step_3": "Find your keyboard model in the popup list.",
+    "connect_step_4_prefix": "Move your mouse to the corresponding device name and click ",
+    "connect_step_4_suffix": ".",
+    "connect_step_5": "Select your keyboard in the browser popup and click \"Connect\" to complete authorization.",
+    "connect_step_6": "After successful authorization, the device tab will open automatically. Click the \"Connect\" button in the upper left to start configuration.",
+    
     "script_panel_title" : "Script",
     "demo_js" : "Demo",
     "download_js" : "Download",
@@ -217,6 +233,7 @@
     "edit" : "Edit",
     "delete" : "Delete",
     "okay" : "OK",
+    "confirm" : "Confirm",
     "clear" : "Clear",
     "cancel" : "Cancel",
     "default" : "Default",
@@ -232,6 +249,7 @@
     "exit" : "Exit",
     "demo" : "Demo",
     "demo_mode" : "Demo mode",
+    "authorize" : "Authorize",
 
     "dark" : "Dark",
     "light" : "Light"

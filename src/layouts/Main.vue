@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, h, watch, onBeforeUnmount} from "vue";
-import { NTabs, NTab, useNotification, NButton, NDropdown, NConfigProvider, NGlobalStyle, NLayout, darkTheme, NEmpty, NIcon, NFlex } from 'naive-ui';
+import { NTabs, NTab, useNotification, NButton, NDropdown, NConfigProvider, NGlobalStyle, NLayout, darkTheme, NEmpty, NIcon, NFlex, useMessage } from 'naive-ui';
 import { useI18n } from "vue-i18n";
 import * as apis from '@/apis/api';
 import { useRegisterSW } from 'virtual:pwa-register/vue';
@@ -20,6 +20,7 @@ const { t } = useI18n();
 const notification = useNotification();
 const store = useMainStore();
 const { themeName, lang } = storeToRefs(store);
+const message = useMessage();
 
 const availableDevices = ref<{ label: string; key: string; icon?: any }[]>([]);
 const activeTheme = computed(() => (themeName.value === 'dark' ? darkTheme : null));
@@ -316,6 +317,31 @@ onMounted(async () => {
 */
 });
 
+async function handleAddRequest(name: string, mode: 'authorize' | 'demo') {
+  if (mode === 'demo') {
+    // 演示模式：直接添加纯离线标签页
+    handleAddTab(name, true);
+  } else if (mode === 'authorize') {
+    // 授权模式：直接唤起 WebHID 原生授权
+    const tempCtrl = create_controller(name);
+    try {
+      const devices = await tempCtrl.detect(); 
+      if (devices && devices.length > 0) {
+        // 使用国际化键名：授权成功
+        message.success(t('main_auth_success'));
+        triggerHotplugCheck(); 
+      } else {
+        // 使用国际化键名：已取消授权
+        message.warning(t('main_auth_cancelled'));
+      }
+    } catch (e) {
+      console.warn("授权异常", e);
+      // 使用国际化键名：授权失败
+      message.error(t('main_auth_failed'));
+    }
+  }
+}
+
 onBeforeUnmount(() => {
   //channel.close();
 });
@@ -329,7 +355,7 @@ const activeTab = computed(() => tabs.value.find(t => t.id === currentTab.value)
 
     <div class="app-shell">
       <TabBar :tabs="tabs" v-model:currentTab="currentTab" :availableDevices="availableDevices" @close="handleCloseTab"
-        @add="(name) => handleAddTab(name, true)" @reorder="handleReorder" />
+        @add="handleAddRequest" @reorder="handleReorder" />
 
       <div class="workspace-viewport">
         <DeviceWorkspace v-for="tab in tabs" :key="tab.id" v-show="currentTab === tab.id" :device-name="tab.deviceName"
