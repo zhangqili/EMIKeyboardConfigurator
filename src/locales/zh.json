@@ -217,6 +217,16 @@
     "setting_calibrate": "校准键盘",
     "setting_calibrate_confirm": "将在1秒后开始校准，5秒内请勿触动键盘",
     
+    "keyboard_render_tool_marquee": "框选工具",
+    "keyboard_render_tool_swipe": "滑动工具",
+    "keyboard_render_mode_new": "新选区",
+    "keyboard_render_mode_toggle": "反选",
+    "keyboard_render_mode_add": "添加到选区",
+    "keyboard_render_mode_subtract": "从选区减去",
+    "keyboard_render_action_select_all": "全选可见按键",
+    "keyboard_render_action_clear": "清空选区",
+    "keyboard_render_action_invert": "反选当前选区",
+    
     "no_keyboard_connected": "未检测到键盘",
     "how_to_connect_title": "如何连接您的键盘？",
     "connect_step_1": "请确保键盘工作正常并且已通过数据线正确连接至电脑。",

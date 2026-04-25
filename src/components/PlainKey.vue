@@ -4,10 +4,10 @@ import { NButton } from "naive-ui";
 
 const props = defineProps([
   "x", "y", "width", "height", "rotationX", "rotationY", "rotationAngle",
-  "labels", "color", "selected", "tooltip"
+  "labels", "color", "selected", "tooltip",
 ]);
 
-const emit = defineEmits(['click']);
+const emit = defineEmits(['click','mousedown', 'mouseenter']);
 
 const usize = ref(54);
 const margin = ref(2);
@@ -62,19 +62,93 @@ function getContrastColor(bgColor : string) {
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     return brightness > 128 ? "#000000" : "#FFFFFF";
 }
-
 const button_style = computed(() : any => {
   const styleObj: any = {
     height: "100%",
     width: "100%",
-    outline: props.selected ? "solid red 2px" : "none",
+    "--n-padding": "0",
+    outline: "none",
+    transition: "all 0.2s ease-in-out" 
   };
 
-if (props.color) {
+  if (props.color) {
+    const contrastText = getContrastColor(props.color) || "#FFFFFF";
+
+    // 1. 基础状态
     styleObj["--n-border"] = `1px solid ${props.color}`;
-    styleObj["--n-border-hover"] = `2px solid ${props.color}`;
-    styleObj["--n-color-hover"] = `${props.color}40`; 
-    styleObj["--n-text-color-hover"] = getContrastColor(props.color) || "#FFFFFF";
+    styleObj["--n-color"] = `transparent`;
+    styleObj["--n-text-color"] = contrastText;
+
+    // 2. 悬浮/聚焦/按下 状态 (统一变量，防止 Naive UI 默认绿色泄漏)
+    const hoverBorder = `1px solid ${props.color}`;
+    const hoverColor = `${props.color}33`;
+
+    styleObj["--n-border-hover"] = hoverBorder;
+    styleObj["--n-border-focus"] = hoverBorder;
+    styleObj["--n-border-pressed"] = hoverBorder;
+
+    styleObj["--n-color-hover"] = hoverColor;
+    styleObj["--n-color-focus"] = hoverColor;
+    styleObj["--n-color-pressed"] = hoverColor;
+
+    styleObj["--n-text-color-hover"] = contrastText;
+    styleObj["--n-text-color-focus"] = contrastText;
+    styleObj["--n-text-color-pressed"] = contrastText;
+
+    if (props.selected) {
+      // 3. 选中时的基础状态
+      styleObj["--n-border"] = `2px solid ${props.color}`;
+      styleObj["--n-color"] = `${props.color}66`;
+      styleObj["--n-text-color"] = contrastText;
+      
+      // 4. 选中时的 悬浮/聚焦/按下 状态
+      const selectedHoverBorder = `2px solid ${props.color}`;
+      const selectedHoverColor = `${props.color}99`;
+
+      styleObj["--n-border-hover"] = selectedHoverBorder;
+      styleObj["--n-border-focus"] = selectedHoverBorder;
+      styleObj["--n-border-pressed"] = selectedHoverBorder;
+
+      styleObj["--n-color-hover"] = selectedHoverColor;
+      styleObj["--n-color-focus"] = selectedHoverColor;
+      styleObj["--n-color-pressed"] = selectedHoverColor;
+    }
+  } else {
+    // 没有颜色时的默认按键逻辑
+    if (props.selected) {
+      const selectedBorder = `2px solid var(--n-primary-color, #18a058)`;
+      const selectedColor = `var(--n-primary-color-hover, rgba(24, 160, 88, 0.2))`;
+      const selectedHoverBorder = `2px solid var(--n-primary-color-hover, #36ad6a)`;
+      const selectedHoverColor = `var(--n-primary-color-pressed, rgba(24, 160, 88, 0.4))`;
+
+      styleObj["--n-border"] = selectedBorder;
+      styleObj["--n-color"] = selectedColor;
+      styleObj["--n-text-color"] = `var(--n-text-color)`;
+
+      styleObj["--n-border-hover"] = selectedHoverBorder;
+      styleObj["--n-border-focus"] = selectedHoverBorder;
+      styleObj["--n-border-pressed"] = selectedHoverBorder;
+
+      styleObj["--n-color-hover"] = selectedHoverColor;
+      styleObj["--n-color-focus"] = selectedHoverColor;
+      styleObj["--n-color-pressed"] = selectedHoverColor;
+    } else {
+      const hoverBorder = `1px solid var(--n-primary-color, #18a058)`;
+      const hoverColor = `var(--n-primary-color-hover, rgba(24, 160, 88, 0.1))`;
+
+      styleObj["--n-border-hover"] = hoverBorder;
+      styleObj["--n-border-focus"] = hoverBorder;
+      styleObj["--n-border-pressed"] = hoverBorder;
+
+      styleObj["--n-color-hover"] = hoverColor;
+      styleObj["--n-color-focus"] = hoverColor;
+      styleObj["--n-color-pressed"] = hoverColor;
+
+      styleObj["--n-text-color"] = `var(--n-text-color)`;
+      styleObj["--n-text-color-hover"] = `var(--n-text-color)`;
+      styleObj["--n-text-color-focus"] = `var(--n-text-color)`;
+      styleObj["--n-text-color-pressed"] = `var(--n-text-color)`;
+    }
   }
 
   return styleObj;
@@ -91,7 +165,10 @@ if (props.color) {
           trigger="hover" placement="top" :animated="false" :delay="0" :duration="0"
         >
           <template #trigger>
-            <n-button :style="button_style" :focusable="false" class="keycap" @click="$emit('click')">
+            <n-button :style="button_style" :focusable="false" class="keycap"
+                @click="$emit('click')"
+                @mousedown="$emit('mousedown', $event)" 
+                @mouseenter="$emit('mouseenter', $event)">
               <div class="keylabels">
                 <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
                   <div v-if="index as number <9 && label" :style="sizeLabel">{{ label }}</div>

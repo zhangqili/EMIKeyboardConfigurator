@@ -29,6 +29,8 @@ const {
   dynamicKeys
 } = inject<KeyboardContext>('keyboardContext')!;
 
+const emit = defineEmits(['click', 'mousedown', 'mouseenter']);
+
 const labels = computed(() => {
   let labels = [...props.labels];
   //console.debug(tabSelection.value);
@@ -167,6 +169,9 @@ const tooltipContent = computed(() => {
     :color="color"
     :selected="selected"
     :tooltip="tooltipContent" 
+    @click="$emit('click', $event)"
+    @mousedown.stop="$emit('mousedown', $event)"
+    @mouseenter="$emit('mouseenter', $event)"
   />
 </template>
 

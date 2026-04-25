@@ -42,9 +42,7 @@ const { themeName, lang } = storeToRefs(store);
 const message = useMessage();
 
 const isConnected = ref<boolean>(false);
-const advancedKey = ref<ekc.IAdvancedKey>(new ekc.AdvancedKey());
 const rgbBaseConfig = ref<ekc.IRGBBaseConfig>(new ekc.RGBBaseConfig());
-const rgbConfig = ref<ekc.IRGBConfig>(new ekc.RGBConfig());
 const dynamicKey = ref<ekc.IDynamicKey>(new ekc.DynamicKey());
 const dynamicKeyIndex = ref<number>(-1);
 const readmeMarkdown = ref<string>("");
@@ -104,6 +102,7 @@ const maxSplitSize = computed(() => (contentRealHeight.value + splitBuffer) + 'p
 const isDragging = ref(false);
 const enableTransition = ref(false);
 const keyboardContentRef = ref<HTMLElement | null>(null);
+const selectedKeys = ref<number[]>([]);
 let resizeObserver: ResizeObserver | null = null;
 const splitBuffer = 4;
 
@@ -273,7 +272,7 @@ async function getController() {
   macros.value = await controller.value.get_macros();
   selectedProfileIndex.value = await controller.value.get_profile_index();
   const cnofig_file_num = await controller.value.get_profile_num();
-  layout_labels.value = await controller.value.get_layout_labels();
+  layoutLabels.value = await controller.value.get_layout_labels();
   readmeMarkdown.value = await controller.value.get_readme_markdown();
   firmwareFeature.value = await controller.value.get_feature();
 
@@ -313,16 +312,9 @@ function applyToAllKeys() {
 function applyToSelectedKey(index: number) {
   let id = index;
   switch (tabSelection.value) {
-    case "PerformancePanel":
-      advancedKeys.value[id] = cloneDeep(advancedKey.value);
-      break;
     case "KeymapPanel":
       if (keymap.value != undefined) keymap.value[currentLayerIndex.value][id] = keyBinding.value;
       break;
-    case "RGBPanel": {
-      rgbConfigs.value[id] = cloneDeep(rgbConfig.value);
-      break;
-    }
     case "DynamicKeyPanel":
       if (dynamicKey.value.type != ekc.DynamicKeyType.DynamicKeyNone) {
         switch (dynamicKey.value.type) {
@@ -521,7 +513,7 @@ const currentPanel = computed(() => {
 
 function handleThemeUpdate() { themeName.value = themeName.value === 'dark' ? 'light' : 'dark'; }
 
-let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
+let layoutLabels = ref<Array<Array<string>> | undefined>([[]]);
 
 const displayLayerPage = computed({
   get: () => currentLayerIndex.value + 1,
@@ -532,6 +524,25 @@ const displayLayerPage = computed({
 
 const totalLayers = computed(() => {
   return keymap.value ? keymap.value.length : 1;
+});
+
+const selectionMode = computed(() => {
+  switch (tabSelection.value) {
+    case "PerformancePanel":
+      return 'multiple';
+    case "RGBPanel":
+      return 'multiple';
+    case "KeymapPanel":
+      return 'none';
+    case "DynamicKeyPanel":
+      return 'none';
+    case "DebugPanel":
+      return 'none';
+    case "OscilloscopePanel":
+      return 'none';
+    default: break;
+  }
+  return 'single';
 });
 </script>
 
@@ -614,7 +625,7 @@ const totalLayers = computed(() => {
               <div v-show="isDragging" style="position: absolute; inset: 0; z-index: 100; cursor: ns-resize;"></div>
               <n-scrollbar style="flex: 1; min-height: 0;" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }" trigger="hover">
                 <div ref="keyboardContentRef" style="padding-bottom: 4px;">
-                  <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
+                  <KeyboardRender v-model:keys="keyboardKeys" v-model:selected-keys="selectedKeys" :mode="selectionMode" :layout_labels="layoutLabels" @select="applyToSelectedKey" />
                 </div>
               </n-scrollbar>
             </div>
@@ -626,7 +637,7 @@ const totalLayers = computed(() => {
 
               <div class="trigger-left" style="z-index: 1;">
                 <Transition name="fade">
-                  <div v-if="tabSelection == 'PerformancePanel' || tabSelection == 'KeymapPanel' || tabSelection == 'RGBPanel'" @mousedown.stop style="pointer-events: auto;">
+                  <div v-if="tabSelection == 'KeymapPanel'" @mousedown.stop style="pointer-events: auto;">
                     <n-button size="tiny" secondary @click="applyToAllKeys">{{ t('apply_to_all') }}</n-button>
                   </div>
                 </Transition>
@@ -662,9 +673,8 @@ const totalLayers = computed(() => {
             <div style="height: 100%; overflow-y: auto; display: flex; flex-direction: column;">
               <Transition name="fade" mode="out-in">
                 <component :is="currentPanel" 
-                v-model:advancedKey="advancedKey"
+                :selectedKeys="selectedKeys"
                 v-model:rgbBaseConfig="rgbBaseConfig"
-                v-model:rgbConfig="rgbConfig"
                 v-model:dynamicKey="dynamicKey"
                 v-model:dynamicKeyIndex="dynamicKeyIndex"
                 v-model:debugEvent="debugEvent"
