@@ -2,7 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, triggerRef, watch, provide } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
-import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar, NGi, NGrid, NDropdown, NSelect, NColorPicker, NInputNumber, NRadioGroup, NRadioButton, NIcon } from 'naive-ui'
+import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar, NGi, NGrid, NDropdown, NSelect, NColorPicker, NInputNumber, NRadioGroup, NRadioButton, NIcon, NMenu } from 'naive-ui'
 import * as apis from '@/apis/api'
 import * as ekc from "emi-keyboard-controller";
 import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup, demoScriptSource } from "@/apis/utils";
@@ -26,6 +26,8 @@ import SmoothSpan from '@/components/SmoothSpan.vue';
 import SettingsPanel from '@/views/SettingsPanel.vue';
 import { PlusFilled as PlusIcon } from '@vicons/material';
 import { KeyboardOff as KeyboardOffIcon } from '@vicons/tabler';
+import KeyboardRenderToolbar from '@/components/KeyboardRenderToolbar.vue';
+import LayoutSubSelector from "@/components/LayoutSubSelector.vue";
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -42,9 +44,7 @@ const { themeName, lang } = storeToRefs(store);
 const message = useMessage();
 
 const isConnected = ref<boolean>(false);
-const advancedKey = ref<ekc.IAdvancedKey>(new ekc.AdvancedKey());
 const rgbBaseConfig = ref<ekc.IRGBBaseConfig>(new ekc.RGBBaseConfig());
-const rgbConfig = ref<ekc.IRGBConfig>(new ekc.RGBConfig());
 const dynamicKey = ref<ekc.IDynamicKey>(new ekc.DynamicKey());
 const dynamicKeyIndex = ref<number>(-1);
 const readmeMarkdown = ref<string>("");
@@ -68,6 +68,7 @@ const keymap = ref<number[][]>([new Array<number>()]);
 const dynamicKeys = ref<ekc.IDynamicKey[]>([]);
 const currentLayerIndex = ref<number>(0);
 const tabSelection = ref<string | null>("PerformancePanel");
+const waitingForUpdate = ref(false);
 
 provide('keyboardContext', {
   keyboardKeys, advancedKeys, rgbConfigs, keymap, dynamicKeys, currentLayerIndex, tabSelection
@@ -104,8 +105,13 @@ const maxSplitSize = computed(() => (contentRealHeight.value + splitBuffer) + 'p
 const isDragging = ref(false);
 const enableTransition = ref(false);
 const keyboardContentRef = ref<HTMLElement | null>(null);
+const selectedKeys = ref<number[]>([]);
 let resizeObserver: ResizeObserver | null = null;
 const splitBuffer = 4;
+
+const selectionTool = ref<'marquee' | 'swipe'>('swipe');
+const booleanMode = ref<'new' | 'toggle' | 'add' | 'subtract'>('toggle');
+const keyboardRenderRef = ref<any>(null);
 
 onMounted(async () => {
   if (controller.value) {
@@ -236,8 +242,16 @@ async function connectCommand() {
   } else {
     var result = await connect_device();
     isConnected.value = result;
-    if (isConnected.value) message.success(t('main_found_device'));
-    else message.error(t('main_device_not_found'));
+    if (isConnected.value)
+    {
+      waitingForUpdate.value = true;
+      message.success(t('main_found_device'));
+    }
+    else
+    {
+      waitingForUpdate.value = false;
+      message.error(t('main_device_not_found'));
+    }
   }
 }
 
@@ -273,7 +287,7 @@ async function getController() {
   macros.value = await controller.value.get_macros();
   selectedProfileIndex.value = await controller.value.get_profile_index();
   const cnofig_file_num = await controller.value.get_profile_num();
-  layout_labels.value = await controller.value.get_layout_labels();
+  layoutLabels.value = await controller.value.get_layout_labels();
   readmeMarkdown.value = await controller.value.get_readme_markdown();
   firmwareFeature.value = await controller.value.get_feature();
 
@@ -299,30 +313,25 @@ async function updateData() {
   triggerRef(advancedKeys); triggerRef(keymap); triggerRef(rgbBaseConfig);
   triggerRef(rgbConfigs); triggerRef(dynamicKeys); triggerRef(selectedProfileIndex);
   triggerRef(macros); triggerRef(firmwareVersion);
+  waitingForUpdate.value = false;
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
   if (!controller.value) return;
+  waitingForUpdate.value = true;
   await controller.value.set_profile_index(option.value as number);
 }
 
 function applyToAllKeys() {
-  advancedKeys.value.forEach((item, index) => { applyToSelectedKey(index); });
+  advancedKeys.value.forEach((item, index) => { applyToPressedKey(index); });
 }
 
-function applyToSelectedKey(index: number) {
+function applyToPressedKey(index: number) {
   let id = index;
   switch (tabSelection.value) {
-    case "PerformancePanel":
-      advancedKeys.value[id] = cloneDeep(advancedKey.value);
-      break;
     case "KeymapPanel":
       if (keymap.value != undefined) keymap.value[currentLayerIndex.value][id] = keyBinding.value;
       break;
-    case "RGBPanel": {
-      rgbConfigs.value[id] = cloneDeep(rgbConfig.value);
-      break;
-    }
     case "DynamicKeyPanel":
       if (dynamicKey.value.type != ekc.DynamicKeyType.DynamicKeyNone) {
         switch (dynamicKey.value.type) {
@@ -389,6 +398,7 @@ function applyToSelectedKey(index: number) {
     case "DebugPanel":
       if (controller.value) {
         debugEvent.value.key_id = id;
+        debugEvent.value.event = 3;
         controller.value.emit(debugEvent.value, useKeymap.value);
       }
       break;
@@ -398,6 +408,20 @@ function applyToSelectedKey(index: number) {
         currentKeys.push(id);
         if (currentKeys.length > 4) currentKeys.shift(); 
         oscilloscopeSelectedKeys.value = currentKeys;
+      }
+      break;
+    default: break;
+  }
+}
+
+function applyToReleasedKey(index: number) {
+  let id = index;
+  switch (tabSelection.value) {
+    case "DebugPanel":
+      if (controller.value) {
+        debugEvent.value.key_id = id;
+        debugEvent.value.event = 1;
+        controller.value.emit(debugEvent.value, useKeymap.value);
       }
       break;
     default: break;
@@ -521,8 +545,14 @@ const currentPanel = computed(() => {
 
 function handleThemeUpdate() { themeName.value = themeName.value === 'dark' ? 'light' : 'dark'; }
 
-let layout_labels = ref<Array<Array<string>> | undefined>([[]]);
+let layoutLabels = ref<Array<Array<string>> | undefined>([[]]);
+const selectedIndices = ref<number[]>([]);
 
+watch(layoutLabels, (newLabels) => {
+  if (newLabels) {
+    selectedIndices.value = new Array(newLabels.length).fill(0);
+  }
+}, { immediate: true });
 const displayLayerPage = computed({
   get: () => currentLayerIndex.value + 1,
   set: (val: number) => { 
@@ -532,6 +562,25 @@ const displayLayerPage = computed({
 
 const totalLayers = computed(() => {
   return keymap.value ? keymap.value.length : 1;
+});
+
+const selectionMode = computed(() => {
+  switch (tabSelection.value) {
+    case "PerformancePanel":
+      return 'multiple';
+    case "RGBPanel":
+      return 'multiple';
+    case "KeymapPanel":
+      return 'none';
+    case "DynamicKeyPanel":
+      return 'none';
+    case "DebugPanel":
+      return 'none';
+    case "OscilloscopePanel":
+      return 'none';
+    default: break;
+  }
+  return 'single';
 });
 </script>
 
@@ -548,6 +597,7 @@ const totalLayers = computed(() => {
             :type="isConnected ? 'error' : 'primary'" 
             :secondary="isConnected"
             style="transition: all 0.3s;"
+            :loading="waitingForUpdate"
           >
             <SmoothSpan :text="isDemo ? t('demo_mode', '演示模式') : (isConnected ? t('toolbar_disconnect') : t('toolbar_connect'))" />
           </n-button>
@@ -579,10 +629,17 @@ const totalLayers = computed(() => {
     </n-layout-header>
 
     <n-layout v-if="controller" has-sider class="main-body">
-      <n-layout-sider bordered :width="200" style="flex-shrink: 0;" content-style="display: flex; flex-direction: column; height: 100%;">
+      <n-layout-sider bordered :width="lang === 'zh' ? 200 : 200" style="flex-shrink: 0;" content-style="display: flex; flex-direction: column; height: 100%; transition: width 0.3s ease;">
         <div style="flex-shrink: 0; padding: 8px;">
-          <n-select v-if="files.length != 0" style="font-size: 14px; margin-bottom: 8px;" size="large" :placeholder="t('main_tabs_profile')"
-            @update:value="handleUpdateFileValue" v-model:value="selectedProfileIndex" v-model:options="files" />
+          <n-select v-if="files.length != 0"
+            style="font-size: 14px;
+            margin-bottom: 8px;"
+            size="large"
+            :placeholder="t('main_tabs_profile')"
+            @update:value="handleUpdateFileValue"
+            v-model:value="selectedProfileIndex"
+            v-model:options="files"
+            :disabled="waitingForUpdate"/>
 
           <n-grid :cols="3" :x-gap="4" style="">
             <n-gi><n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button></n-gi>
@@ -592,15 +649,10 @@ const totalLayers = computed(() => {
         </div>
 
         <n-scrollbar style="flex: 1; min-height: 0; margin-top: -6px;" content-style="padding-bottom: 12px">
-          <div class="menu-list-container">
-            <TransitionGroup name="menu-list">
-              <n-button v-for="option in menuOptions" :key="option.key" class="menu-item-btn"
-                :type="tabSelection === option.key ? 'primary' : 'default'" :secondary="tabSelection === option.key"
-                :quaternary="tabSelection !== option.key" @click="tabSelection = option.key as string" size="large">
-                <div class="menu-label">{{ option.label }}</div>
-              </n-button>
-            </TransitionGroup>
-          </div>
+          <n-menu 
+            :options="menuOptions" 
+            v-model:value="tabSelection" 
+          />
         </n-scrollbar>
       </n-layout-sider>
 
@@ -614,7 +666,16 @@ const totalLayers = computed(() => {
               <div v-show="isDragging" style="position: absolute; inset: 0; z-index: 100; cursor: ns-resize;"></div>
               <n-scrollbar style="flex: 1; min-height: 0;" :style="{ pointerEvents: isDragging ? 'none' : 'auto' }" trigger="hover">
                 <div ref="keyboardContentRef" style="padding-bottom: 4px;">
-                  <KeyboardRender v-model:keys="keyboardKeys" :layout_labels="layout_labels" @select="applyToSelectedKey" />
+                  <KeyboardRender 
+                  ref="keyboardRenderRef"
+                  v-model:keys="keyboardKeys"
+                  v-model:selected-keys="selectedKeys"
+                  :mode="selectionMode"
+                  v-model:selected-indices="selectedIndices"
+                  @press="applyToPressedKey"
+                  @release="applyToReleasedKey"
+                  v-model:selection-tool="selectionTool" 
+                  v-model:boolean-mode="booleanMode" />
                 </div>
               </n-scrollbar>
             </div>
@@ -623,13 +684,31 @@ const totalLayers = computed(() => {
           <template #resize-trigger>
             <div class="custom-resize-trigger" :class="{ 'dark': themeName === 'dark' }">
               <div style="position: absolute; inset: 0; z-index: 0; pointer-events: auto;" @dblclick="resetToAuto"></div>
-
               <div class="trigger-left" style="z-index: 1;">
-                <Transition name="fade">
-                  <div v-if="tabSelection == 'PerformancePanel' || tabSelection == 'KeymapPanel' || tabSelection == 'RGBPanel'" @mousedown.stop style="pointer-events: auto;">
-                    <n-button size="tiny" secondary @click="applyToAllKeys">{{ t('apply_to_all') }}</n-button>
-                  </div>
-                </Transition>
+                <div @mousedown.stop style="pointer-events: auto; display: flex; align-items: center; gap: 8px;">
+
+                  <n-button 
+                    v-if="tabSelection == 'KeymapPanel'" 
+                    key="apply-all-btn"
+                    size="medium" 
+                    secondary 
+                    style="height: 32px;"
+                    @click="applyToAllKeys"
+                  >
+                    {{ t('apply_to_all') }}
+                  </n-button>
+                
+                  <KeyboardRenderToolbar 
+                    v-if="selectionMode == 'multiple'"
+                    key="render-toolbar"
+                    v-model:selection-tool="selectionTool"
+                    v-model:boolean-mode="booleanMode"
+                    @selectAll="keyboardRenderRef?.selectAll()"
+                    @deselectAll="keyboardRenderRef?.deselectAll()"
+                    @invertSelection="keyboardRenderRef?.invertSelection()"
+                  />
+
+                </div>
               </div>
 
               <div class="trigger-center" style="z-index: 1;">
@@ -646,8 +725,30 @@ const totalLayers = computed(() => {
                   </div>
                 </Transition>
               </div>
-
               <div class="trigger-right" style="z-index: 1;">
+                <div 
+                  v-if="layoutLabels && layoutLabels.length > 0 && layoutLabels[0].length != 0" 
+                  @mousedown.stop 
+                  style="margin-right: 12px; pointer-events: auto; display: flex; align-items: center;"
+                >
+                  <n-popover placement="top-end" trigger="hover" :show-arrow="false">
+                    <template #trigger>
+                      <n-button size="medium" secondary style="height: 32px;">
+                        {{ t("keyboard_render_edit_layout") }}
+                      </n-button>
+                    </template>
+                    <div style="width: 240px;">
+                      <n-flex vertical>
+                        <LayoutSubSelector 
+                          v-for="(value, index) in layoutLabels" 
+                          :key="index"
+                          v-model:selected-index="selectedIndices[index as number]" 
+                          :labels="value"
+                        />
+                      </n-flex>
+                    </div>
+                  </n-popover>
+                </div>
                 <div class="toggle-btn" @click="toggleCollapse" @mousedown.stop style="pointer-events: auto;">
                   <n-icon size="16">
                     <svg v-if="parseFloat(splitSize) < 50" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z" /></svg>
@@ -662,9 +763,8 @@ const totalLayers = computed(() => {
             <div style="height: 100%; overflow-y: auto; display: flex; flex-direction: column;">
               <Transition name="fade" mode="out-in">
                 <component :is="currentPanel" 
-                v-model:advancedKey="advancedKey"
+                v-model:selectedKeys="selectedKeys"
                 v-model:rgbBaseConfig="rgbBaseConfig"
-                v-model:rgbConfig="rgbConfig"
                 v-model:dynamicKey="dynamicKey"
                 v-model:dynamicKeyIndex="dynamicKeyIndex"
                 v-model:debugEvent="debugEvent"
@@ -764,11 +864,4 @@ const totalLayers = computed(() => {
 .handle-bar.active { background-color: #18a058; }
 .toggle-btn { cursor: pointer; display: flex; align-items: center; color: #666; padding: 4px; border-radius: 4px; }
 .toggle-btn:hover { background-color: rgba(0, 0, 0, 0.05); }
-.menu-list-container { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; position: relative; }
-.menu-item-btn { width: 100%; justify-content: flex-start; text-align: left; transition: all 0.5s; }
-.menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menu-list-move { transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important; z-index: 1; position: relative; }
-.menu-list-enter-active, .menu-list-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
-.menu-list-enter-from, .menu-list-leave-to { opacity: 0; }
-.menu-list-leave-active { position: absolute; left: 8px; right: 8px; z-index: 0; }
 </style>

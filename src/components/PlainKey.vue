@@ -4,14 +4,37 @@ import { NButton } from "naive-ui";
 
 const props = defineProps([
   "x", "y", "width", "height", "rotationX", "rotationY", "rotationAngle",
-  "labels", "color", "selected", "tooltip"
+  "labels", "color", "selected", "tooltip",
 ]);
 
-const emit = defineEmits(['click']);
+const emit = defineEmits(['click','mousedown', 'mouseenter', 'mouseup', 'mouseleave']);
 
 const usize = ref(54);
 const margin = ref(2);
+const isPressed = ref(false);
+function handleMouseDown(event: MouseEvent) {
+  isPressed.value = true;
+  emit('mousedown', event);
+}
 
+function handleMouseUp(event: MouseEvent) {
+  isPressed.value = false;
+  emit('mouseup', event);
+}
+
+function handleMouseEnter(event: MouseEvent) {
+  if (event.buttons !== 0) {
+    isPressed.value = true;
+  } else {
+    isPressed.value = false;
+  }
+  emit('mouseenter', event);
+}
+
+function handleMouseLeave(event: MouseEvent) {
+  isPressed.value = false;
+  emit('mouseleave', event);
+}
 const rotation = computed(() : CSSProperties => {
   if (props.rotationAngle !== 0) {
     return {
@@ -31,21 +54,33 @@ const keycap_size = computed(() : CSSProperties => ({
   transition: 'all 0.5s ease'
 }));
 
+const shrinkOffset = computed(() => props.selected ? 6 : 0);
+const translateOffset = computed(() => props.selected ? 'translate(2px, 2px)' : 'translate(0px, 0px)');
+const translateOffsetBottom = computed(() => props.selected ? 'translate(2px, -2px)' : 'translate(0px, 0px)');
+
 const sizeLabel = computed(() : CSSProperties => ({
-  width: usize.value * props.width - 12 + "px",
-  height: usize.value * props.height - 12 + "px",
-  maxWidth: usize.value * props.width - 12 + "px",
-  maxHeight: usize.value * props.height - 12 + "px",
+  // 宽度和高度动态减去 shrinkOffset
+  width: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  height: usize.value * props.height - 12 - shrinkOffset.value + "px",
+  maxWidth: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  maxHeight: usize.value * props.height - 12 - shrinkOffset.value + "px",
   textWrap: "wrap",
+  // 增加平滑的动画过渡
+  fontSize: props.selected ? '0.85em' : '1em',
+  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+  // 应用位移补偿
+  transform: translateOffset.value
 }));
 
 const sizeLabel1 = computed(() : CSSProperties => ({
-  width: usize.value * props.width - 12 + "px",
-  maxWidth: usize.value * props.width - 12 + "px",
+  width: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  maxWidth: usize.value * props.width - 12 - shrinkOffset.value + "px",
   textWrap: "wrap",
   height: "8px",
+  fontSize: props.selected ? '0.85em' : '1em',
+  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+  transform: translateOffsetBottom.value
 }));
-
 const key_border = computed(() => {
   return {
     padding: margin.value + "px",
@@ -67,14 +102,65 @@ const button_style = computed(() : any => {
   const styleObj: any = {
     height: "100%",
     width: "100%",
-    outline: props.selected ? "solid red 2px" : "none",
+    "--n-padding": "0",
+    outline: "none",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    "z-index": "1" 
   };
 
-if (props.color) {
+  const primaryColor = "var(--n-primary-color, #18a058)";
+
+  if (props.color) {
+    const isLight = getContrastColor(props.color) === "#000000";
+    
+    // 1. 基础颜色
+    styleObj["--n-color"] = props.color;
+    styleObj["--n-text-color"] = isLight ? "#000000" : "#FFFFFF";
     styleObj["--n-border"] = `1px solid ${props.color}`;
-    styleObj["--n-border-hover"] = `2px solid ${props.color}`;
-    styleObj["--n-color-hover"] = `${props.color}40`; 
-    styleObj["--n-text-color-hover"] = getContrastColor(props.color) || "#FFFFFF";
+
+    styleObj["--n-color-hover"] = props.color;
+    styleObj["--n-color-focus"] = props.color;
+    styleObj["--n-color-pressed"] = props.color;
+    
+    styleObj["--n-text-color-hover"] = styleObj["--n-text-color"];
+    styleObj["--n-text-color-focus"] = styleObj["--n-text-color"];
+    styleObj["--n-text-color-pressed"] = styleObj["--n-text-color"];
+
+    styleObj["--n-border-hover"] = styleObj["--n-border"];
+    styleObj["--n-border-focus"] = styleObj["--n-border"];
+    styleObj["--n-border-pressed"] = styleObj["--n-border"];
+
+    // 选中状态
+    if (props.selected) {
+      // 保持 1px 的基础边框，防止内容向内收缩
+      styleObj["--n-border"] = `1px solid ${primaryColor}`;
+      styleObj["--n-border-hover"] = `1px solid ${primaryColor}`;
+      styleObj["--n-border-focus"] = `1px solid ${primaryColor}`;
+      styleObj["--n-border-pressed"] = `1px solid ${primaryColor}`;
+      
+      styleObj["box-shadow"] = `0 0 0 2px ${primaryColor}`;
+      styleObj["z-index"] = "2"; 
+    }
+  } else {
+    // 默认按键逻辑（无自定义颜色）
+    styleObj["--n-color"] = "transparent";
+    styleObj["--n-border"] = "1px solid var(--n-border-color)";
+
+    if (props.selected) {
+      styleObj["--n-border"] = `1px solid ${primaryColor}`;
+      styleObj["--n-border-hover"] = `1px solid ${primaryColor}`;
+      styleObj["--n-border-focus"] = `1px solid ${primaryColor}`;
+      styleObj["--n-border-pressed"] = `1px solid ${primaryColor}`;
+
+      const activeBg = "var(--n-primary-color-hover, rgba(24, 160, 88, 0.1))";
+      styleObj["--n-color"] = activeBg;
+      styleObj["--n-color-hover"] = activeBg;
+      styleObj["--n-color-focus"] = activeBg;
+      styleObj["--n-color-pressed"] = activeBg;
+
+      styleObj["box-shadow"] = `0 0 0 2px ${primaryColor}`;
+      styleObj["z-index"] = "2";
+    }
   }
 
   return styleObj;
@@ -87,15 +173,24 @@ if (props.color) {
       <div style="position: absolute; inset: 2px;">
         
         <n-popover 
-          :disabled="!props.tooltip || props.tooltip.length === 0" 
+          :disabled="!props.tooltip || props.tooltip.length === 0 || isPressed" 
           trigger="hover" placement="top" :animated="false" :delay="0" :duration="0"
         >
           <template #trigger>
-            <n-button :style="button_style" :focusable="false" class="keycap" @click="$emit('click')">
-              <div class="keylabels">
+            <n-button :style="button_style" :focusable="false" class="keycap"
+                @click="$emit('click')"
+                @mousedown="handleMouseDown" 
+                @mouseenter="handleMouseEnter"
+                @mouseup="handleMouseUp"
+                @mouseleave="handleMouseLeave">
+                <div class="keylabels">
                 <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
-                  <div v-if="index as number <9 && label" :style="sizeLabel">{{ label }}</div>
-                  <div v-if="index as number >=9 && label" :style="sizeLabel1">{{ label }}</div>
+                  <div v-if="index as number < 9 && label" :style="sizeLabel">
+                    {{ label }}
+                  </div>
+                  <div v-if="index as number >= 9 && label" :style="sizeLabel1">
+                    {{ label }}
+                  </div>
                 </div>
               </div>
             </n-button>
@@ -241,6 +336,16 @@ if (props.color) {
 .keylabel.textsize9 {
   font-size: 24px;
   line-height: 1em;
+}
+
+:deep(.n-button__content) {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  position: relative !important;
 }
 
 .keylabels {

@@ -47,7 +47,12 @@ const props = defineProps<{
 const oscilloscopeSelectedKeys = defineModel<number[]>("oscilloscopeSelectedKeys", {
     default: []
 });
-
+const selectedKeys = defineModel<number[]>("selectedKeys", {
+    default: () => []
+});
+watch(oscilloscopeSelectedKeys, (newVal) => {
+    selectedKeys.value = [...newVal];
+}, { immediate: true, deep: true });
 // --- 状态控制 ---
 const isPolling = ref(false);
 const hiddenKeys = ref<number[]>([]);
@@ -682,6 +687,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     isPolling.value = false;
     props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
+    selectedKeys.value = [];
 });
 
 function clearWaveform() {
