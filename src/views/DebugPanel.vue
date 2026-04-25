@@ -175,15 +175,16 @@ onBeforeUnmount(() => {
     props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
-function emitEvent(index : number)
+function emitCustomEvent()
 {
-    debugEvent.value.key_id = index;
     props.controller.emit(debugEvent.value, useKeymap.value)
 }
 
 function handleMouseDown(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    emitEvent(index);
+    debugEvent.value.key_id = index;
+    debugEvent.value.event = 3;
+    props.controller.emit(debugEvent.value, useKeymap.value)
   } else {
 
   }
@@ -191,7 +192,24 @@ function handleMouseDown(event : MouseEvent, index: number) {
 
 function handleMouseEnter(event : MouseEvent, index: number) {
   if (event.buttons === 1) {
-    emitEvent(index);
+    debugEvent.value.key_id = index;
+    debugEvent.value.event = 3;
+    props.controller.emit(debugEvent.value, useKeymap.value)
+  }
+}
+
+function handleMouseUp(event : MouseEvent, index: number) {
+  if (event.button !== 0) return;
+  debugEvent.value.key_id = index;
+  debugEvent.value.event = 1;
+  props.controller.emit(debugEvent.value, useKeymap.value)
+}
+
+function handleMouseLeave(event : MouseEvent, index: number) {
+  if (event.buttons === 1) {
+    debugEvent.value.key_id = index;
+    debugEvent.value.event = 1;
+    props.controller.emit(debugEvent.value, useKeymap.value)
   }
 }
 
@@ -204,6 +222,8 @@ function handleMouseEnter(event : MouseEvent, index: number) {
             <PlainKey v-for="(binding,index) in keymap[currentLayerIndex].slice(advancedKeys == undefined ? 0 : advancedKeys.length)"
               @mousedown="(event : MouseEvent) => handleMouseDown(event, index + advancedKeys.length)"
               @mouseenter="(event : MouseEvent) => handleMouseEnter(event, index + advancedKeys.length)"
+              @mouseup="(event : MouseEvent) => handleMouseUp(event, index + advancedKeys.length)"
+              @mouseleave="(event : MouseEvent) => handleMouseLeave(event, index + advancedKeys.length)"
               :width="1" :height="1" :x=index
               :labels="[(index + advancedKeys.length).toString()]" />
           </div>
@@ -213,9 +233,14 @@ function handleMouseEnter(event : MouseEvent, index: number) {
           
           <template #1>
             <n-scrollbar style="height: 100%; padding-right: 16px;">
-              <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
+              <n-form label-placement="left":label-width="80" require-mark-placement="right-hanging">
                 <n-form-item :label="t('debug_panel_enable_debug')">
                   <n-switch v-model:value="debugSwitch" @update:value="handleChange"></n-switch>
+                </n-form-item>
+                <n-form-item :label="t('key_id')">
+                  <n-flex :align="'center'">
+                      <n-input-number v-model:value="debugEvent.key_id"></n-input-number>
+                  </n-flex>
                 </n-form-item>
                 <n-form-item :label="t('key')">
                   <n-flex :align="'center'">
@@ -243,6 +268,7 @@ function handleMouseEnter(event : MouseEvent, index: number) {
                   </n-flex>
                 </n-form-item>
               </n-form>
+              <n-button  type="primary" @click="emitCustomEvent">{{ t('send_event') }}</n-button>
             </n-scrollbar>
           </template>
           

@@ -7,7 +7,7 @@ const props = defineProps([
   "labels", "color", "selected", "tooltip",
 ]);
 
-const emit = defineEmits(['click','mousedown', 'mouseenter']);
+const emit = defineEmits(['click','mousedown', 'mouseenter', 'mouseup', 'mouseleave']);
 
 const usize = ref(54);
 const margin = ref(2);
@@ -72,85 +72,45 @@ const button_style = computed(() : any => {
   };
 
   if (props.color) {
-    const contrastText = getContrastColor(props.color) || "#FFFFFF";
-
-    // 1. 基础状态
+    // 1. 仅处理自定义颜色的边框和背景
     styleObj["--n-border"] = `1px solid ${props.color}`;
     styleObj["--n-color"] = `transparent`;
-    styleObj["--n-text-color"] = contrastText;
 
-    // 2. 悬浮/聚焦/按下 状态 (统一变量，防止 Naive UI 默认绿色泄漏)
-    const hoverBorder = `1px solid ${props.color}`;
-    const hoverColor = `${props.color}33`;
+    // 统一交互状态，防止绿色泄漏
+    styleObj["--n-border-hover"] = styleObj["--n-border"];
+    styleObj["--n-border-focus"] = styleObj["--n-border"];
+    styleObj["--n-border-pressed"] = styleObj["--n-border"];
 
-    styleObj["--n-border-hover"] = hoverBorder;
-    styleObj["--n-border-focus"] = hoverBorder;
-    styleObj["--n-border-pressed"] = hoverBorder;
-
-    styleObj["--n-color-hover"] = hoverColor;
-    styleObj["--n-color-focus"] = hoverColor;
-    styleObj["--n-color-pressed"] = hoverColor;
-
-    styleObj["--n-text-color-hover"] = contrastText;
-    styleObj["--n-text-color-focus"] = contrastText;
-    styleObj["--n-text-color-pressed"] = contrastText;
+    styleObj["--n-color-hover"] = `${props.color}33`;
+    styleObj["--n-color-focus"] = styleObj["--n-color-hover"];
+    styleObj["--n-color-pressed"] = styleObj["--n-color-hover"];
 
     if (props.selected) {
-      // 3. 选中时的基础状态
       styleObj["--n-border"] = `2px solid ${props.color}`;
       styleObj["--n-color"] = `${props.color}66`;
-      styleObj["--n-text-color"] = contrastText;
-      
-      // 4. 选中时的 悬浮/聚焦/按下 状态
-      const selectedHoverBorder = `2px solid ${props.color}`;
-      const selectedHoverColor = `${props.color}99`;
-
-      styleObj["--n-border-hover"] = selectedHoverBorder;
-      styleObj["--n-border-focus"] = selectedHoverBorder;
-      styleObj["--n-border-pressed"] = selectedHoverBorder;
-
-      styleObj["--n-color-hover"] = selectedHoverColor;
-      styleObj["--n-color-focus"] = selectedHoverColor;
-      styleObj["--n-color-pressed"] = selectedHoverColor;
+      styleObj["--n-border-hover"] = styleObj["--n-border"];
+      styleObj["--n-color-hover"] = `${props.color}99`;
     }
   } else {
-    // 没有颜色时的默认按键逻辑
+    // 2. 默认按键方案：使用主题边框色
+    styleObj["--n-color"] = "transparent";
+    styleObj["--n-border"] = "1px solid var(--n-border-color)";
+
+    const activeBorder = "1px solid var(--n-primary-color)";
+    
+    styleObj["--n-border-hover"] = activeBorder;
+    styleObj["--n-border-focus"] = activeBorder;
+    styleObj["--n-border-pressed"] = activeBorder;
+
+    styleObj["--n-color-hover"] = "var(--n-primary-color-hover, rgba(24, 160, 88, 0.1))";
+    styleObj["--n-color-focus"] = styleObj["--n-color-hover"];
+    styleObj["--n-color-pressed"] = "var(--n-primary-color-pressed, rgba(24, 160, 88, 0.2))";
+
     if (props.selected) {
-      const selectedBorder = `2px solid var(--n-primary-color, #18a058)`;
-      const selectedColor = `var(--n-primary-color-hover, rgba(24, 160, 88, 0.2))`;
-      const selectedHoverBorder = `2px solid var(--n-primary-color-hover, #36ad6a)`;
-      const selectedHoverColor = `var(--n-primary-color-pressed, rgba(24, 160, 88, 0.4))`;
-
-      styleObj["--n-border"] = selectedBorder;
-      styleObj["--n-color"] = selectedColor;
-      styleObj["--n-text-color"] = `var(--n-text-color)`;
-
-      styleObj["--n-border-hover"] = selectedHoverBorder;
-      styleObj["--n-border-focus"] = selectedHoverBorder;
-      styleObj["--n-border-pressed"] = selectedHoverBorder;
-
-      styleObj["--n-color-hover"] = selectedHoverColor;
-      styleObj["--n-color-focus"] = selectedHoverColor;
-      styleObj["--n-color-pressed"] = selectedHoverColor;
-    } else {
-      const hoverBorder = `1px solid var(--n-primary-color, #18a058)`;
-      const hoverColor = `var(--n-primary-color-hover, rgba(24, 160, 88, 0.1))`;
-
-      styleObj["--n-border-hover"] = hoverBorder;
-      styleObj["--n-border-focus"] = hoverBorder;
-      styleObj["--n-border-pressed"] = hoverBorder;
-
-      styleObj["--n-color-hover"] = hoverColor;
-      styleObj["--n-color-focus"] = hoverColor;
-      styleObj["--n-color-pressed"] = hoverColor;
-
-      styleObj["--n-text-color"] = `var(--n-text-color)`;
-      styleObj["--n-text-color-hover"] = `var(--n-text-color)`;
-      styleObj["--n-text-color-focus"] = `var(--n-text-color)`;
-      styleObj["--n-text-color-pressed"] = `var(--n-text-color)`;
+      styleObj["--n-border"] = "2px solid var(--n-primary-color)";
+      styleObj["--n-color"] = "var(--n-primary-color-hover, rgba(24, 160, 88, 0.2))";
     }
   }
-
   return styleObj;
 });
 </script>
@@ -168,7 +128,9 @@ const button_style = computed(() : any => {
             <n-button :style="button_style" :focusable="false" class="keycap"
                 @click="$emit('click')"
                 @mousedown="$emit('mousedown', $event)" 
-                @mouseenter="$emit('mouseenter', $event)">
+                @mouseenter="$emit('mouseenter', $event)"
+                @mouseup="$emit('mouseup', $event)"
+                @mouseleave="$emit('mouseleave', $event)">
               <div class="keylabels">
                 <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
                   <div v-if="index as number <9 && label" :style="sizeLabel">{{ label }}</div>
