@@ -221,6 +221,11 @@
     "keyboard_render_action_clear": "Clear Selection",
     "keyboard_render_action_invert": "Invert Selection",
 
+    "common_multiple_values": "Mix",
+    "common_multiple_modes": "Mix",
+    "common_please_select": "Please select",
+    "common_please_select_key": "Please select keys above to configure",
+
     "no_keyboard_connected": "No keyboard detected",
     "how_to_connect_title": "How to connect your keyboard?",
     "connect_step_1": "Ensure the keyboard is working properly and is correctly connected to the computer via a data cable.",

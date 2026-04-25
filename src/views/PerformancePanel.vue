@@ -66,18 +66,27 @@ const modes = computed(()=> [
 
 <template>
   <n-card style="height: 100%;">
-    <n-space vertical>
+    <div v-if="props.selectedKeys.length === 0" style="height: 100%; display: flex; align-items: center; justify-content: center;">
+      <n-empty :description="t('common_please_select_key')" />
+    </div>
+    <n-space v-else vertical>
       
-      <n-radio-group v-model:value="mode">
-        <n-radio-button v-for="m in modes" :key="m.value" :value="m.value" :label="m.label" />
-      </n-radio-group>
-      
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <n-radio-group v-model:value="mode">
+          <n-radio-button v-for="m in modes" :key="m.value" :value="m.value" :label="m.label" />
+        </n-radio-group>
+        
+        <span v-if="mode === null" style="color: var(--n-text-color-3); font-size: 13px;">
+          * {{ t('common_multiple_modes') }}
+        </span>
+      </div>
+
       <n-form inline label-placement="top" label-width="auto" require-mark-placement="right-hanging">
         
         <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" :label="t('performance_panel_activation_value')">
           <n-input-number 
             v-model:value="activation_value" 
-            :placeholder="activation_value === null ? '多个不同值' : t('performance_panel_activation_value')" 
+            :placeholder="activation_value === null ?t('common_multiple_values') : t('performance_panel_activation_value')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -87,7 +96,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogNormalMode" :label="t('performance_panel_deactivation_value')">
           <n-input-number 
             v-model:value="deactivation_value" 
-            :placeholder="deactivation_value === null ? '多个不同值' : t('performance_panel_deactivation_value')" 
+            :placeholder="deactivation_value === null ? t('common_multiple_values') : t('performance_panel_deactivation_value')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -97,7 +106,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" :label="t('performance_panel_trigger_distance')">
           <n-input-number 
             v-model:value="trigger_distance" 
-            :placeholder="trigger_distance === null ? '多个不同值' : t('performance_panel_trigger_distance')" 
+            :placeholder="trigger_distance === null ? t('common_multiple_values') : t('performance_panel_trigger_distance')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -107,7 +116,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogRapidMode" :label="t('performance_panel_release_distance')">
           <n-input-number 
             v-model:value="release_distance" 
-            :placeholder="release_distance === null ? '多个不同值' : t('performance_panel_release_distance')" 
+            :placeholder="release_distance === null ? t('common_multiple_values') : t('performance_panel_release_distance')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -117,7 +126,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_trigger_speed')">
           <n-input-number 
             v-model:value="trigger_speed" 
-            :placeholder="trigger_speed === null ? '多个不同值' : t('performance_panel_trigger_speed')" 
+            :placeholder="trigger_speed === null ? t('common_multiple_values') : t('performance_panel_trigger_speed')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -127,7 +136,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode === ekc.KeyMode.KeyAnalogSpeedMode" :label="t('performance_panel_release_speed')">
           <n-input-number 
             v-model:value="release_speed" 
-            :placeholder="release_speed === null ? '多个不同值' : t('performance_panel_release_speed')" 
+            :placeholder="release_speed === null ? t('common_multiple_values') : t('performance_panel_release_speed')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -137,7 +146,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode !== ekc.KeyMode.KeyDigitalMode && mode !== null" :label="t('performance_panel_upper_deadzone')">
           <n-input-number 
             v-model:value="upper_deadzone" 
-            :placeholder="upper_deadzone === null ? '多个不同值' : t('performance_panel_upper_deadzone')" 
+            :placeholder="upper_deadzone === null ? t('common_multiple_values') : t('performance_panel_upper_deadzone')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>
@@ -147,7 +156,7 @@ const modes = computed(()=> [
         <n-form-item v-if="mode !== ekc.KeyMode.KeyDigitalMode && mode !== null" :label="t('performance_panel_lower_deadzone')">
           <n-input-number 
             v-model:value="lower_deadzone" 
-            :placeholder="lower_deadzone === null ? '多个不同值' : t('performance_panel_lower_deadzone')" 
+            :placeholder="lower_deadzone === null ? t('common_multiple_values') : t('performance_panel_lower_deadzone')" 
             :min="0" :max="100" 
           >
             <template #suffix>%</template>

@@ -7,8 +7,8 @@ import { SelectAllFilled, DeselectFilled } from '@vicons/material';
 const { t } = useI18n();
 
 // 接收来自父组件的状态
-const selectionTool = defineModel<'marquee' | 'swipe'>('tool');
-const booleanMode = defineModel<'new' | 'toggle' | 'add' | 'subtract'>('mode');
+const selectionTool = defineModel<'marquee' | 'swipe'>('selectionTool');
+const booleanMode = defineModel<'new' | 'toggle' | 'add' | 'subtract'>('booleanMode');
 
 defineEmits(['selectAll', 'deselectAll', 'invertSelection']);
 </script>

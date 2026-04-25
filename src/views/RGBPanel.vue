@@ -229,14 +229,17 @@ function applyRainbowEffect() {
       
       <n-card style="height: 100%;" content-style="flex: 1; display: flex; flex-direction: column; overflow-y: auto;"
       :title="t('rgb_panel_sub_title')">
-        <n-space vertical>
+        <div v-if="props.selectedKeys.length === 0" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+          <n-empty :description="t('common_please_select_key')" />
+        </div>
+        <n-space v-else vertical>
           <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
             
             <n-form-item :label="t('rgb_panel_mode')">
               <n-select 
                 :options="modes" 
                 v-model:value="mode"
-                :placeholder="mode === null ? '多个不同模式' : '请选择'"
+                :placeholder="mode === null ? t('common_multiple_modes') : t('common_please_select')"
               />
             </n-form-item>
             
@@ -247,7 +250,7 @@ function applyRainbowEffect() {
             <n-form-item :label="t('rgb_panel_speed')">
               <n-input-number 
                 v-model:value="speed" 
-                :placeholder="speed === null ? '多个不同值' : t('rgb_panel_speed')"
+                :placeholder="speed === null ? t('common_multiple_values') : t('rgb_panel_speed')"
               />
             </n-form-item>
           </n-form>

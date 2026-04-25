@@ -4,7 +4,6 @@ import { NRadioGroup, NRadioButton, NCard, NButton, NButtonGroup, NPopover, NFle
 import Key from "./Key.vue";
 import * as kle from "@ijprest/kle-serial";
 import { KeyConfig } from "@/apis/utils";
-import LayoutSubSelector from "./LayoutSubSelector.vue";
 import { useI18n } from "vue-i18n";
 import {
   CropOutline,          // 框选
@@ -23,10 +22,10 @@ onMounted(() => {
     isMounted.value = true;
   });
 });
+const isMousePressed = ref(false);
 
 const props = defineProps({
   keys: { type: Array as () => any[], required: true },
-  layout_labels: { type: Array as () => any[], default: () => [] },
   mode: { 
     type: String as PropType<'none' | 'single' | 'multiple'>, 
     default: 'multiple' 
@@ -48,6 +47,8 @@ const selectionTool = defineModel<'marquee' | 'swipe'>('selectionTool', {
 const booleanMode = defineModel<'new' | 'toggle' | 'add' | 'subtract'>('booleanMode', {
   default: 'toggle'
 });
+
+const selectedIndices = defineModel<number[]>('selectedIndices', { default: () => [] });
 
 defineExpose({ selectAll, deselectAll, invertSelection });
 
@@ -336,14 +337,6 @@ const visibleKeys = computed(() => {
   });
 });
 
-const selectedIndices = ref<number[]>([]);
-
-watch(() => props.layout_labels, (newLabels) => {
-  if (newLabels) {
-    selectedIndices.value = new Array(newLabels.length).fill(0);
-  }
-}, { immediate: true });
-
 </script>
 
 <template>
@@ -379,7 +372,7 @@ watch(() => props.layout_labels, (newLabels) => {
                 :selected="selectedKeys.includes(key.id)" 
                 
                 :style="{
-                  opacity: (selectedKeys.length === 0 || selectedKeys.includes(key.id)) ? 1 : 0.8,
+                  opacity: (selectedKeys.length === 0 || selectedKeys.includes(key.id)) ? 1 : 0.25,
                   transition: 'opacity 0.2s ease'
                 }"
               />
@@ -402,29 +395,6 @@ watch(() => props.layout_labels, (newLabels) => {
           </div>
       </template>
     </n-card>
-
-    <div 
-      v-if="props.layout_labels && props.layout_labels.length > 0 && props.layout_labels[0].length != 0" 
-      style="position: absolute; top: 16px; right: 16px; z-index: 10;"
-    >
-      <n-popover placement="bottom-end" trigger="hover" :show-arrow="false">
-        <template #trigger>
-          <n-button secondary>
-            {{ t("keyboard_render_edit_layout") }}
-          </n-button>
-        </template>
-        <div style="width: 240px;">
-          <n-flex vertical>
-            <LayoutSubSelector 
-              v-for="(value, index) in props.layout_labels" 
-              :key="index"
-              v-model:selected-index="selectedIndices[index as number]" 
-              :labels="value"
-            />
-          </n-flex>
-        </div>
-      </n-popover>
-    </div>
   </div>
 </template>
 
@@ -440,11 +410,11 @@ watch(() => props.layout_labels, (newLabels) => {
 .list-move,
 .list-enter-active,
 .list-leave-active {
-  transition: all 0.5s ease;
+  transition: all 0.5s ease !important;
 }
 .list-enter-from,
 .list-leave-to {
-  opacity: 0;
+  opacity: 0 !important;
 }
 .list-leave-active {
   position: absolute;

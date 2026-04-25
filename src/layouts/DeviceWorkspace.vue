@@ -2,7 +2,7 @@
 import { onMounted, onBeforeUnmount, ref, nextTick, computed, h, triggerRef, watch, provide } from "vue";
 import { useI18n } from "vue-i18n";
 import * as kle from "@ijprest/kle-serial";
-import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar, NGi, NGrid, NDropdown, NSelect, NColorPicker, NInputNumber, NRadioGroup, NRadioButton, NIcon } from 'naive-ui'
+import { useMessage, SelectOption, NLayout, NLayoutHeader, NFlex, NButton, NSplit, NScrollbar, NGi, NGrid, NDropdown, NSelect, NColorPicker, NInputNumber, NRadioGroup, NRadioButton, NIcon, NMenu } from 'naive-ui'
 import * as apis from '@/apis/api'
 import * as ekc from "emi-keyboard-controller";
 import { DynamicKeyToKeyName, keyBindingModifierToString, keyCodeToKeyName, keyCodeToString, KeyConfig, keyModeDisplayMap, rgbModeDisplayMap, rgbToHex, mapDynamicKey, mapBackDynamicKey, LayoutGroup, demoScriptSource } from "@/apis/utils";
@@ -27,6 +27,7 @@ import SettingsPanel from '@/views/SettingsPanel.vue';
 import { PlusFilled as PlusIcon } from '@vicons/material';
 import { KeyboardOff as KeyboardOffIcon } from '@vicons/tabler';
 import KeyboardRenderToolbar from '@/components/KeyboardRenderToolbar.vue';
+import LayoutSubSelector from "@/components/LayoutSubSelector.vue";
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -109,7 +110,7 @@ let resizeObserver: ResizeObserver | null = null;
 const splitBuffer = 4;
 
 const selectionTool = ref<'marquee' | 'swipe'>('swipe');
-const booleanMode = ref<'new' | 'toggle' | 'add' | 'subtract'>('new');
+const booleanMode = ref<'new' | 'toggle' | 'add' | 'subtract'>('toggle');
 const keyboardRenderRef = ref<any>(null);
 
 onMounted(async () => {
@@ -545,7 +546,13 @@ const currentPanel = computed(() => {
 function handleThemeUpdate() { themeName.value = themeName.value === 'dark' ? 'light' : 'dark'; }
 
 let layoutLabels = ref<Array<Array<string>> | undefined>([[]]);
+const selectedIndices = ref<number[]>([]);
 
+watch(layoutLabels, (newLabels) => {
+  if (newLabels) {
+    selectedIndices.value = new Array(newLabels.length).fill(0);
+  }
+}, { immediate: true });
 const displayLayerPage = computed({
   get: () => currentLayerIndex.value + 1,
   set: (val: number) => { 
@@ -622,7 +629,7 @@ const selectionMode = computed(() => {
     </n-layout-header>
 
     <n-layout v-if="controller" has-sider class="main-body">
-      <n-layout-sider bordered :width="200" style="flex-shrink: 0;" content-style="display: flex; flex-direction: column; height: 100%;">
+      <n-layout-sider bordered :width="lang === 'zh' ? 200 : 200" style="flex-shrink: 0;" content-style="display: flex; flex-direction: column; height: 100%; transition: width 0.3s ease;">
         <div style="flex-shrink: 0; padding: 8px;">
           <n-select v-if="files.length != 0"
             style="font-size: 14px;
@@ -642,15 +649,10 @@ const selectionMode = computed(() => {
         </div>
 
         <n-scrollbar style="flex: 1; min-height: 0; margin-top: -6px;" content-style="padding-bottom: 12px">
-          <div class="menu-list-container">
-            <TransitionGroup name="menu-list">
-              <n-button v-for="option in menuOptions" :key="option.key" class="menu-item-btn"
-                :type="tabSelection === option.key ? 'primary' : 'default'" :secondary="tabSelection === option.key"
-                :quaternary="tabSelection !== option.key" @click="tabSelection = option.key as string" size="large">
-                <div class="menu-label">{{ option.label }}</div>
-              </n-button>
-            </TransitionGroup>
-          </div>
+          <n-menu 
+            :options="menuOptions" 
+            v-model:value="tabSelection" 
+          />
         </n-scrollbar>
       </n-layout-sider>
 
@@ -669,7 +671,7 @@ const selectionMode = computed(() => {
                   v-model:keys="keyboardKeys"
                   v-model:selected-keys="selectedKeys"
                   :mode="selectionMode"
-                  :layout_labels="layoutLabels"
+                  v-model:selected-indices="selectedIndices"
                   @press="applyToPressedKey"
                   @release="applyToReleasedKey"
                   v-model:selection-tool="selectionTool" 
@@ -688,8 +690,9 @@ const selectionMode = computed(() => {
                   <n-button 
                     v-if="tabSelection == 'KeymapPanel'" 
                     key="apply-all-btn"
-                    size="tiny" 
+                    size="medium" 
                     secondary 
+                    style="height: 32px;"
                     @click="applyToAllKeys"
                   >
                     {{ t('apply_to_all') }}
@@ -698,8 +701,8 @@ const selectionMode = computed(() => {
                   <KeyboardRenderToolbar 
                     v-if="selectionMode == 'multiple'"
                     key="render-toolbar"
-                    v-model:tool="selectionTool"
-                    v-model:mode="booleanMode"
+                    v-model:selection-tool="selectionTool"
+                    v-model:boolean-mode="booleanMode"
                     @selectAll="keyboardRenderRef?.selectAll()"
                     @deselectAll="keyboardRenderRef?.deselectAll()"
                     @invertSelection="keyboardRenderRef?.invertSelection()"
@@ -722,8 +725,30 @@ const selectionMode = computed(() => {
                   </div>
                 </Transition>
               </div>
-
               <div class="trigger-right" style="z-index: 1;">
+                <div 
+                  v-if="layoutLabels && layoutLabels.length > 0 && layoutLabels[0].length != 0" 
+                  @mousedown.stop 
+                  style="margin-right: 12px; pointer-events: auto; display: flex; align-items: center;"
+                >
+                  <n-popover placement="top-end" trigger="hover" :show-arrow="false">
+                    <template #trigger>
+                      <n-button size="medium" secondary style="height: 32px;">
+                        {{ t("keyboard_render_edit_layout") }}
+                      </n-button>
+                    </template>
+                    <div style="width: 240px;">
+                      <n-flex vertical>
+                        <LayoutSubSelector 
+                          v-for="(value, index) in layoutLabels" 
+                          :key="index"
+                          v-model:selected-index="selectedIndices[index as number]" 
+                          :labels="value"
+                        />
+                      </n-flex>
+                    </div>
+                  </n-popover>
+                </div>
                 <div class="toggle-btn" @click="toggleCollapse" @mousedown.stop style="pointer-events: auto;">
                   <n-icon size="16">
                     <svg v-if="parseFloat(splitSize) < 50" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z" /></svg>
@@ -839,11 +864,4 @@ const selectionMode = computed(() => {
 .handle-bar.active { background-color: #18a058; }
 .toggle-btn { cursor: pointer; display: flex; align-items: center; color: #666; padding: 4px; border-radius: 4px; }
 .toggle-btn:hover { background-color: rgba(0, 0, 0, 0.05); }
-.menu-list-container { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; position: relative; }
-.menu-item-btn { width: 100%; justify-content: flex-start; text-align: left; transition: all 0.5s; }
-.menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menu-list-move { transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important; z-index: 1; position: relative; }
-.menu-list-enter-active, .menu-list-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
-.menu-list-enter-from, .menu-list-leave-to { opacity: 0; }
-.menu-list-leave-active { position: absolute; left: 8px; right: 8px; z-index: 0; }
 </style>
