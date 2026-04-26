@@ -203,6 +203,8 @@
     "dynamic_key_mutex_panel_priority_mode" : "Priority mode",
     "dynamic_key_mutex_panel_always" : "Always trigger when fully pressed",
     "dynamic_key_mutex_panel_key_bindings" : "Key bindings",
+    "dynamic_key_mutex_panel_select": "Select",
+    "dynamic_key_mutex_panel_please_select_2_keys": "* Please select 2 keys above in sequence",
 
     "macro_panel_tick" : "Tick",
     "macro_panel_is_virtual" : "Virtual",

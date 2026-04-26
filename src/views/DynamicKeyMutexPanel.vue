@@ -78,9 +78,25 @@ const dynamic_key_mutex_switch = computed<boolean>({
 <template>
 <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
   <n-form-item :label="t('key')">
-    <div class="keyboard no-select" style="height: 54px;width: 108px;">
-        <PlainKey v-for="(item,index) in dynamic_key_mutex.target_keys_location" :width="1" :height="1" :x=index
-      :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></PlainKey>
+    <div v-if="dynamic_key_mutex?.target_keys_location?.length > 0" class="keyboard no-select" style="height: 54px; width: 108px; position: relative;">
+      
+      <PlainKey 
+        v-for="(item,index) in dynamic_key_mutex.target_keys_location" 
+        :key="index" :width="1" :height="1" :x="index"
+        :labels="['Layer ' + (item?.layer ?? '?'), , , , , , (item?.id ?? '?')]"
+      ></PlainKey>
+
+      <div v-if="dynamic_key_mutex.target_keys_location.length === 1" 
+           style="position: absolute; left: 54px; top: 0; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--n-border-color); border-radius: 4px; box-sizing: border-box;">
+        <span style="color: var(--n-text-color-3); font-size: 12px; text-align: center; line-height: 1.2;">
+          {{ t('dynamic_key_mutex_panel_select') }}<br/>{{ t('dynamic_key_mutex_panel_key2') }}
+        </span>
+      </div>
+
+    </div>
+    
+    <div v-else style="height: 54px; display: flex; align-items: center;">
+      <span style="color: var(--n-text-color-3); font-size: 13px;">{{ t('dynamic_key_mutex_panel_please_select_2_keys') }}</span>
     </div>
   </n-form-item>
   <n-form-item :label="t('dynamic_key_mutex_panel_priority_mode')">
@@ -93,7 +109,7 @@ const dynamic_key_mutex_switch = computed<boolean>({
   </n-form-item>
   <n-form-item :label="t('dynamic_key_mutex_panel_key_bindings')">
     <div class="keyboard no-select" style="height: 54px;">
-      <KeyEditCell v-for="(item,index) in dynamic_key_mutex.bindings" :width="1" :height="1" :x=index
+      <KeyEditCell v-for="(item,index) in dynamic_key_mutex.bindings" :x=index
         v-model:value="dynamic_key_mutex.bindings[index]"></KeyEditCell>
     </div>
   </n-form-item>

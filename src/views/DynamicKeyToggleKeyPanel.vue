@@ -21,14 +21,17 @@ const dynamic_key_tk = defineModel<ekc.IDynamicKeyToggleKey>("dynamicKey",{
 <template>
 <n-form label-placement="top" label-width="auto" require-mark-placement="right-hanging">
     <n-form-item :label="t('key')">
-      <div class="keyboard no-select" style="height: 54px;">
-        <PlainKey v-for="(item,index) in dynamic_key_tk.target_keys_location" :width="1" :height="1" :x=index
+      <div v-if="dynamic_key_tk.target_keys_location && dynamic_key_tk.target_keys_location.length > 0" class="keyboard no-select" style="height: 54px;">
+        <PlainKey v-for="(item,index) in dynamic_key_tk.target_keys_location" :key="index" :width="1" :height="1" :x="index"
       :labels="['Layer '+item.layer.toString(),,,,,,item.id.toString()]"></PlainKey>
+      </div>
+      <div v-else style="height: 54px; display: flex; align-items: center;">
+        <span>* {{ t('common_please_select_key') }}</span>
       </div>
     </n-form-item>
     <n-form-item :label="t('dynamic_key_tk_panel_key_bindings')">
       <div class="keyboard no-select" style="height: 54px;">
-        <KeyEditCell v-for="(item,index) in dynamic_key_tk.bindings" :width="1" :height="1" :x=index
+        <KeyEditCell v-for="(item,index) in dynamic_key_tk.bindings" :x=index
           v-model:value="dynamic_key_tk.bindings[index]"></KeyEditCell>
       </div>
     </n-form-item>
