@@ -128,6 +128,7 @@ function deleteDynamicKey(index : number)
   if (keymap.value != undefined) {
     mapDynamicKey(keymap.value, dynamicKeys.value);
   }
+  selectedKeys.value = [];
 }
 
 function editDynamicKey(index : number)

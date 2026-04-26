@@ -171,6 +171,8 @@
     "dynamic_key_mutex_panel_priority_mode" : "优先级模式",
     "dynamic_key_mutex_panel_always" : "按压至底部死区时触发，忽略互斥条件",
     "dynamic_key_mutex_panel_key_bindings" : "按键绑定",
+    "dynamic_key_mutex_panel_select": "选择",
+    "dynamic_key_mutex_panel_please_select_2_keys": "* 请在上方依次选择 2 个按键",
 
     "macro_panel_tick" : "时刻",
     "macro_panel_is_virtual" : "虚拟按键",

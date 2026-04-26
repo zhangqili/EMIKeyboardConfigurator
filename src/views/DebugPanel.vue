@@ -246,7 +246,7 @@ function handleMouseLeave(event : MouseEvent, index: number) {
                   <n-flex :align="'center'">
                       <n-input-number v-model:value="debugEvent.keycode"></n-input-number>
                       <div class="keyboard no-select" style="height: 54px; width: 54px;">
-                          <KeyEditCell :width="1" :height="1" :x="0" :y="0" v-model:value="debugEvent.keycode"></KeyEditCell>
+                          <KeyEditCell :x="0" v-model:value="debugEvent.keycode"></KeyEditCell>
                       </div>
                   </n-flex>
                 </n-form-item>

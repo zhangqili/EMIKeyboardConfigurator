@@ -580,7 +580,7 @@ const selectionMode = computed(() => {
       return 'none';
     default: break;
   }
-  return 'single';
+  return 'none';
 });
 </script>
 

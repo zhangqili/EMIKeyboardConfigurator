@@ -59,6 +59,10 @@ watch(() => props.mode, (newMode, oldMode) => {
   }
 });
 
+watch(selectedIndices, () => {
+  selectedKeys.value = [];
+}, { deep: true });
+
 const usize = ref(54);
 
 

@@ -55,8 +55,8 @@ const keycap_size = computed(() : CSSProperties => ({
 }));
 
 const shrinkOffset = computed(() => props.selected ? 6 : 0);
-const translateOffset = computed(() => props.selected ? 'translate(2px, 2px)' : 'translate(0px, 0px)');
-const translateOffsetBottom = computed(() => props.selected ? 'translate(2px, -2px)' : 'translate(0px, 0px)');
+const translateOffset = computed(() => props.selected ? 'translate(0px, 0px)' : 'translate(0px, 0px)');
+const translateOffsetBottom = computed(() => props.selected ? 'translate(0px, 0px)' : 'translate(0px, 0px)');
 
 const sizeLabel = computed(() : CSSProperties => ({
   // 宽度和高度动态减去 shrinkOffset
@@ -98,67 +98,90 @@ function getContrastColor(bgColor : string) {
     return brightness > 128 ? "#000000" : "#FFFFFF";
 }
 
+function adjustColor(color: string, amount: number) {
+  if (!color) return "#000000";
+  const hex = color.replace('#', '');
+  if (hex.length !== 6) return color;
+  
+  let r = parseInt(hex.substring(0, 2), 16);
+  let g = parseInt(hex.substring(2, 4), 16);
+  let b = parseInt(hex.substring(4, 6), 16);
+
+  r = Math.max(0, Math.min(255, r + amount));
+  g = Math.max(0, Math.min(255, g + amount));
+  b = Math.max(0, Math.min(255, b + amount));
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
 const button_style = computed(() : any => {
   const styleObj: any = {
     height: "100%",
     width: "100%",
     "--n-padding": "0",
+    "--n-border-radius": "0",
     outline: "none",
     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-    "z-index": "1" 
+    "z-index": "1",
+    "border": "2px solid transparent",
+    "background-clip": "padding-box",
+    "box-sizing": "border-box" 
   };
-
-  const primaryColor = "var(--n-primary-color, #18a058)";
 
   if (props.color) {
     const isLight = getContrastColor(props.color) === "#000000";
+    const textColor = isLight ? "#000000" : "#FFFFFF";
     
-    // 1. 基础颜色
+    // 浅色背景：悬浮变暗(-20)，按压更暗(-40)
+    // 深色背景：悬浮变亮(+30)，按压更亮(+50)
+    const hoverAmount = isLight ? -20 : 30; 
+    const pressedAmount = isLight ? -40 : 50;
+    
+    const hoverColor = adjustColor(props.color, hoverAmount);
+    const pressedColor = adjustColor(props.color, pressedAmount);
+    
     styleObj["--n-color"] = props.color;
-    styleObj["--n-text-color"] = isLight ? "#000000" : "#FFFFFF";
-    styleObj["--n-border"] = `1px solid ${props.color}`;
+    styleObj["--n-text-color"] = textColor;
+    styleObj["--n-border"] = `1px solid ${props.color}`; 
 
-    styleObj["--n-color-hover"] = props.color;
-    styleObj["--n-color-focus"] = props.color;
-    styleObj["--n-color-pressed"] = props.color;
+    styleObj["--n-color-hover"] = hoverColor;
+    styleObj["--n-color-focus"] = hoverColor;
+    styleObj["--n-color-pressed"] = pressedColor;
     
-    styleObj["--n-text-color-hover"] = styleObj["--n-text-color"];
-    styleObj["--n-text-color-focus"] = styleObj["--n-text-color"];
-    styleObj["--n-text-color-pressed"] = styleObj["--n-text-color"];
+    styleObj["--n-text-color-hover"] = textColor;
+    styleObj["--n-text-color-focus"] = textColor;
+    styleObj["--n-text-color-pressed"] = textColor;
 
     styleObj["--n-border-hover"] = styleObj["--n-border"];
     styleObj["--n-border-focus"] = styleObj["--n-border"];
     styleObj["--n-border-pressed"] = styleObj["--n-border"];
 
-    // 选中状态
     if (props.selected) {
-      // 保持 1px 的基础边框，防止内容向内收缩
-      styleObj["--n-border"] = `1px solid ${primaryColor}`;
-      styleObj["--n-border-hover"] = `1px solid ${primaryColor}`;
-      styleObj["--n-border-focus"] = `1px solid ${primaryColor}`;
-      styleObj["--n-border-pressed"] = `1px solid ${primaryColor}`;
-      
-      styleObj["box-shadow"] = `0 0 0 2px ${primaryColor}`;
+      styleObj["border"] = `2px solid ${textColor}`;
+      styleObj["--n-border"] = "none";
+      styleObj["--n-border-hover"] = "none";
+      styleObj["--n-border-focus"] = "none";
+      styleObj["--n-border-pressed"] = "none";
       styleObj["z-index"] = "2"; 
     }
   } else {
-    // 默认按键逻辑（无自定义颜色）
+    // 默认按键逻辑
     styleObj["--n-color"] = "transparent";
     styleObj["--n-border"] = "1px solid var(--n-border-color)";
 
     if (props.selected) {
-      styleObj["--n-border"] = `1px solid ${primaryColor}`;
-      styleObj["--n-border-hover"] = `1px solid ${primaryColor}`;
-      styleObj["--n-border-focus"] = `1px solid ${primaryColor}`;
-      styleObj["--n-border-pressed"] = `1px solid ${primaryColor}`;
+      styleObj["border"] = `2px solid var(--n-text-color)`;
+      styleObj["--n-border"] = "none";
+      styleObj["--n-border-hover"] = "none";
+      styleObj["--n-border-focus"] = "none";
+      styleObj["--n-border-pressed"] = "none";
 
-      const activeBg = "var(--n-primary-color-hover, rgba(24, 160, 88, 0.1))";
+      const activeBg = "var(--n-border-color)";
       styleObj["--n-color"] = activeBg;
       styleObj["--n-color-hover"] = activeBg;
       styleObj["--n-color-focus"] = activeBg;
       styleObj["--n-color-pressed"] = activeBg;
 
-      styleObj["box-shadow"] = `0 0 0 2px ${primaryColor}`;
       styleObj["z-index"] = "2";
     }
   }
@@ -170,20 +193,19 @@ const button_style = computed(() : any => {
 <template>
   <div class="key" :style="rotation">
     <div :style="keycap_size">
-      <div style="position: absolute; inset: 2px;">
         
-        <n-popover 
-          :disabled="!props.tooltip || props.tooltip.length === 0 || isPressed" 
-          trigger="hover" placement="top" :animated="false" :delay="0" :duration="0"
-        >
-          <template #trigger>
-            <n-button :style="button_style" :focusable="false" class="keycap"
-                @click="$emit('click')"
-                @mousedown="handleMouseDown" 
-                @mouseenter="handleMouseEnter"
-                @mouseup="handleMouseUp"
-                @mouseleave="handleMouseLeave">
-                <div class="keylabels">
+      <n-popover 
+        :disabled="!props.tooltip || props.tooltip.length === 0 || isPressed" 
+        trigger="hover" placement="top" :animated="false" :delay="0" :duration="0"
+      >
+        <template #trigger>
+          <n-button :style="button_style" :focusable="false" class="keycap"
+              @click="$emit('click')"
+              @mousedown="handleMouseDown" 
+              @mouseenter="handleMouseEnter"
+              @mouseup="handleMouseUp"
+              @mouseleave="handleMouseLeave">
+              <div class="keylabels">
                 <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
                   <div v-if="index as number < 9 && label" :style="sizeLabel">
                     {{ label }}
@@ -192,16 +214,15 @@ const button_style = computed(() : any => {
                     {{ label }}
                   </div>
                 </div>
-              </div>
-            </n-button>
-          </template>
-          
-          <div style="text-align: center; font-size: 12px;">
-            <div v-for="(line, idx) in props.tooltip" :key="idx">{{ line }}</div>
-          </div>
-        </n-popover>
+            </div>
+          </n-button>
+        </template>
         
-      </div>
+        <div style="text-align: center; font-size: 12px;">
+          <div v-for="(line, idx) in props.tooltip" :key="idx">{{ line }}</div>
+        </div>
+      </n-popover>
+        
     </div>
   </div>
 </template>
