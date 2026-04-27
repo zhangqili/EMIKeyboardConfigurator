@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, triggerRef } from 'vue';
+import { computed, ref, triggerRef, nextTick } from 'vue';
 import { keyboardEventToHidCodeMap, keyCodeToKeyName, keyModifierToKeyName, LayerControlToKeyName, MouseKeycodeToKeyName, KeyboardOperationToKeyName, ConsumerKeyToKeyName, SystemKeyToKeyName, JoystickKeycodeToKeyName, MIDIKeyToKeyName, MIDINoteName, KeyboardConfigToKeyName, MacroKeycodeToKeyName, GamepadKeycodeToKeyName, ScriptKeycodeToKeyName } from "@/apis/utils"
 import { Keycode, KeyModifier, LayerControlKeycode, MouseKeycode, KeyboardKeycode, ConsumerKeycode, SystemRawKeycode, JoystickKeycode, MIDIKeycode, KeyboardConfigCode, MacroKeycode, GamepadKeycode, ScriptKeycode } from "emi-keyboard-controller"
 import { SelectOption, useMessage } from 'naive-ui';
@@ -32,15 +32,15 @@ const allSections = computed(() => [
   { id: 'key_selector_mouse', title: t('key_selector_mouse'), type: 'others' },
   { id: 'key_selector_consumer', title: t('key_selector_consumer'), type: 'others' },
   { id: 'key_selector_system', title: t('key_selector_system'), type: 'others' },
-  { id: 'key_selector_joystick', title: t('key_selector_joystick'), type: 'others' },
   { id: 'key_selector_script', title: t('key_selector_script'), type: 'others' },
   { id: 'key_selector_gamepad', title: t('key_selector_gamepad'), type: 'others' },
+  { id: 'key_selector_joystick', title: t('key_selector_joystick'), type: 'others' },
   { id: 'key_selector_midi', title: t('key_selector_midi'), type: 'others' },
   { id: 'key_selector_midi_note', title: t('key_selector_midi_note'), type: 'others' },
   { id: 'key_selector_macro', title: t('key_selector_macro'), type: 'others' },
   { id: 'key_selector_layer', title: t('key_selector_layer'), type: 'others' },
   { id: 'key_selector_keyboard', title: t('key_selector_keyboard'), type: 'others' },
-  { id: 'key_selector_keyboard_profile', title: t('key_selector_keyboard_profile'), type: 'others' },
+  { id: 'key_selector_keyboard_config', title: t('key_selector_keyboard_config'), type: 'others' },
   { id: 'key_selector_user', title: t('key_selector_user'), type: 'others' },
   { id: 'key_selector_transparent', title: t('key_selector_transparent'), type: 'others' },
 ]);
@@ -193,26 +193,42 @@ const handleAnchorClick = (e: MouseEvent) => {
   }
 };
 const rightPanelRef = ref<HTMLElement | null>(null);
-let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+const activeSection = ref(allSections.value[0].id);
 const syncRightScroll = () => {
-  if (scrollTimeout) return; 
+  if (!scrollContainerRef.value) return;
+  const containerTop = scrollContainerRef.value.getBoundingClientRect().top;
   
-  scrollTimeout = setTimeout(() => {
-    if (rightPanelRef.value) {
-      // 找到当前右侧处于激活状态的锚点
-      const activeLink = rightPanelRef.value.querySelector('.n-anchor-link--active');
-      
-      if (activeLink) {
-        // 使用原生 API 滚动到可视区域
-        // block: 'nearest' 非常智能：如果元素已经在视野内，它不会乱动；如果超出了视野，它会以最小距离把它拉回边缘
-        activeLink.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'nearest' 
-        });
+  let currentId = activeSection.value;
+  
+  for (const section of allSections.value) {
+    const el = document.getElementById(section.id);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.height === 0) continue;
+
+      if (rect.top - containerTop <= 32) {
+        currentId = section.id;
+      } else {
+        break;
       }
     }
-    scrollTimeout = null;
-  }, 100); // 100ms 的延迟既能保证视觉跟随，又不会卡顿
+  }
+  
+if (currentId !== activeSection.value) {
+    activeSection.value = currentId;
+
+    nextTick(() => {
+      if (rightPanelRef.value) {
+        const targetSelector = `[href="#${currentId}"]`;
+        
+        const activeLink = rightPanelRef.value.querySelector(`${targetSelector}, .custom-anchor-active`);
+        
+        if (activeLink) {
+          activeLink.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }); 
+  }
 };
 </script>
 <template>
@@ -352,12 +368,6 @@ const syncRightScroll = () => {
                       :label-fn="(k) => GamepadKeycodeToKeyName[Number(k) as GamepadKeycode]"
                       @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.GamepadCollection)" />
                 
-                    <KeyButtonGroup id="key_selector_keyboard" :title="t('key_selector_keyboard')"
-                      :keys="Object.keys(KeyboardKeycode).slice(0, 13)"
-                      :active-fn="(k) => (binding & 0xFF) == Keycode.KeyboardOperation && (((binding >> 8) & 0x3F) < 0x20) && ((binding >> 8) & 0x3F) == Number(k)"
-                      :label-fn="(k) => KeyboardOperationToKeyName[Number(k) as KeyboardKeycode]"
-                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.KeyboardOperation)" />
-                
                     <KeyButtonGroup id="key_selector_joystick" :title="t('key_selector_joystick')">
                       <n-button :type="((binding & 0xFF) == Keycode.JoystickCollection) ? 'primary' : ''" @click="handleKeycodeClick(Keycode.JoystickCollection)">
                         {{ keyCodeToKeyName[Keycode.JoystickCollection] }}
@@ -433,11 +443,17 @@ const syncRightScroll = () => {
                       </n-grid>
                     </KeyButtonGroup>
                 
-                    <KeyButtonGroup id="key_selector_keyboard_profile" :title="t('key_selector_keyboard_profile')">
+                    <KeyButtonGroup id="key_selector_keyboard" :title="t('key_selector_keyboard')"
+                      :keys="Object.keys(KeyboardKeycode).slice(0, 13)"
+                      :active-fn="(k) => (binding & 0xFF) == Keycode.KeyboardOperation && (((binding >> 8) & 0x3F) < 0x20) && ((binding >> 8) & 0x3F) == Number(k)"
+                      :label-fn="(k) => KeyboardOperationToKeyName[Number(k) as KeyboardKeycode]"
+                      @click-key="(k) => handleFullKeycodeClick(Number(k) << 8 | Keycode.KeyboardOperation)" />
+                
+                    <KeyButtonGroup id="key_selector_keyboard_config" :title="t('key_selector_keyboard_config')">
                       <n-button
                         :type="(((binding & 0xFF) == Keycode.KeyboardOperation) && (((binding >> 8) & 0x3F) >= KeyboardKeycode.KeyboardConfigBase)) ? 'primary' : ''"
                         @click="handleFullKeycodeClick((keyboard_config_control_value << 14) | (Number(keyboard_config_value) + KeyboardKeycode.KeyboardConfigBase) << 8 | Keycode.KeyboardOperation)">
-                        Keyboard Profile
+                        Keyboard Configuration
                       </n-button>
                       <n-grid :cols="4" style="width: 100%; margin-top: 8px;">
                         <n-gi :span="1">

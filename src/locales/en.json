@@ -78,7 +78,7 @@
     "key_selector_macro" : "Macro",
     "key_selector_layer" : "Layer",
     "key_selector_keyboard" : "Keyboard",
-    "key_selector_keyboard_profile" : "Keyboard Configuration",
+    "key_selector_keyboard_config" : "Keyboard Configuration",
     "key_selector_user" : "User",
     "key_selector_transparent" : "Transparent",
 
