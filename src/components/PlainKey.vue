@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type CSSProperties } from "vue";
+import { computed, ref, watch, type CSSProperties } from "vue";
 import { NButton } from "naive-ui";
 
 const props = defineProps([
@@ -12,8 +12,37 @@ const emit = defineEmits(['click','mousedown', 'mouseenter', 'mouseup', 'mousele
 const usize = ref(54);
 const margin = ref(2);
 const isPressed = ref(false);
+const isHovered = ref(false);
+const buttonRef = ref<any>(null);
+
+function triggerRipple() {
+  if (buttonRef.value && buttonRef.value.$el) {
+    const clickEvent = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    });
+    buttonRef.value.$el.dispatchEvent(clickEvent);
+  }
+}
+watch(() => props.selected, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    triggerRipple(); 
+  }
+});
+function handleNativeClick(event: MouseEvent) {
+  if (event.isTrusted) {
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    event.preventDefault();
+  } else {
+    emit('click', event);
+  }
+}
+
 function handleMouseDown(event: MouseEvent) {
   isPressed.value = true;
+  triggerRipple();
   emit('mousedown', event);
 }
 
@@ -23,8 +52,10 @@ function handleMouseUp(event: MouseEvent) {
 }
 
 function handleMouseEnter(event: MouseEvent) {
+  isHovered.value = true;
   if (event.buttons !== 0) {
     isPressed.value = true;
+    triggerRipple();
   } else {
     isPressed.value = false;
   }
@@ -32,6 +63,7 @@ function handleMouseEnter(event: MouseEvent) {
 }
 
 function handleMouseLeave(event: MouseEvent) {
+  isHovered.value = false;
   isPressed.value = false;
   emit('mouseleave', event);
 }
@@ -116,42 +148,36 @@ function adjustColor(color: string, amount: number) {
 
 const button_style = computed(() : any => {
   const styleObj: any = {
-    height: "100%",
-    width: "100%",
-    "--n-padding": "0",
-    "--n-border-radius": "0",
-    outline: "none",
-    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-    "z-index": "1",
-    "border": "2px solid transparent",
-    "background-clip": "padding-box",
-    "box-sizing": "border-box" 
+    height: "100%", width: "100%", "--n-padding": "0", "--n-border-radius": "0",
+    outline: "none", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", "z-index": "1",
+    "border": "2px solid transparent", "background-clip": "padding-box", "box-sizing": "border-box" 
   };
 
   if (props.color) {
     const isLight = getContrastColor(props.color) === "#000000";
     const textColor = isLight ? "#000000" : "#FFFFFF";
-    
-    // 浅色背景：悬浮变暗(-20)，按压更暗(-40)
-    // 深色背景：悬浮变亮(+30)，按压更亮(+50)
     const hoverAmount = isLight ? -20 : 30; 
     const pressedAmount = isLight ? -40 : 50;
     
     const hoverColor = adjustColor(props.color, hoverAmount);
     const pressedColor = adjustColor(props.color, pressedAmount);
-    
-    styleObj["--n-color"] = props.color;
-    styleObj["--n-text-color"] = textColor;
-    styleObj["--n-border"] = `1px solid ${props.color}`; 
 
-    styleObj["--n-color-hover"] = hoverColor;
-    styleObj["--n-color-focus"] = hoverColor;
-    styleObj["--n-color-pressed"] = pressedColor;
+    // 1. 如果是按住鼠标滑入(isPressed)，让 Hover 颜色扮演 Pressed 颜色
+    const currentHoverColor = isPressed.value ? pressedColor : hoverColor;
+    // 2. 如果已经滑出(isHovered 为 false)，强制让 Pressed 颜色恢复成底色，无视浏览器的 :active 锁定
+    const currentPressedColor = isHovered.value ? pressedColor : props.color;
+
+    styleObj["--n-color"] = props.color;
+    styleObj["--n-color-hover"] = currentHoverColor;
+    styleObj["--n-color-pressed"] = currentPressedColor;
+    styleObj["--n-color-focus"] = props.color; // 防止点击松开后的焦点残留
     
+    styleObj["--n-text-color"] = textColor;
     styleObj["--n-text-color-hover"] = textColor;
     styleObj["--n-text-color-focus"] = textColor;
     styleObj["--n-text-color-pressed"] = textColor;
 
+    styleObj["--n-border"] = `1px solid ${props.color}`;
     styleObj["--n-border-hover"] = styleObj["--n-border"];
     styleObj["--n-border-focus"] = styleObj["--n-border"];
     styleObj["--n-border-pressed"] = styleObj["--n-border"];
@@ -168,6 +194,11 @@ const button_style = computed(() : any => {
     // 默认按键逻辑
     styleObj["--n-color"] = "transparent";
     styleObj["--n-border"] = "1px solid var(--n-border-color)";
+    styleObj["--n-color-focus"] = "transparent";
+    
+    // 对无色按键同样进行状态劫持
+    styleObj["--n-color-hover"] = isPressed.value ? "var(--n-border-color)" : "var(--n-color-hover)";
+    styleObj["--n-color-pressed"] = isHovered.value ? "var(--n-border-color)" : "transparent";
 
     if (props.selected) {
       styleObj["border"] = `2px solid var(--n-text-color)`;
@@ -199,8 +230,8 @@ const button_style = computed(() : any => {
         trigger="hover" placement="top" :animated="false" :delay="0" :duration="0"
       >
         <template #trigger>
-          <n-button :style="button_style" :focusable="false" class="keycap"
-              @click="$emit('click')"
+          <n-button ref="buttonRef" :style="button_style" :focusable="false" class="keycap"
+              @click.capture="handleNativeClick"
               @mousedown="handleMouseDown" 
               @mouseenter="handleMouseEnter"
               @mouseup="handleMouseUp"

@@ -748,6 +748,9 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
   {
     subString = keyCodeToKeyName[code as Keycode];
     mainString = keyBindingModifierToString(keycode);
+    if (modifier!=0 && code == Keycode.NoEvent) {
+      subString = "";
+    }
   }
   else
   {
@@ -820,6 +823,10 @@ export function keyCodeToString(keycode: number): {mainString: string, subString
         mainString = MacroKeycodeToKeyName[((modifier>>4)&0x0F) as MacroKeycode]+(modifier&0x0F).toString();
         break;
     }
+  }
+  if (subString == "") {
+    subString = mainString;
+    mainString = "";
   }
   return {mainString: mainString, subString: subString};
 }

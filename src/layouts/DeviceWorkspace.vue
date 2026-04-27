@@ -28,6 +28,7 @@ import { PlusFilled as PlusIcon } from '@vicons/material';
 import { KeyboardOff as KeyboardOffIcon } from '@vicons/tabler';
 import KeyboardRenderToolbar from '@/components/KeyboardRenderToolbar.vue';
 import LayoutSubSelector from "@/components/LayoutSubSelector.vue";
+import { ViewQuiltOutlined } from '@vicons/material'
 
 type SafeController = Omit<ekc.KeyboardController, 'listeners'>;
 
@@ -731,13 +732,17 @@ const selectionMode = computed(() => {
                   @mousedown.stop 
                   style="margin-right: 12px; pointer-events: auto; display: flex; align-items: center;"
                 >
-                  <n-popover placement="top-end" trigger="hover" :show-arrow="false">
+                  <n-popover raw placement="top-end" trigger="hover" :show-arrow="true">
                     <template #trigger>
-                      <n-button size="medium" secondary style="height: 32px;">
-                        {{ t("keyboard_render_edit_layout") }}
+                      <n-button size="medium" secondary style="height: 32px; width: 32px;">
+                        <template #icon>
+                          <NIcon>
+                            <ViewQuiltOutlined />
+                          </NIcon>
+                        </template>
                       </n-button>
                     </template>
-                    <div style="width: 240px;">
+                    <n-card :title="t('keyboard_render_edit_layout')" style="width: 240px;">
                       <n-flex vertical>
                         <LayoutSubSelector 
                           v-for="(value, index) in layoutLabels" 
@@ -746,7 +751,7 @@ const selectionMode = computed(() => {
                           :labels="value"
                         />
                       </n-flex>
-                    </div>
+                    </n-card>
                   </n-popover>
                 </div>
                 <div class="toggle-btn" @click="toggleCollapse" @mousedown.stop style="pointer-events: auto;">
