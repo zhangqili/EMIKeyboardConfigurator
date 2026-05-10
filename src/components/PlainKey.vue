@@ -236,6 +236,7 @@ const button_style = computed(() : any => {
               @mouseenter="handleMouseEnter"
               @mouseup="handleMouseUp"
               @mouseleave="handleMouseLeave">
+            <slot>
               <div class="keylabels">
                 <div v-for="(label, index) in props.labels" :key="index" :class="'keylabel keylabel' + index + ' textsize2'">
                   <div v-if="index as number < 9 && label" :style="sizeLabel">
@@ -245,7 +246,8 @@ const button_style = computed(() : any => {
                     {{ label }}
                   </div>
                 </div>
-            </div>
+              </div>
+            </slot>
           </n-button>
         </template>
         

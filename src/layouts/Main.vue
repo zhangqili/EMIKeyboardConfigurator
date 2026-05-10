@@ -118,6 +118,7 @@ function create_controller(device: string): SafeController {
     case "Destrez Asural Left": ctrl = new ekc.DestrezAsuralLeftController(); break;
     case "Destrez Asural Right": ctrl = new ekc.DestrezAsuralRightController(); break;
     case "Open28S": ctrl = new ekc.Open28SController(); break;
+    case "Aterty Magnetic Gaming Keyboard": ctrl = new ekc.AT32KeyboardController(); break;
     case "ANSI 104 Sample": ctrl = new ekc.ANSI104SampleController(); break;
     default: ctrl = new ekc.ANSI104SampleController();
   }
@@ -326,6 +327,7 @@ async function handleAddRequest(name: string, mode: 'authorize' | 'demo') {
     const tempCtrl = create_controller(name);
     try {
       const devices = await tempCtrl.detect(); 
+      console.log(devices);
       if (devices && devices.length > 0) {
         // 使用国际化键名：授权成功
         message.success(t('main_auth_success'));

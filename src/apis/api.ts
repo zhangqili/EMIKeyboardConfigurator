@@ -10,6 +10,7 @@ const DEVICES = [
     "Destrez Asural Left",
     "Destrez Asural Right",
     "Open28S",
+    "Aterty Magnetic Gaming Keyboard",
     "ANSI 104 Sample",
 ];
 

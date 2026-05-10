@@ -225,7 +225,9 @@ function handleMouseLeave(event : MouseEvent, index: number) {
               @mouseup="(event : MouseEvent) => handleMouseUp(event, index + advancedKeys.length)"
               @mouseleave="(event : MouseEvent) => handleMouseLeave(event, index + advancedKeys.length)"
               :width="1" :height="1" :x=index
-              :labels="[(index + advancedKeys.length).toString()]" />
+              :labels="[(index + advancedKeys.length).toString()]" >
+                  
+            </PlainKey>
           </div>
         </n-flex>
         

@@ -74,6 +74,6 @@ export class Open28SController extends LibampKeyboardController {
                     Keycode.KeyTransparent,
                 ],
         ];
-        this.dynamic_keys = Array(32).fill(null).map(() => (new DynamicKey()));;
+        this.dynamic_keys = Array(8).fill(null).map(() => (new DynamicKey()));;
     }
 }
