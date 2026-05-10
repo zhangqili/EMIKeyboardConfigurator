@@ -347,7 +347,7 @@ const visibleKeys = computed(() => {
   <div style="display: grid; place-items: center; position: relative; height: 100%;">
 
     <n-card @mousedown="handleBackgroundMouseDown" 
-      style="width: max-content;" 
+      style="width: max-content; cursor: crosshair;"
       content-style="padding: 0px;" 
       :bordered="false"
     >
@@ -423,5 +423,7 @@ const visibleKeys = computed(() => {
 .list-leave-active {
   position: absolute;
 }
-
+:deep(*) {
+  cursor: crosshair !important;
+}
 </style>

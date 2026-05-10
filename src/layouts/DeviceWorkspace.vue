@@ -606,7 +606,7 @@ const selectionMode = computed(() => {
           <n-button @click="applyCommand" :disabled="!isReady">
             {{ t('toolbar_apply') }}
           </n-button>
-          <n-button @click="controller?.flash();" :disabled="!isReady">
+          <n-button  v-if="files.length > 0" @click="controller?.flash();" :disabled="!isReady">
             {{ t('toolbar_device_flash_configuration') }}
           </n-button>        
           <n-button tertiary :focusable="false" :type="versionStatusType">
@@ -632,7 +632,7 @@ const selectionMode = computed(() => {
     <n-layout v-if="controller" has-sider class="main-body">
       <n-layout-sider bordered :width="lang === 'zh' ? 200 : 200" style="flex-shrink: 0;" content-style="display: flex; flex-direction: column; height: 100%; transition: width 0.3s ease;">
         <div style="flex-shrink: 0; padding: 8px;">
-          <n-select v-if="files.length != 0"
+          <n-select v-if="files.length > 1"
             style="font-size: 14px;
             margin-bottom: 8px;"
             size="large"

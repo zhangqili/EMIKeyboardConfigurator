@@ -4,7 +4,7 @@ import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode
 import layout from './keyboard_layout.json?raw';
 export class Open28SController extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 17;
-    profile_number:number = 0;
+    profile_number:number = 1;
 
     constructor() {
         super();
