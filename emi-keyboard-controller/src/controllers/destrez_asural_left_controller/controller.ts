@@ -19,7 +19,7 @@ export class DestrezAsuralLeftController extends LibampKeyboardController {
             vendorId: 0xFEED,
             productId: 22319,
             usagePage: 0xFF60
-            }, silent);
+            }, silent, "Asural Left");
     }
 
     get_layout_json(): string {
