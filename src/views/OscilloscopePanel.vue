@@ -707,6 +707,72 @@ function clearWaveform() {
         chartRef.value.chart.setOption({ series: emptySeries }, { replaceMerge: ['series'] });
     }
 }
+
+// --- 噪声与波形分析计算 ---
+// 计算指定区间内数据的峰峰值(Vpp)、有效值(RMS)、最大跳变(Max Δ)和波峰因数(CF)
+const calculateStats = (cache: Record<number, [number, number][]>, pts: {x: number, y: number}[]) => {
+    if (pts.length !== 2) return null;
+    
+    // 获取两个游标的 X 轴范围 (Tick 区间)
+    const startX = Math.min(pts[0].x, pts[1].x);
+    const endX = Math.max(pts[0].x, pts[1].x);
+    
+    const stats: Record<number, { vpp: number, rms: number, mean: number, count: number, maxDelta: number, crestFactor: number}> = {};
+
+    oscilloscopeSelectedKeys.value.forEach(id => {
+        if (hiddenKeys.value.includes(id)) return;
+        const data = cache[id];
+        if (!data || data.length === 0) return;
+
+        // 提取该区间内的所有 Y 值
+        const rangeValues = data
+            .filter(d => d[0] >= startX && d[0] <= endX)
+            .map(d => d[1]);
+
+        if (rangeValues.length === 0) return;
+
+        const max = Math.max(...rangeValues);
+        const min = Math.min(...rangeValues);
+        const vpp = max - min; // 峰峰值噪声
+
+        const sum = rangeValues.reduce((a, b) => a + b, 0);
+        const mean = sum / rangeValues.length; // 平均值（直流偏置基准）
+
+        // 计算 RMS (均方根)：交流耦合后的纯噪声有效值
+        const variance = rangeValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / rangeValues.length;
+        const rms = Math.sqrt(variance);
+
+        // 1. 计算相邻点最大差值 (Max Step Noise)
+        let maxDelta = 0;
+        for (let i = 1; i < rangeValues.length; i++) {
+            const delta = Math.abs(rangeValues[i] - rangeValues[i - 1]);
+            if (delta > maxDelta) maxDelta = delta;
+        }
+
+        // 2. 计算波峰因数 (Crest Factor) = 最大绝对偏差 / RMS
+        let maxDeviation = 0;
+        for (let i = 0; i < rangeValues.length; i++) {
+            const dev = Math.abs(rangeValues[i] - mean);
+            if (dev > maxDeviation) maxDeviation = dev;
+        }
+        const crestFactor = rms > 0 ? (maxDeviation / rms) : 0;
+
+        stats[id] = { vpp, rms, mean, count: rangeValues.length, maxDelta, crestFactor };
+    });
+
+    return stats;
+};
+
+// 监听 measurePoints，自动计算 Raw 和 Value 两个图表的统计结果
+const rawAnalysisStats = computed(() => {
+    if (!isMeasuring.value || measurePoints.value[0].length !== 2) return null;
+    return calculateStats(rawDataCache, measurePoints.value[0]);
+});
+
+const valAnalysisStats = computed(() => {
+    if (!isMeasuring.value || measurePoints.value[1].length !== 2) return null;
+    return calculateStats(valueDataCache, measurePoints.value[1]);
+});
 </script>
 
 <template>
@@ -792,7 +858,63 @@ function clearWaveform() {
                      ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[1][1].y - measurePoints[1][0].y).toFixed(3) }}</span>
                  </div>
             </div>
+            <!-- Raw 图表测量与分析浮窗 -->
+<div v-if="isMeasuring && measurePoints[0].length === 2"
+                 :style="{
+                     position: 'absolute', top: '16px', left: '80px', zIndex: 10, pointerEvents: 'none',
+                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                     padding: '12px', borderRadius: '6px', backdropFilter: 'blur(8px)',
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '320px'
+                 }">
+                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '8px', borderBottom: '1px solid #555', paddingBottom: '4px' }">
+                    Raw Measurement & Analysis
+                 </div>
+                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333', marginBottom: '10px' }">
+                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[0][1].x - measurePoints[0][0].x).toFixed(0) }}</span> Ticks
+                     <span style="margin: 0 8px; color: #666">|</span>
+                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[0][1].y - measurePoints[0][0].y).toFixed(0) }}</span>
+                 </div>
+                 <!-- 遍历显示每个未隐藏按键的噪声数据 -->
+                 <div v-if="rawAnalysisStats" v-for="(stats, id) in rawAnalysisStats" :key="id" :style="{ fontSize: '12px', marginTop: '8px', borderLeft: `2px solid ${lineColors[oscilloscopeSelectedKeys.indexOf(Number(id)) % lineColors.length]}`, paddingLeft: '8px' }">
+                     <div :style="{ color: themeName === 'dark' ? '#eee' : '#333', fontWeight: 'bold', marginBottom: '4px' }">Key {{ id }}</div>
+                     <div style="display: flex; flex-wrap: wrap; gap: 8px 12px;">
+                         <span style="color:#ff4637;" title="Peak-to-Peak Noise">Vpp: <b>{{ stats.vpp.toFixed(0) }}</b></span>
+                         <span style="color:#18a058;" title="Root Mean Square Noise">RMS: <b>{{ stats.rms.toFixed(2) }}</b></span>
+                         <span style="color:#d03050;" title="Max Step Noise (相邻点最大差值)">Max Δ: <b>{{ stats.maxDelta.toFixed(0) }}</b></span>
+                         <span style="color:#f0a020;" title="Crest Factor (波峰因数)">CF: <b>{{ stats.crestFactor.toFixed(2) }}</b></span>
+                     </div>
+                 </div>
+            </div>
 
+            <!-- Value 图表测量与分析浮窗 -->
+            <div v-if="isMeasuring && measurePoints[1].length === 2"
+                 :style="{
+                     position: 'absolute', top: '52%', left: '80px', zIndex: 10, pointerEvents: 'none',
+                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                     padding: '12px', borderRadius: '6px', backdropFilter: 'blur(8px)',
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '320px'
+                 }">
+                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '8px', borderBottom: '1px solid #555', paddingBottom: '4px' }">
+                    Value Measurement & Analysis
+                 </div>
+                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333', marginBottom: '10px' }">
+                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[1][1].x - measurePoints[1][0].x).toFixed(0) }}</span> Ticks
+                     <span style="margin: 0 8px; color: #666">|</span>
+                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[1][1].y - measurePoints[1][0].y).toFixed(3) }}</span>
+                 </div>
+                 <!-- 遍历显示每个未隐藏按键的噪声数据 -->
+                 <div v-if="valAnalysisStats" v-for="(stats, id) in valAnalysisStats" :key="id" :style="{ fontSize: '12px', marginTop: '8px', borderLeft: `2px solid ${lineColors[oscilloscopeSelectedKeys.indexOf(Number(id)) % lineColors.length]}`, paddingLeft: '8px' }">
+                     <div :style="{ color: themeName === 'dark' ? '#eee' : '#333', fontWeight: 'bold', marginBottom: '4px' }">Key {{ id }}</div>
+                     <div style="display: flex; flex-wrap: wrap; gap: 8px 12px;">
+                         <span style="color:#ff4637;" title="Peak-to-Peak Noise">Vpp: <b>{{ stats.vpp.toFixed(4) }}</b></span>
+                         <span style="color:#18a058;" title="Root Mean Square Noise">RMS: <b>{{ stats.rms.toFixed(4) }}</b></span>
+                         <span style="color:#d03050;" title="Max Step Noise (相邻点最大差值)">Max Δ: <b>{{ stats.maxDelta.toFixed(4) }}</b></span>
+                         <span style="color:#f0a020;" title="Crest Factor (波峰因数)">CF: <b>{{ stats.crestFactor.toFixed(2) }}</b></span>
+                     </div>
+                 </div>
+            </div>
             <v-chart ref="chartRef" :theme="themeName" :option="chartOption" :update-options="{ replaceMerge: ['series'] }"
                 @zr:click="handleChartClick"
                 @zr:mousedown="handleChartMouseDown"

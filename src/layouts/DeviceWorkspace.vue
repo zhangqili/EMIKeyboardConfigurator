@@ -19,6 +19,7 @@ import AboutPanel from "@/views/AboutPanel.vue";
 import ScriptPanel from "@/views/ScriptPanel.vue";
 import MacroPanel from "@/views/MacroPanel.vue";
 import OscilloscopePanel from "@/views/OscilloscopePanel.vue";
+import ConsolePanel from "@/views/ConsolePanel.vue";
 import KeyboardRender from "@/components/KeyboardRender.vue";
 import cloneDeep from "lodash/cloneDeep";
 import { setI18nLanguage } from "@/locales/i18n";
@@ -501,6 +502,7 @@ const menuOptions = computed(() => {
     opts.push({ label: t('main_tabs_debug'), key: 'DebugPanel' });
     opts.push({ label: t('main_tabs_oscilloscope'), key: 'OscilloscopePanel' });
   }
+  opts.push({ label: t('main_tabs_console'), key: 'ConsolePanel' });
   opts.push({ label: t('main_tabs_settings'), key: 'SettingsPanel' });
   opts.push({ label: t('main_tabs_about'), key: 'AboutPanel' });
   return opts;
@@ -537,6 +539,7 @@ const currentPanel = computed(() => {
     case 'DebugPanel': return DebugPanel;
     case 'SettingsPanel': return SettingsPanel;
     case 'OscilloscopePanel': return OscilloscopePanel;
+    case 'ConsolePanel': return ConsolePanel;
     case 'MacroPanel': return MacroPanel;
     case 'ScriptPanel': return ScriptPanel;
     case 'AboutPanel': return AboutPanel;

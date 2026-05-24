@@ -33,11 +33,40 @@ enum LargeDataCmd {
     End = 0x02,
     Abort = 0x03,
 }
+const AMP_FRAME_PROTO = 0x41;
+const AMP_FRAME_REPORT_SIZE = 64;
+const AMP_FRAME_HEADER_SIZE = 6;
+const AMP_FRAME_MAX_PAYLOAD = AMP_FRAME_REPORT_SIZE - AMP_FRAME_HEADER_SIZE;
+
+enum AmpChannel {
+    Control = 0,
+    Debug = 1,
+    Console = 2,
+    Large = 3,
+    NexusCtrl = 4,
+    User = 15,
+}
+
+enum AmpFrameFlag {
+    ReqAck = 0x01,
+    Resp = 0x02,
+    Error = 0x04,
+    More = 0x08,
+}
+
+interface AmpFrame {
+    channel: number;
+    flags: number;
+    seq: number;
+    code: number;
+    type: number;
+    payload: Uint8Array;
+}
+
 interface PendingRequest {
     resolve: (data: Uint8Array) => void;
     reject: (reason: any) => void;
-    expectedCode: PacketCode | number;
-    expectedType: PacketData | number;
+    seq: number;
     timer: number;
 }
 
@@ -103,7 +132,8 @@ export class LibampKeyboardController extends KeyboardController {
     private handleInputReport: (event: HIDInputReportEvent) => void;
     profile_number:number = 4;
     profile_index:number = 0;
-    private pendingRequest: PendingRequest | null = null;
+    private pendingRequests = new Map<number, PendingRequest>();
+    private nextSeq: number = 1;
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
     private requestQueue = new RequestQueue();
     firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
@@ -120,60 +150,62 @@ export class LibampKeyboardController extends KeyboardController {
         super();
         this.device = undefined;this.handleInputReport = (event: HIDInputReportEvent) => {
             const data = new Uint8Array(event.data.buffer);
-            const packetCode = data[0];
-            const packetType = data[1];
-
-            // 1. 检查是否有正在等待的请求，并且收到的包类型匹配
-            // 注意：这里我们假设回包是 PacketCodeSet 或 PacketCodeGet，且 packetType 匹配
-            if (this.pendingRequest && 
-                packetCode === this.pendingRequest.expectedCode) {
-                
-                window.clearTimeout(this.pendingRequest.timer);
-                this.pendingRequest.resolve(data);
-                this.pendingRequest = null;
+            const frame = this.decodeFrame(data);
+            if (!frame) {
                 return;
             }
 
-            // 2. 如果不是我们在等待的包（或者是主动上报的 Debug/User 包），则走原有流程
-            //this.dispatchEvent(new Event('updateData'));
-            this.packet_process(data);
+            if ((frame.flags & AmpFrameFlag.Resp) && frame.seq !== 0) {
+                const pending = this.pendingRequests.get(frame.seq);
+                if (pending) {
+                    window.clearTimeout(pending.timer);
+                    this.pendingRequests.delete(frame.seq);
+                    if (frame.flags & AmpFrameFlag.Error) {
+                        pending.reject(new Error(`Device returned error ${frame.payload[0] ?? 0} for seq ${frame.seq}`));
+                    } else {
+                        pending.resolve(this.frameToLegacyPacket(frame));
+                    }
+                    return;
+                }
+            }
+
+            if (frame.channel === AmpChannel.Console) {
+                this.dispatchEvent(new CustomEvent('consoleData', {
+                    detail: {
+                        text: new TextDecoder().decode(frame.payload),
+                        data: frame.payload,
+                    }
+                }));
+                return;
+            }
+
+            this.packet_process(this.frameToLegacyPacket(frame));
         };
 
     }
     private async sendAndWait(buf: Uint8Array, timeout: number = 200): Promise<Uint8Array> {
-        const expectedCode = buf[0];
-        const expectedType = buf[1];
-
+        const seq = this.allocateSeq();
+        const report = this.legacyPacketToFrame(buf, AmpFrameFlag.ReqAck, seq);
         return new Promise((resolve, reject) => {
-            // 3. 设置超时
             const timer = window.setTimeout(() => {
-                // 双重检查，确保超时的是当前这个请求
-                if (this.pendingRequest && 
-                    this.pendingRequest.expectedCode === expectedCode&&
-                    this.pendingRequest.expectedType === expectedType) {
-                    
-                    this.pendingRequest = null;
-                    reject(new Error(`Timeout waiting for packet: Code ${expectedCode}`));
+                if (this.pendingRequests.get(seq)) {
+                    this.pendingRequests.delete(seq);
+                    reject(new Error(`Timeout waiting for packet seq ${seq}, code ${buf[0]}, type ${buf[1]}`));
                 }
             }, timeout);
 
-            // 4. 注册等待请求
-            this.pendingRequest = {
+            this.pendingRequests.set(seq, {
                 resolve,
                 reject,
-                expectedCode, // 自动填入
-                expectedType,
+                seq,
                 timer
-            };
+            });
 
-            try {
-                // 5. 发送数据
-                this.write(buf);
-            } catch (error) {
+            this.sendReport(report).catch((error) => {
                 window.clearTimeout(timer);
-                this.pendingRequest = null;
+                this.pendingRequests.delete(seq);
                 reject(error);
-            }
+            });
         });
     }
 
@@ -196,9 +228,167 @@ export class LibampKeyboardController extends KeyboardController {
         }
     };
 
+    private allocateSeq(): number {
+        const seq = this.nextSeq;
+        this.nextSeq = (this.nextSeq + 1) & 0xFF;
+        if (this.nextSeq === 0) {
+            this.nextSeq = 1;
+        }
+        return seq;
+    }
+
+    private async sendReport(report: Uint8Array): Promise<void> {
+        if (!this.device || !this.device.opened) {
+            throw new Error("Device is not connected");
+        }
+        await this.device.sendReport(0, report as BufferSource);
+    }
+
+    private channelForPacket(code: number, type: number): AmpChannel {
+        if (code === PacketCode.PacketCodeLargeSet || code === PacketCode.PacketCodeLargeGet) {
+            return AmpChannel.Large;
+        }
+        if ((code === PacketCode.PacketCodeGet || code === PacketCode.PacketCodeSet) && type === PacketData.PacketDataDebug) {
+            return AmpChannel.Debug;
+        }
+        if (code === PacketCode.PacketCodeLog) {
+            return AmpChannel.Console;
+        }
+        if (code === PacketCode.PacketCodeUser) {
+            return AmpChannel.User;
+        }
+        return AmpChannel.Control;
+    }
+
+    private legacyPacketLength(buf: Uint8Array): number {
+        const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+        switch (buf[0]) {
+            case PacketCode.PacketCodeEvent:
+                return 8;
+            case PacketCode.PacketCodeLog:
+                return Math.min(buf.byteLength, 4 + view.getUint16(2, true));
+            case PacketCode.PacketCodeLargeSet:
+            case PacketCode.PacketCodeLargeGet:
+                if (buf[2] === LargeDataCmd.Payload) {
+                    return Math.min(buf.byteLength, 9 + view.getUint16(7, true));
+                }
+                if (buf[2] === LargeDataCmd.Start) {
+                    return 11;
+                }
+                return 3;
+            case PacketCode.PacketCodeGet:
+            case PacketCode.PacketCodeSet:
+                switch (buf[1]) {
+                    case PacketData.PacketDataAdvancedKey:
+                        return 22;
+                    case PacketData.PacketDataRgbBaseConfig:
+                        return 15;
+                    case PacketData.PacketDataRgbConfig:
+                        return Math.min(buf.byteLength, 3 + buf[2] * 8);
+                    case PacketData.PacketDataKeymap:
+                        return Math.min(buf.byteLength, 6 + buf[5] * 2);
+                    case PacketData.PacketDataDynamicKey:
+                        return 34;
+                    case PacketData.PacketDataProfileIndex:
+                        return 3;
+                    case PacketData.PacketDataConfig:
+                        return Math.min(buf.byteLength, 4 + buf[2] * 2);
+                    case PacketData.PacketDataDebug:
+                        return Math.min(buf.byteLength, 7 + buf[2] * 8);
+                    case PacketData.PacketDataMacro:
+                        return Math.min(buf.byteLength, 5 + view.getUint16(3, true) * 12);
+                    case PacketData.PacketDataVersion: {
+                        const infoLen = view.getUint16(2, true);
+                        return infoLen > 0 ? Math.min(buf.byteLength, 16 + infoLen) : 2;
+                    }
+                    case PacketData.PacketDataFeature:
+                        return 11;
+                    default:
+                        return buf.byteLength;
+                }
+            default:
+                return buf.byteLength;
+        }
+    }
+
+    private legacyPacketToFrame(buf: Uint8Array, flags: number, seq: number): Uint8Array {
+        const report = new Uint8Array(AMP_FRAME_REPORT_SIZE);
+        const packetLen = this.legacyPacketLength(buf);
+        const code = buf[0];
+        let type = 0;
+        let payload: Uint8Array;
+
+        if (code === PacketCode.PacketCodeEvent) {
+            payload = buf.slice(1, packetLen);
+        } else if (code === PacketCode.PacketCodeLog) {
+            payload = buf.slice(4, packetLen);
+        } else {
+            type = buf[1];
+            payload = buf.slice(2, packetLen);
+        }
+
+        if (payload.length > AMP_FRAME_MAX_PAYLOAD) {
+            throw new Error(`Packet too large for AmpFrame: code ${code}, type ${type}, payload ${payload.length}`);
+        }
+
+        report[0] = AMP_FRAME_PROTO;
+        report[1] = ((this.channelForPacket(code, type) & 0x0F) << 4) | (flags & 0x0F);
+        report[2] = seq;
+        report[3] = code;
+        report[4] = type;
+        report[5] = payload.length;
+        report.set(payload, AMP_FRAME_HEADER_SIZE);
+        return report;
+    }
+
+    private decodeFrame(data: Uint8Array): AmpFrame | null {
+        if (data.byteLength < AMP_FRAME_HEADER_SIZE || data[0] !== AMP_FRAME_PROTO) {
+            console.warn("[AmpFrame] Dropped non-V2 report", data);
+            return null;
+        }
+        const len = data[5];
+        if (len > AMP_FRAME_MAX_PAYLOAD || AMP_FRAME_HEADER_SIZE + len > data.byteLength) {
+            console.warn("[AmpFrame] Dropped invalid frame length", len);
+            return null;
+        }
+        return {
+            channel: data[1] >> 4,
+            flags: data[1] & 0x0F,
+            seq: data[2],
+            code: data[3],
+            type: data[4],
+            payload: data.slice(AMP_FRAME_HEADER_SIZE, AMP_FRAME_HEADER_SIZE + len),
+        };
+    }
+
+    private frameToLegacyPacket(frame: AmpFrame): Uint8Array {
+        const packet = new Uint8Array(64);
+        if (frame.code === PacketCode.PacketCodeEvent) {
+            packet[0] = frame.code;
+            packet.set(frame.payload, 1);
+            return packet;
+        }
+        if (frame.code === PacketCode.PacketCodeLog) {
+            packet[0] = frame.code;
+            const view = new DataView(packet.buffer);
+            view.setUint16(2, frame.payload.length, true);
+            packet.set(frame.payload, 4);
+            return packet;
+        }
+        packet[0] = frame.code;
+        packet[1] = frame.type;
+        packet.set(frame.payload, 2);
+        return packet;
+    }
+
     write(buf: Uint8Array): number {
-        this.device?.sendReport(0, buf as BufferSource);
-        return (buf.byteLength + 1);
+        try {
+            const report = this.legacyPacketToFrame(buf, 0, 0);
+            void this.sendReport(report).catch((e) => console.error("Failed to write packet", e));
+        } catch (e) {
+            console.error("Failed to write packet", e);
+        }
+        return buf.byteLength;
     }
     read(buf: Uint8Array): number {
         throw new Error('Method not implemented.');
@@ -216,9 +406,9 @@ export class LibampKeyboardController extends KeyboardController {
             result = true;
         }
         if (result) {
-            this.request();
             this.device.addEventListener("inputreport", this.handleInputReport);
             navigator.hid.addEventListener('disconnect', this.handleDeviceDisconnect);
+            this.request();
         }
         return result;
     }
@@ -236,11 +426,11 @@ export class LibampKeyboardController extends KeyboardController {
         }
 
         // 【新增】如果有正在等待底层返回的请求，立刻拒绝掉，防止队列卡死
-        if (this.pendingRequest) {
-            window.clearTimeout(this.pendingRequest.timer);
-            this.pendingRequest.reject(new Error("Device disconnected abruptly"));
-            this.pendingRequest = null;
+        for (const pending of this.pendingRequests.values()) {
+            window.clearTimeout(pending.timer);
+            pending.reject(new Error("Device disconnected abruptly"));
         }
+        this.pendingRequests.clear();
 
         this.requestQueue.clear(new Error("Device disconnected abruptly"));
     }
@@ -249,8 +439,8 @@ export class LibampKeyboardController extends KeyboardController {
         const totalSize = data.length;
         // 头部大小: Code(1)+Type(1)+Sub(1)+Header(8) = 11 (Start包)
         // 载荷包头部: Code(1)+Type(1)+Sub(1)+Offset(4)+Len(2) = 9
-        const headerSize = 9;
-        const maxPayloadSize = 63 - headerSize;
+        const payloadHeaderSize = 7; // sub(1)+offset(4)+length(2) after AmpFrame strips code/type
+        const maxPayloadSize = AMP_FRAME_MAX_PAYLOAD - payloadHeaderSize;
 
         // 1. 发送 START 包
         this.txBuffer.fill(0);
@@ -326,7 +516,7 @@ export class LibampKeyboardController extends KeyboardController {
 
         const resultBuffer = new Uint8Array(totalSize);
         let receivedSize = 0;
-        const maxPayloadSize = 63 - 9; // 55 bytes
+        const maxPayloadSize = AMP_FRAME_MAX_PAYLOAD - 7;
 
         // 2. 循环拉取 PAYLOAD
         while (receivedSize < totalSize) {
@@ -711,6 +901,9 @@ export class LibampKeyboardController extends KeyboardController {
                     case KeyboardConfigCode.KeyboardConfigEnableReport:
                         this.config.enable_report = value;
                         break;
+                    case KeyboardConfigCode.KeyboardConfigConsole:
+                        this.config.console = value;
+                        break;
                 }
             }
         }
@@ -736,6 +929,9 @@ export class LibampKeyboardController extends KeyboardController {
                         break;
                     case KeyboardConfigCode.KeyboardConfigEnableReport:
                         value = this.config.enable_report;
+                        break;
+                    case KeyboardConfigCode.KeyboardConfigConsole:
+                        value = this.config.console;
                         break;
                 }
                 // 写入 boolean 对应的 0 或 1
@@ -900,57 +1096,50 @@ export class LibampKeyboardController extends KeyboardController {
         }
     }
     flash(): void {
-        let send_buf = new Uint8Array(63);
-        let dataView = new DataView(send_buf.buffer);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x03;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = KeyboardKeycode.KeyboardSave;
         send_buf[6] = 1;
-        let res = this.write(send_buf);
-        console.debug("Wrote Save Command: {:?} byte(s)", res);
+        void this.enqueueCommand(send_buf, 1000);
     }
 
     calibrate(): void {
-        let send_buf = new Uint8Array(63);
-        let dataView = new DataView(send_buf.buffer);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x01;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = KeyboardKeycode.KeyboardCalibrate;
         send_buf[6] = 1;
-        let res = this.write(send_buf);
-        console.debug("Wrote Calibrate Command: {:?} byte(s)", res);
+        void this.enqueueCommand(send_buf, 1000);
     }
     system_reset(): void {
-        let send_buf = new Uint8Array(63);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x03;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = KeyboardKeycode.KeyboardReboot;
         send_buf[6] = 1;
-        let res = this.write(send_buf);
-        console.debug("Wrote System Reset Command: {:?} byte(s)", res);
+        void this.enqueueCommand(send_buf, 1000);
     }
     factory_reset(): void {
-        let send_buf = new Uint8Array(63);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x03;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = KeyboardKeycode.KeyboardFactoryReset;
         send_buf[6] = 1;
-        let res = this.write(send_buf);
-        console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
+        void this.enqueueCommand(send_buf, 1000);
     }
     enter_bootloader(): void {
-        let send_buf = new Uint8Array(63);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x03;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = KeyboardKeycode.KeyboardBootloader;
         send_buf[6] = 1;
-        let res = this.write(send_buf);
-        console.debug("Wrote Factory Reset Command: {:?} byte(s)", res);
+        void this.enqueueCommand(send_buf, 1000);
     }
     async read_data(): Promise<void> {
         await this.read_config();
@@ -985,7 +1174,7 @@ export class LibampKeyboardController extends KeyboardController {
       }
     }
     async request_debug(): Promise<void> {
-        const KEYS_PER_PACKET = 7; // 固件限制每包 5 个
+        const KEYS_PER_PACKET = 6;
         // 假设你有 80 个键，这里 advanced_keys.length = 80
         const total_keys = this.advanced_keys.length;
         const page_num = Math.ceil(total_keys / KEYS_PER_PACKET);
@@ -1079,22 +1268,22 @@ export class LibampKeyboardController extends KeyboardController {
         });
     }
     start_debug(): void {
-        let send_buf = new Uint8Array(63);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x03;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = 32 | (1<<6);
         send_buf[6] = 1;
-        this.write(send_buf);
+        void this.enqueueCommand(send_buf, 1000);
     }
     stop_debug(): void {
-        let send_buf = new Uint8Array(63);
+        let send_buf = new Uint8Array(64);
         send_buf[0] = PacketCode.PacketCodeEvent;
         send_buf[1] = 0x03;
         send_buf[2] = Keycode.KeyboardOperation;
         send_buf[3] = 32 | (0<<6);
         send_buf[6] = 1;
-        this.write(send_buf);
+        void this.enqueueCommand(send_buf, 1000);
     }
     
     async write_advanced_keys() {
