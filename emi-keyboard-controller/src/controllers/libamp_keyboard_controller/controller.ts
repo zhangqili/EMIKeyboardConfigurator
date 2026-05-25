@@ -136,6 +136,10 @@ export class LibampKeyboardController extends KeyboardController {
     private nextSeq: number = 1;
     private txBuffer = new Uint8Array(64); // 复用发送缓冲区，避免GC
     private requestQueue = new RequestQueue();
+    private reloadTimer: number | null = null;
+    private isReloading: boolean = false;
+    private refreshAgain: boolean = false;
+    private readonly reloadDebounceMs: number = 200;
     firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
     macros : MacroAction[][] = [[]];
     feature : Feature = {
@@ -176,6 +180,11 @@ export class LibampKeyboardController extends KeyboardController {
                         data: frame.payload,
                     }
                 }));
+                return;
+            }
+
+            if (this.isVersionNotificationFrame(frame)) {
+                this.handleVersionNotification(this.frameToLegacyPacket(frame));
                 return;
             }
 
@@ -381,6 +390,61 @@ export class LibampKeyboardController extends KeyboardController {
         return packet;
     }
 
+    private isVersionNotificationFrame(frame: AmpFrame): boolean {
+        return frame.seq === 0 &&
+            !(frame.flags & AmpFrameFlag.Resp) &&
+            frame.channel === AmpChannel.Control &&
+            frame.code === PacketCode.PacketCodeGet &&
+            frame.type === PacketData.PacketDataVersion;
+    }
+
+    private isSupportedFirmwareVersion(): boolean {
+        return this.firmware_version.major === 0 && this.firmware_version.minor === 1;
+    }
+
+    private handleVersionNotification(buf: Uint8Array): void {
+        if (this.packet_process_version(buf) && this.isSupportedFirmwareVersion()) {
+            this.scheduleReload();
+        }
+    }
+
+    private scheduleReload(): void {
+        if (this.isReloading) {
+            this.refreshAgain = true;
+            return;
+        }
+        if (this.reloadTimer !== null) {
+            window.clearTimeout(this.reloadTimer);
+        }
+        this.reloadTimer = window.setTimeout(() => {
+            this.reloadTimer = null;
+            void this.runReload();
+        }, this.reloadDebounceMs);
+    }
+
+    private async runReload(): Promise<void> {
+        if (this.isReloading) {
+            this.refreshAgain = true;
+            return;
+        }
+        if (this.reloadTimer !== null) {
+            window.clearTimeout(this.reloadTimer);
+            this.reloadTimer = null;
+        }
+
+        this.isReloading = true;
+        try {
+            do {
+                this.refreshAgain = false;
+                await this.read_data();
+            } while (this.refreshAgain);
+        } catch (e) {
+            console.error("Error loading config:", e);
+        } finally {
+            this.isReloading = false;
+        }
+    }
+
     write(buf: Uint8Array): number {
         try {
             const report = this.legacyPacketToFrame(buf, 0, 0);
@@ -431,6 +495,13 @@ export class LibampKeyboardController extends KeyboardController {
             pending.reject(new Error("Device disconnected abruptly"));
         }
         this.pendingRequests.clear();
+
+        if (this.reloadTimer !== null) {
+            window.clearTimeout(this.reloadTimer);
+            this.reloadTimer = null;
+        }
+        this.isReloading = false;
+        this.refreshAgain = false;
 
         this.requestQueue.clear(new Error("Device disconnected abruptly"));
     }
@@ -968,7 +1039,7 @@ export class LibampKeyboardController extends KeyboardController {
         }));
       }
     }
-    packet_process_version(buf: Uint8Array) {
+    packet_process_version(buf: Uint8Array): boolean {
         let dataView = new DataView(buf.buffer);
         if (buf[0] == PacketCode.PacketCodeGet) {
             // Offset 2: info_length (uint16) - 暂时没用到，直接读后面的
@@ -981,14 +1052,11 @@ export class LibampKeyboardController extends KeyboardController {
             const infoBytes = buf.slice(16, 16 + infoLen);
             const decoder = new TextDecoder('utf-8');
             this.firmware_version.info = decoder.decode(infoBytes).replace(/\0/g, ''); // 去除可能的空字符
-            if (this.firmware_version.major == 0 &&
-                this.firmware_version.minor == 1
-            ) {
-                this.read_data();
-            }
             
             console.log("Firmware Version:", this.firmware_version);
+            return true;
         }
+        return false;
     }
     packet_process_feature(buf: Uint8Array) {
         let dataView = new DataView(buf.buffer);
@@ -1168,7 +1236,10 @@ export class LibampKeyboardController extends KeyboardController {
     }
     async request(): Promise<void> {
       try {
-          await this.request_version();
+          const version = await this.request_version();
+          if (version && this.isSupportedFirmwareVersion()) {
+              await this.runReload();
+          }
       } catch (e) {
           console.error("Error loading config:", e);
       }
@@ -1675,7 +1746,9 @@ export class LibampKeyboardController extends KeyboardController {
         try {
             // 使用队列发送并等待回复
             const res = await this.enqueueCommand(this.txBuffer);
-            this.packet_process_version(res);
+            if (!this.packet_process_version(res)) {
+                return null;
+            }
             return this.firmware_version;
         } catch (e) {
             console.error("Failed to get firmware version", e);

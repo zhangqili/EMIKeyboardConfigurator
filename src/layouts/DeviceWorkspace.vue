@@ -319,7 +319,7 @@ async function updateData() {
 }
 
 async function handleUpdateFileValue(_value: string, option: SelectOption) {
-  if (!controller.value) return;
+  if (!controller.value || !isReady.value) return;
   waitingForUpdate.value = true;
   await controller.value.set_profile_index(option.value as number);
 }
@@ -643,7 +643,7 @@ const selectionMode = computed(() => {
             @update:value="handleUpdateFileValue"
             v-model:value="selectedProfileIndex"
             v-model:options="files"
-            :disabled="waitingForUpdate"/>
+            :disabled="waitingForUpdate || !isReady"/>
 
           <n-grid :cols="3" :x-gap="4" style="">
             <n-gi><n-button size="tiny" block @click="loadDefaultConfig">{{ t('default') }}</n-button></n-gi>
