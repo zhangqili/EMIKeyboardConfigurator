@@ -37,6 +37,11 @@ const AMP_FRAME_PROTO = 0x41;
 const AMP_FRAME_REPORT_SIZE = 64;
 const AMP_FRAME_HEADER_SIZE = 6;
 const AMP_FRAME_MAX_PAYLOAD = AMP_FRAME_REPORT_SIZE - AMP_FRAME_HEADER_SIZE;
+const DEBUG_PACKET_HEADER_SIZE = 7;
+const DEBUG_ITEM_SIZE = 10;
+const DEBUG_KEYS_PER_PACKET = 5;
+const DEBUG_FLAG_STATE = 1 << 0;
+const DEBUG_FLAG_REPORT_STATE = 1 << 1;
 
 enum AmpChannel {
     Control = 0,
@@ -303,7 +308,7 @@ export class LibampKeyboardController extends KeyboardController {
                     case PacketData.PacketDataConfig:
                         return Math.min(buf.byteLength, 4 + buf[2] * 2);
                     case PacketData.PacketDataDebug:
-                        return Math.min(buf.byteLength, 7 + buf[2] * 8);
+                        return Math.min(buf.byteLength, DEBUG_PACKET_HEADER_SIZE + buf[2] * DEBUG_ITEM_SIZE);
                     case PacketData.PacketDataMacro:
                         return Math.min(buf.byteLength, 5 + view.getUint16(3, true) * 12);
                     case PacketData.PacketDataVersion: {
@@ -1021,14 +1026,16 @@ export class LibampKeyboardController extends KeyboardController {
         const updated_keys: number[] = [];
         for (var i = 0; i < dataLength; i++)
         {
-            const key_index = dataView.getUint16(7 + 0 + 8 * i, true);
+            const base = DEBUG_PACKET_HEADER_SIZE + DEBUG_ITEM_SIZE * i;
+            const key_index = dataView.getUint16(base, true);
             updated_keys.push(key_index);
             if (key_index<this.advanced_keys.length)
             {
-                this.advanced_keys[key_index].state  = buf[7 + 8 * i + 2] > 0;
-                this.advanced_keys[key_index].report_state = buf[7 + 8 * i + 3] > 0;
-                this.advanced_keys[key_index].raw = dataView.getUint16(7 + 8 * i + 4, true);
-                this.advanced_keys[key_index].value = dataView.getUint16(7 + 8 * i + 6, true)/65535;
+                this.advanced_keys[key_index].state = buf[base + 2] > 0;
+                this.advanced_keys[key_index].report_state = buf[base + 3] > 0;
+                this.advanced_keys[key_index].value = dataView.getUint16(base + 4, true)/65535;
+                this.advanced_keys[key_index].raw = dataView.getUint16(base + 6, true);
+                this.advanced_keys[key_index].filtered_raw = dataView.getUint16(base + 8, true);
             }
         }
         this.dispatchEvent(new CustomEvent('updateDebugData', {
@@ -1245,10 +1252,8 @@ export class LibampKeyboardController extends KeyboardController {
       }
     }
     async request_debug(): Promise<void> {
-        const KEYS_PER_PACKET = 6;
-        // 假设你有 80 个键，这里 advanced_keys.length = 80
         const total_keys = this.advanced_keys.length;
-        const page_num = Math.ceil(total_keys / KEYS_PER_PACKET);
+        const page_num = Math.ceil(total_keys / DEBUG_KEYS_PER_PACKET);
         
         // 创建一个任务数组
         const tasks: Promise<Uint8Array>[] = [];
@@ -1258,21 +1263,14 @@ export class LibampKeyboardController extends KeyboardController {
             send_buf[0] = PacketCode.PacketCodeGet;
             send_buf[1] = PacketData.PacketDataDebug;
 
-            let page_length = (i + 1) * KEYS_PER_PACKET > total_keys ? total_keys % KEYS_PER_PACKET : KEYS_PER_PACKET;
+            let page_length = (i + 1) * DEBUG_KEYS_PER_PACKET > total_keys ? total_keys % DEBUG_KEYS_PER_PACKET : DEBUG_KEYS_PER_PACKET;
             send_buf[2] = page_length; // 告诉固件我要读几个
 
             let dataView = new DataView(send_buf.buffer);
             // 填充我要读的那些按键的 Index
             for (let j = 0; j < page_length; j++) {
-                let key_index = i * KEYS_PER_PACKET + j;
-                // 注意偏移量：PacketDebug 结构体 header 占 3 字节 (Code, Type, Len)
-                // 每个 Item 占 12 字节。请求时我们只需要填 Index (2 bytes)
-                // 固件 packet.c 逻辑是读取 packet->data[i].index
-                // PacketDebug data offset = 3
-                // item size = 12
-                // index offset inside item = 0
-                // 所以 offset = 3 + j * 12
-                dataView.setUint16(7 + j * 8, key_index, true);
+                let key_index = i * DEBUG_KEYS_PER_PACKET + j;
+                dataView.setUint16(DEBUG_PACKET_HEADER_SIZE + j * DEBUG_ITEM_SIZE, key_index, true);
             }
 
             // 关键：将发送任务加入数组，使用 enqueueCommand (记得你上一轮引入的队列方法)
@@ -1293,9 +1291,8 @@ export class LibampKeyboardController extends KeyboardController {
             return;
         }
 
-        const KEYS_PER_PACKET = 4; // 固件限制每包 5 个
         const total_keys = ids.length; // 总请求数为传入数组的长度
-        const page_num = Math.ceil(total_keys / KEYS_PER_PACKET);
+        const page_num = Math.ceil(total_keys / DEBUG_KEYS_PER_PACKET);
         
         // 创建一个任务数组
         const tasks: Promise<Uint8Array>[] = [];
@@ -1307,7 +1304,7 @@ export class LibampKeyboardController extends KeyboardController {
             send_buf[1] = PacketData.PacketDataDebug;
 
             // 计算当前包实际要请求几个按键
-            let page_length = (i + 1) * KEYS_PER_PACKET > total_keys ? total_keys % KEYS_PER_PACKET : KEYS_PER_PACKET;
+            let page_length = (i + 1) * DEBUG_KEYS_PER_PACKET > total_keys ? total_keys % DEBUG_KEYS_PER_PACKET : DEBUG_KEYS_PER_PACKET;
             send_buf[2] = page_length; // 告诉固件我要读几个
 
             let dataView = new DataView(send_buf.buffer);
@@ -1315,13 +1312,8 @@ export class LibampKeyboardController extends KeyboardController {
             // 填充我要读的那些按键的 Index
             for (let j = 0; j < page_length; j++) {
                 // 从 ids 数组中读取当前循环对应的具体按键 ID
-                let key_index = ids[i * KEYS_PER_PACKET + j];
-                
-                // PacketDebug data offset = 3
-                // item size = 12
-                // index offset inside item = 0
-                // 所以 offset = 3 + j * 12
-                dataView.setUint16(7 + j * 8, key_index, true);
+                let key_index = ids[i * DEBUG_KEYS_PER_PACKET + j];
+                dataView.setUint16(DEBUG_PACKET_HEADER_SIZE + j * DEBUG_ITEM_SIZE, key_index, true);
             }
 
             // 将发送任务加入数组，使用 enqueueCommand

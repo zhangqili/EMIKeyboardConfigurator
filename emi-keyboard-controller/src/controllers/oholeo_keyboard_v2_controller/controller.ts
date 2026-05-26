@@ -35,6 +35,7 @@ export class OholeoKeyboardV2Controller extends LibampKeyboardController {
             report_state: false,
             value: 0.0,
             raw: 0.0,
+            filtered_raw: 0.0,
             mode: KeyMode.KeyAnalogNormalMode,
             calibration_mode: CalibrationMode.KeyAutoCalibrationUndefined,
             maximum: 0.0,

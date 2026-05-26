@@ -236,6 +236,7 @@ let isRenderPending = false;
 // --- 数据缓存字典 ---
 // 格式: { keyId: [[tick1, val1], [tick2, val2], ...] }
 const rawDataCache: Record<number, [number, number][]> = {};
+const filteredRawDataCache: Record<number, [number, number][]> = {};
 const valueDataCache: Record<number, [number, number][]> = {};
 
 const stateAreasCache: Record<number, { start: number, end: number | null }[]> = {};
@@ -269,20 +270,22 @@ const chartOption = shallowRef({
             html += `<table style="width:100%; border-collapse: collapse; font-size: 13px; text-align: left;">`;
             html += `<tr>
                         <td style="padding-right:16px;"></td>
-                        <td style="padding-right:16px; color:#888;">State</td> <td style="padding-right:16px; color:#888;">Raw</td>
-                        <td style="color:#888;">Value</td>
+                        <td style="padding-right:16px; color:#888;">State</td> 
+                        <td style="padding-right:16px; color:#888;">Raw</td>
+                        <td style="padding-right:16px; color:#18a058;">Filtered</td> <td style="color:#888;">Value</td>
                      </tr>`;
-
             // 遍历所有选中的按键，提取当前 tick 下的 State, Raw 和 Value
             oscilloscopeSelectedKeys.value.forEach((id, index) => {
                 if (hiddenKeys.value.includes(id)) return;
 
                 const color = lineColors[index % lineColors.length];
                 let rawVal = '-';
+                let filteredRawVal = '-';
                 let valVal = '-';
                 let isPressed = false; // 记录当前状态
 
                 const rawCache = rawDataCache[id];
+                const fRawCache = filteredRawDataCache[id];
                 const valCache = valueDataCache[id];
                 const stateCache = stateAreasCache[id];
 
@@ -295,7 +298,12 @@ const chartOption = shallowRef({
                     const r = rawCache.find(d => d[0] === tick);
                     if (r) rawVal = r[1].toString();
                 }
-
+                if (fRawCache && fRawCache[dataIndex] && fRawCache[dataIndex][0] === tick) {
+                    filteredRawVal = fRawCache[dataIndex][1].toFixed(2); // 保留两位小数，看起来更专业
+                } else if (fRawCache) {
+                    const fr = fRawCache.find(d => d[0] === tick);
+                    if (fr) filteredRawVal = fr[1].toFixed(2);
+                }
                 if (valCache && valCache[dataIndex] && valCache[dataIndex][0] === tick) {
                     valVal = valCache[dataIndex][1].toFixed(4);
                 } else if (valCache) {
@@ -316,13 +324,13 @@ const chartOption = shallowRef({
                     ? `<span style="color: #18a058; font-weight: bold;">ON</span>`
                     : `<span style="color: #777;">OFF</span>`;
 
-                html += `<tr>
+                    html += `<tr>
                     <td style="padding-right:16px;">
                         <span style="display:inline-block; margin-right:6px; border-radius:50%; width:10px; height:10px; background-color:${color};"></span>
                         Key ${id}
                     </td>
-                    <td style="padding-right:16px;">${stateHtml}</td> <td style="padding-right:16px; font-weight:bold;">${rawVal}</td>
-                    <td style="font-weight:bold;">${valVal}</td>
+                    <td style="padding-right:16px;">${stateHtml}</td> 
+                    <td style="padding-right:16px; font-weight:bold; color:#aaa;">${rawVal}</td> <td style="padding-right:16px; font-weight:bold;">${filteredRawVal}</td> <td style="font-weight:bold;">${valVal}</td>
                 </tr>`;
             });
 
@@ -446,6 +454,7 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
     const removedKeys = oldKeys.filter(k => !newKeys.includes(k));
     removedKeys.forEach(k => {
         delete rawDataCache[k];
+        delete filteredRawDataCache[k]
         delete valueDataCache[k];
         delete stateAreasCache[k];
         delete lastStateCache[k];
@@ -500,11 +509,13 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
         const targetKey = advancedKeys.value[keyId];
         if (targetKey) {
             if (!rawDataCache[keyId]) rawDataCache[keyId] = [];
+            if (!filteredRawDataCache[keyId]) filteredRawDataCache[keyId] = [];
             if (!valueDataCache[keyId]) valueDataCache[keyId] = [];
             if (!stateAreasCache[keyId]) stateAreasCache[keyId] = [];
 
             // 追加新数据
             rawDataCache[keyId].push([numericTick, targetKey.raw]);
+            filteredRawDataCache[keyId].push([numericTick, targetKey.filtered_raw ?? targetKey.raw]);
             valueDataCache[keyId].push([numericTick, targetKey.value]);
 
             // --- 状态边缘检测与区间记录 ---
@@ -527,7 +538,9 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
                 // 直接保留最后 windowSize 个元素，这是最高效的 JS 数组截断方式
                 rawDataCache[keyId] = rawDataCache[keyId].slice(-windowSize.value);
             }
-
+            if (filteredRawDataCache[keyId].length > bufferLimit) {
+                filteredRawDataCache[keyId] = filteredRawDataCache[keyId].slice(-windowSize.value);
+            }
             if (valueDataCache[keyId].length > bufferLimit) {
                 valueDataCache[keyId] = valueDataCache[keyId].slice(-windowSize.value);
             }
@@ -562,14 +575,30 @@ function renderCharts() {
         const rawId = `raw_${id}`;
         if (!seriesCache[rawId]) {
             seriesCache[rawId] = {
-                id: rawId, name: `Key ${id}`, type: 'line', xAxisIndex: 0, yAxisIndex: 0,
-                showSymbol: false, itemStyle: { color }, lineStyle: { width: 1 },
-                //sampling: 'lttb', // 开启降采样，极大地提升高频数据渲染性能
+                id: rawId, name: `Raw ${id}`, type: 'line', xAxisIndex: 0, yAxisIndex: 0,
+                showSymbol: false, 
+                itemStyle: { color }, 
+                lineStyle: { width: 1, type: 'dashed', opacity: 0.35 }, // 虚线 + 半透明
+                sampling: 'lttb',
             };
         }
         seriesCache[rawId].data = isHidden ? [] : rawDataCache[id];
-        seriesCache[rawId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
+        seriesCache[rawId].markArea = undefined;
+        //seriesCache[rawId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
         seriesData.push(seriesCache[rawId]);
+
+        const fRawId = `f_raw_${id}`;
+        if (!seriesCache[fRawId]) {
+            seriesCache[fRawId] = {
+                id: fRawId, name: `Filtered ${id}`, type: 'line', xAxisIndex: 0, yAxisIndex: 0,
+                showSymbol: false, 
+                itemStyle: { color }, 
+                lineStyle: { width: 1, opacity: 1 }, // 实线，略粗
+            };
+        }
+        seriesCache[fRawId].data = isHidden ? [] : filteredRawDataCache[id];
+        seriesCache[fRawId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
+        seriesData.push(seriesCache[fRawId]);
 
         // 复用或创建 Value Series
         const valId = `val_${id}`;
@@ -693,6 +722,7 @@ onBeforeUnmount(() => {
 function clearWaveform() {
     oscilloscopeSelectedKeys.value.forEach(id => {
         if (rawDataCache[id]) rawDataCache[id].length = 0;
+        if (filteredRawDataCache[id]) filteredRawDataCache[id].length = 0;
         if (valueDataCache[id]) valueDataCache[id].length = 0;
         if (stateAreasCache[id]) stateAreasCache[id].length = 0; // 新增清理
         if (lastStateCache[id]) lastStateCache[id] = false;     // 新增清理

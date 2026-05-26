@@ -148,6 +148,7 @@ export interface IAdvancedKey {
     report_state: boolean;
     value: number;
     raw: number;
+    filtered_raw: number;
     maximum: number;
     minimum: number;
 
@@ -169,6 +170,7 @@ export class AdvancedKey implements IAdvancedKey {
     report_state: boolean;
     value: number;
     raw: number;
+    filtered_raw: number;
     maximum: number;
     minimum: number;
 
@@ -190,6 +192,7 @@ export class AdvancedKey implements IAdvancedKey {
         this.state = false;
         this.report_state = false;
         this.raw = 0;
+        this.filtered_raw = 0;
         this.maximum = 0;
         this.minimum = 0;
         this.mode = KeyMode.KeyAnalogRapidMode;
