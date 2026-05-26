@@ -1,22 +1,14 @@
-;''
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, inject, type Ref, provide, watch, shallowRef,triggerRef, h } from 'vue'
-import { useMessage, darkTheme, useOsTheme, NConfigProvider, NSpace, NFlex, NTag } from 'naive-ui'
-import { createI18n } from 'vue-i18n'
+import { onBeforeUnmount, onMounted, ref, inject, type Ref, shallowRef, triggerRef, h } from 'vue'
+import { NTag } from 'naive-ui'
 import { useI18n } from "vue-i18n";
 import type { DataTableColumns } from 'naive-ui'
-import * as apis from '@/apis/api';
 import * as ekc from 'emi-keyboard-controller';
-import { storeToRefs } from 'pinia';
-import { useMainStore } from '@/store/main';
 import KeyEditCell from '@/components/KeyEditCell.vue';
 import ActiveKeysMonitor from '@/components/ActiveKeysMonitor.vue';
 import OsKeyMonitor from '@/components/OsKeyMonitor.vue';
 
 const { t } = useI18n();
-const store = useMainStore();
-// 只取 switch 和 advancedKeys 用于显示
-// 移除 chart_option 的响应式解构，我们只在初始化时用它
 
 interface KeyboardContext {
   advancedKeys: Ref<ekc.IAdvancedKey[]>;
@@ -39,6 +31,7 @@ const {
 // 手动非响应式获取初始配置，避免 watch 开销
 const debugSwitch = ref(false);
 const isPolling = ref(false);
+let pollingRunId = 0;
 
 const debugEvent = defineModel<ekc.KeyboardKeyEvent>("debugEvent",{ 
   default: new ekc.KeyboardKeyEvent()
@@ -53,8 +46,12 @@ const props = defineProps<{
 }>();
 
 async function startRequestLoop() {
+    if (isPolling.value) {
+        return;
+    }
+    const runId = ++pollingRunId;
     isPolling.value = true;
-    while (isPolling.value) {
+    while (isPolling.value && runId === pollingRunId) {
         try {
             // 只管发请求，不需要在这里等待返回值处理 UI
             await props.controller.request_debug();
@@ -68,6 +65,7 @@ async function startRequestLoop() {
 }
 
 function stopRequestLoop() {
+    pollingRunId++;
     isPolling.value = false;
 }
 
@@ -81,10 +79,16 @@ async function handleChange(value: boolean) {
     }
 }
 
-let timer = 0;
+interface DebugRow {
+    id: number;
+    state: boolean;
+    report_state: boolean;
+    raw: number;
+    value: number;
+}
 
 // 表格列定义
-const columns: DataTableColumns<ekc.IAdvancedKey> = [
+const columns: DataTableColumns<DebugRow> = [
     { title: t('debug_panel_index'), key: 'id', width: 40 },
     { title: t('debug_panel_state'), key: 'state', width: 40,
         render(row) {
@@ -131,22 +135,23 @@ const columns: DataTableColumns<ekc.IAdvancedKey> = [
         } },
 ]
 
-const tableData = ref<any[]>([]);
+const tableData = shallowRef<DebugRow[]>([]);
+const pendingUpdatedKeys = new Set<number>();
+let pendingFlushFrame: number | null = null;
 
-const handleDebugDataUpdated = (event: Event) => {
-    const customEvent = event as CustomEvent;
-    const currentTick = customEvent.detail.tick;
-    // 解构出当前数据包实际更新的按键数组
-    const updatedKeys = customEvent.detail.updated_keys as number[];
+function flushDebugData() {
+    pendingFlushFrame = null;
+    if (pendingUpdatedKeys.size === 0) {
+        return;
+    }
+
     triggerRef(advancedKeys);
     const newTableData = [...tableData.value];
-    
-    // 2. 遍历本次真实收到更新的按键
-    updatedKeys.forEach(id => {
+    pendingUpdatedKeys.forEach(id => {
         const rawKey = advancedKeys.value[id];
         if (rawKey) {
             newTableData[id] = {
-                ...newTableData[id],
+                id: id,
                 state: rawKey.state,
                 report_state: rawKey.report_state,
                 raw: rawKey.raw,
@@ -154,9 +159,18 @@ const handleDebugDataUpdated = (event: Event) => {
             };
         }
     });
-    
-    // 3. 赋值回本地 ref，精准触发表格刷新
+    pendingUpdatedKeys.clear();
     tableData.value = newTableData;
+}
+
+const handleDebugDataUpdated = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    // 解构出当前数据包实际更新的按键数组
+    const updatedKeys = customEvent.detail.updated_keys as number[];
+    updatedKeys.forEach(id => pendingUpdatedKeys.add(id));
+    if (pendingFlushFrame === null) {
+        pendingFlushFrame = requestAnimationFrame(flushDebugData);
+    }
 };
 
 onMounted(() => {
@@ -172,6 +186,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     stopRequestLoop();
+    if (pendingFlushFrame !== null) {
+        cancelAnimationFrame(pendingFlushFrame);
+        pendingFlushFrame = null;
+    }
+    pendingUpdatedKeys.clear();
     props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
 });
 
@@ -283,6 +302,7 @@ function handleMouseLeave(event : MouseEvent, index: number) {
                 <n-data-table 
                   :data="tableData" 
                   :columns="columns" 
+                  :row-key="(row: DebugRow) => row.id"
                   :bordered="false" 
                   flex-height
                   style="flex: 1; min-height: 0;"

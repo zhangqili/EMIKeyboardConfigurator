@@ -15,16 +15,16 @@ interface KeyboardContext {
 }
 const { advancedKeys } = inject<KeyboardContext>('keyboardContext')!;
 
-function useSharedProperty(propName: keyof ekc.IAdvancedKey, isPercentage = true) {
+function useSharedProperty(propName: keyof ekc.IAdvancedKeyConfiguration, isPercentage = true) {
   return computed<any>({
     get: () => {
       if (!props.selectedKeys || props.selectedKeys.length === 0) return null;
       
       // 取第一个选中的按键作为基准
-      const firstVal = advancedKeys.value[props.selectedKeys[0]][propName];
+      const firstVal = advancedKeys.value[props.selectedKeys[0]].config[propName];
       
       // 检查是否所有选中的按键该属性都相同
-      const isAllSame = props.selectedKeys.every(id => advancedKeys.value[id][propName] === firstVal);
+      const isAllSame = props.selectedKeys.every(id => advancedKeys.value[id].config[propName] === firstVal);
 
       // 如果不相同，返回 null（在 UI 上表现为“混合状态”或空输入框）
       if (!isAllSame) return null; 
@@ -40,7 +40,7 @@ function useSharedProperty(propName: keyof ekc.IAdvancedKey, isPercentage = true
 
       // 批量将新值应用到所有被选中的按键上
       props.selectedKeys.forEach(id => {
-        (advancedKeys.value[id] as any)[propName] = realVal;
+        (advancedKeys.value[id].config as any)[propName] = realVal;
       });
     }
   });
@@ -55,6 +55,8 @@ const trigger_speed = useSharedProperty('trigger_speed');
 const release_speed = useSharedProperty('release_speed');
 const upper_deadzone = useSharedProperty('upper_deadzone');
 const lower_deadzone = useSharedProperty('lower_deadzone');
+const upper_bound = useSharedProperty('upper_bound', false);
+const lower_bound = useSharedProperty('lower_bound', false);
 
 const modes = computed(()=> [
   { value: ekc.KeyMode.KeyDigitalMode, label: t('performance_panel_digital') },
@@ -169,10 +171,10 @@ const modes = computed(()=> [
         <n-collapse-item :title="t('performance_panel_advanced_options')">
           <n-form inline label-placement="top" label-width="auto" require-mark-placement="right-hanging">
             <n-form-item :label="t('performance_panel_upper_bound')">
-              <n-input-number :placeholder="t('performance_panel_upper_bound')"/>
+              <n-input-number v-model:value="upper_bound" :placeholder="upper_bound === null ? t('common_multiple_values') : t('performance_panel_upper_bound')"/>
             </n-form-item>
             <n-form-item :label="t('performance_panel_lower_bound')">
-              <n-input-number :placeholder="t('performance_panel_lower_bound')"/>
+              <n-input-number v-model:value="lower_bound" :placeholder="lower_bound === null ? t('common_multiple_values') : t('performance_panel_lower_bound')"/>
             </n-form-item>
           </n-form>
         </n-collapse-item>

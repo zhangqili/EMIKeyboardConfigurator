@@ -142,16 +142,7 @@ export class KeyboardConfig {
     console : boolean = false;
 }
 
-// Interface for AdvancedKey
-export interface IAdvancedKey {
-    state: boolean;
-    report_state: boolean;
-    value: number;
-    raw: number;
-    filtered_raw: number;
-    maximum: number;
-    minimum: number;
-
+export interface IAdvancedKeyConfiguration {
     mode: KeyMode;
     calibration_mode: CalibrationMode;
     activation_value: number;
@@ -165,15 +156,8 @@ export interface IAdvancedKey {
     upper_bound: number;
     lower_bound: number;
 }
-export class AdvancedKey implements IAdvancedKey {
-    state: boolean;
-    report_state: boolean;
-    value: number;
-    raw: number;
-    filtered_raw: number;
-    maximum: number;
-    minimum: number;
 
+export class AdvancedKeyConfiguration implements IAdvancedKeyConfiguration {
     mode: KeyMode;
     calibration_mode: CalibrationMode;
     activation_value: number;
@@ -187,14 +171,7 @@ export class AdvancedKey implements IAdvancedKey {
     upper_bound: number;
     lower_bound: number;
 
-    constructor() {
-        this.value = 0;
-        this.state = false;
-        this.report_state = false;
-        this.raw = 0;
-        this.filtered_raw = 0;
-        this.maximum = 0;
-        this.minimum = 0;
+    constructor(config: Partial<IAdvancedKeyConfiguration> = {}) {
         this.mode = KeyMode.KeyAnalogRapidMode;
         this.calibration_mode = CalibrationMode.KeyNoCalibration;
         this.activation_value = 0.5;
@@ -207,7 +184,67 @@ export class AdvancedKey implements IAdvancedKey {
         this.lower_deadzone = 0.2;
         this.upper_bound = 4096.0;
         this.lower_bound = 0;
+        const assign = <K extends keyof IAdvancedKeyConfiguration>(key: K) => {
+            const value = config[key];
+            if (value !== undefined) {
+                (this as any)[key] = value;
+            }
+        };
+        assign('mode');
+        assign('calibration_mode');
+        assign('activation_value');
+        assign('deactivation_value');
+        assign('trigger_distance');
+        assign('release_distance');
+        assign('trigger_speed');
+        assign('release_speed');
+        assign('upper_deadzone');
+        assign('lower_deadzone');
+        assign('upper_bound');
+        assign('lower_bound');
     }
+}
+
+// Interface for AdvancedKey
+export interface IAdvancedKey {
+    state: boolean;
+    report_state: boolean;
+    value: number;
+    raw: number;
+    filtered_raw: number;
+    extremum: number;
+    config: IAdvancedKeyConfiguration;
+}
+
+export class AdvancedKey implements IAdvancedKey {
+    state: boolean;
+    report_state: boolean;
+    value: number;
+    raw: number;
+    filtered_raw: number;
+    extremum: number;
+    config: AdvancedKeyConfiguration;
+
+    constructor(config: Partial<IAdvancedKeyConfiguration> = {}) {
+        this.value = 0;
+        this.state = false;
+        this.report_state = false;
+        this.raw = 0;
+        this.filtered_raw = 0;
+        this.extremum = 0;
+        this.config = new AdvancedKeyConfiguration(config);
+    }
+}
+
+export function normalizeAdvancedKey(key: Partial<IAdvancedKey> & Partial<IAdvancedKeyConfiguration>): AdvancedKey {
+    const normalized = new AdvancedKey(key.config ?? key);
+    normalized.state = key.state ?? false;
+    normalized.report_state = key.report_state ?? false;
+    normalized.value = key.value ?? 0;
+    normalized.raw = key.raw ?? 0;
+    normalized.filtered_raw = key.filtered_raw ?? 0;
+    normalized.extremum = key.extremum ?? 0;
+    return normalized;
 }
 
 export class DynamicKey implements IDynamicKey {
@@ -902,10 +939,10 @@ export interface IKeyboardController{
     system_reset() : void;
     factory_reset() : void;
     enter_bootloader(): void;
-    request_debug_at(ids: number[]) : void;
+    request_debug_at(ids: number[]) : Promise<void>;
     start_debug() : void;
     stop_debug() : void;
-    request_debug() : void;
+    request_debug() : Promise<void>;
     get_layout_json() : string;
     get_profile_num() : number;
     get_profile_index(): number;
@@ -1060,7 +1097,7 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         return this.advanced_keys;
     }
     set_advanced_keys(keys: IAdvancedKey[]): void {
-        this.advanced_keys = keys;
+        this.advanced_keys = keys.map(key => normalizeAdvancedKey(key));
     }
     get_rgb_base_config(): IRGBBaseConfig {
         return this.rgb_base_config;
@@ -1116,9 +1153,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     {
 
     }
-    request_debug_at(ids: number[]): void
+    request_debug_at(ids: number[]): Promise<void>
     {
-    
+        return Promise.resolve();
     }
     start_debug() : void
     {
@@ -1128,9 +1165,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
     {
 
     }
-    request_debug() : void
+    request_debug() : Promise<void>
     {
-
+        return Promise.resolve();
     }
     get_layout_json() : string
     {

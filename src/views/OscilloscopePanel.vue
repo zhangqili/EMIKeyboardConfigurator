@@ -714,6 +714,9 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    if (isPolling.value) {
+        props.controller.stop_debug();
+    }
     isPolling.value = false;
     props.controller.removeEventListener('updateDebugData', handleDebugDataUpdated);
     selectedKeys.value = [];

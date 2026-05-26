@@ -29,16 +29,9 @@ export class Zellia80Controller extends LibampKeyboardController {
 
 
     reset_to_default(): void {
-        this.advanced_keys = Array(this.ADVANCED_KEY_NUM).fill(null).map(() => ({
-            state: false,
-            report_state: false,
-            value: 0.0,
-            raw: 0.0,
-            filtered_raw: 0.0,
+        this.advanced_keys = Array(this.ADVANCED_KEY_NUM).fill(null).map(() => new AdvancedKey({
             mode: KeyMode.KeyAnalogRapidMode,
             calibration_mode: CalibrationMode.KeyAutoCalibrationUndefined,
-            maximum: 0.0,
-            minimum: 0.0,
             activation_value: 0.5,
             deactivation_value: 0.49,
             trigger_distance: 0.08,

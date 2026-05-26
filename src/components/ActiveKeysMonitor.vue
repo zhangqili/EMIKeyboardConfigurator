@@ -22,6 +22,7 @@ interface HardwareKeyRecord extends DisplayKey {
 const pressedKeys = ref<HardwareKeyRecord[]>([]);
 const releasedKeys = ref<HardwareKeyRecord[]>([]);
 let globalId = 0;
+let activeSignature = '';
 
 watch(() => props.data, (newData) => {
     if (!newData) return;
@@ -29,11 +30,17 @@ watch(() => props.data, (newData) => {
     const currentActiveIds = newData
         .filter(row => row.state || row.report_state)
         .map(row => row.id);
+    const nextSignature = currentActiveIds.join(',');
+    if (nextSignature === activeSignature) {
+        return;
+    }
+    activeSignature = nextSignature;
+    const currentActiveIdSet = new Set(currentActiveIds);
 
     // 1. 模拟 KeyUp
     for (let i = pressedKeys.value.length - 1; i >= 0; i--) {
         const tk = pressedKeys.value[i];
-        if (!currentActiveIds.includes(tk.id)) {
+        if (!currentActiveIdSet.has(tk.id)) {
             pressedKeys.value.splice(i, 1);
             
             tk.isFading = false;
@@ -63,7 +70,7 @@ watch(() => props.data, (newData) => {
             });
         }
     });
-}, { deep: true, immediate: true }); 
+}, { immediate: true }); 
 </script>
 
 <template>

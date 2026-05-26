@@ -271,6 +271,8 @@
     "dont_show_again" : "Don't show again",
     "about" : "About",
     "layout" : "Layout",
+    "key_id" : "Key ID",
+    "send_event" : "Send Event",
     "key_press" : "Press",
     "key_release" : "Release",
     "keyboard_render_edit_layout" : "Edit layout",

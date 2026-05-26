@@ -144,7 +144,11 @@ export class LibampKeyboardController extends KeyboardController {
     private reloadTimer: number | null = null;
     private isReloading: boolean = false;
     private refreshAgain: boolean = false;
+    private profileSwitchReloadPending: boolean = false;
+    private isDebugRequestRunning: boolean = false;
+    private lastDebugTimeoutWarningAt: number = 0;
     private readonly reloadDebounceMs: number = 200;
+    private readonly debugRequestTimeoutMs: number = 500;
     firmware_version : FirmwareVersion = { major: 0, minor: 0, patch: 0, info: "" };
     macros : MacroAction[][] = [[]];
     feature : Feature = {
@@ -447,7 +451,12 @@ export class LibampKeyboardController extends KeyboardController {
             console.error("Error loading config:", e);
         } finally {
             this.isReloading = false;
+            this.profileSwitchReloadPending = false;
         }
+    }
+
+    private shouldSkipDebugRequest(): boolean {
+        return this.isReloading || this.reloadTimer !== null || this.profileSwitchReloadPending;
     }
 
     write(buf: Uint8Array): number {
@@ -507,6 +516,7 @@ export class LibampKeyboardController extends KeyboardController {
         }
         this.isReloading = false;
         this.refreshAgain = false;
+        this.profileSwitchReloadPending = false;
 
         this.requestQueue.clear(new Error("Device disconnected abruptly"));
     }
@@ -703,31 +713,33 @@ export class LibampKeyboardController extends KeyboardController {
         let dataView = new DataView(buf.buffer);  
         if (buf[0] == PacketCode.PacketCodeGet) {
             const key_index = dataView.getUint16(2, true);
-            this.advanced_keys[key_index].mode = buf[4];
-            this.advanced_keys[key_index].calibration_mode = buf[5];
-            this.advanced_keys[key_index].activation_value = dataView.getUint16(6 + 2 * 0, true)/65535;
-            this.advanced_keys[key_index].deactivation_value = dataView.getUint16(6 + 2 * 1, true)/65535;
-            this.advanced_keys[key_index].trigger_distance = dataView.getUint16(6 + 2 * 2, true)/65535;
-            this.advanced_keys[key_index].release_distance = dataView.getUint16(6 + 2 * 3, true)/65535;
-            this.advanced_keys[key_index].trigger_speed = dataView.getUint16(6 + 2 * 4, true)/65535;
-            this.advanced_keys[key_index].release_speed = dataView.getUint16(6 + 2 * 5, true)/65535;
-            this.advanced_keys[key_index].upper_deadzone = dataView.getUint16(6 + 2 * 6, true)/65535;
-            this.advanced_keys[key_index].lower_deadzone = dataView.getUint16(6 + 2 * 7, true)/65535;
+            const config = this.advanced_keys[key_index].config;
+            config.mode = buf[4];
+            config.calibration_mode = buf[5];
+            config.activation_value = dataView.getUint16(6 + 2 * 0, true)/65535;
+            config.deactivation_value = dataView.getUint16(6 + 2 * 1, true)/65535;
+            config.trigger_distance = dataView.getUint16(6 + 2 * 2, true)/65535;
+            config.release_distance = dataView.getUint16(6 + 2 * 3, true)/65535;
+            config.trigger_speed = dataView.getUint16(6 + 2 * 4, true)/65535;
+            config.release_speed = dataView.getUint16(6 + 2 * 5, true)/65535;
+            config.upper_deadzone = dataView.getUint16(6 + 2 * 6, true)/65535;
+            config.lower_deadzone = dataView.getUint16(6 + 2 * 7, true)/65535;
             console.log(this.advanced_keys[key_index]);
         }
         else (buf[0] == PacketCode.PacketCodeSet)
         {
             const key_index = dataView.getUint16(2, true);
-            buf[4] = this.advanced_keys[key_index].mode;
-            buf[5] = this.advanced_keys[key_index].calibration_mode;
-            dataView.setUint16(6 + 2 * 0, this.advanced_keys[key_index].activation_value*65535, true);
-            dataView.setUint16(6 + 2 * 1, this.advanced_keys[key_index].deactivation_value*65535, true);
-            dataView.setUint16(6 + 2 * 2, this.advanced_keys[key_index].trigger_distance*65535, true);
-            dataView.setUint16(6 + 2 * 3, this.advanced_keys[key_index].release_distance*65535, true);
-            dataView.setUint16(6 + 2 * 4, this.advanced_keys[key_index].trigger_speed*65535, true);
-            dataView.setUint16(6 + 2 * 5, this.advanced_keys[key_index].release_speed*65535, true);
-            dataView.setUint16(6 + 2 * 6, this.advanced_keys[key_index].upper_deadzone*65535, true);
-            dataView.setUint16(6 + 2 * 7, this.advanced_keys[key_index].lower_deadzone*65535, true);
+            const config = this.advanced_keys[key_index].config;
+            buf[4] = config.mode;
+            buf[5] = config.calibration_mode;
+            dataView.setUint16(6 + 2 * 0, config.activation_value*65535, true);
+            dataView.setUint16(6 + 2 * 1, config.deactivation_value*65535, true);
+            dataView.setUint16(6 + 2 * 2, config.trigger_distance*65535, true);
+            dataView.setUint16(6 + 2 * 3, config.release_distance*65535, true);
+            dataView.setUint16(6 + 2 * 4, config.trigger_speed*65535, true);
+            dataView.setUint16(6 + 2 * 5, config.release_speed*65535, true);
+            dataView.setUint16(6 + 2 * 6, config.upper_deadzone*65535, true);
+            dataView.setUint16(6 + 2 * 7, config.lower_deadzone*65535, true);
         }
     }   
 
@@ -1017,7 +1029,7 @@ export class LibampKeyboardController extends KeyboardController {
         console.log(this.config);
     }
 
-    packet_process_debug(buf : Uint8Array)
+    private applyDebugPacket(buf : Uint8Array): { tick: number; updated_keys: number[] } | null
     {
       let dataView = new DataView(buf.buffer);  
       if (buf[0] == PacketCode.PacketCodeGet) {
@@ -1038,12 +1050,62 @@ export class LibampKeyboardController extends KeyboardController {
                 this.advanced_keys[key_index].filtered_raw = dataView.getUint16(base + 8, true);
             }
         }
+        return {
+            tick: tick,
+            updated_keys: updated_keys,
+        };
+      }
+      return null;
+    }
+
+    private dispatchDebugData(tick: number, updated_keys: number[]): void {
         this.dispatchEvent(new CustomEvent('updateDebugData', {
             detail: {
                 tick: tick,
                 updated_keys: updated_keys,
             }
         }));
+    }
+
+    private processDebugResults(results: Uint8Array[]): void {
+        let tick = 0;
+        const updated_keys: number[] = [];
+        const seen = new Set<number>();
+        results.forEach(res => {
+            if (!res) {
+                return;
+            }
+            const update = this.applyDebugPacket(res);
+            if (!update) {
+                return;
+            }
+            tick = update.tick;
+            update.updated_keys.forEach(id => {
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    updated_keys.push(id);
+                }
+            });
+        });
+        if (updated_keys.length > 0) {
+            this.dispatchDebugData(tick, updated_keys);
+        }
+    }
+
+    private warnDebugRequestDisrupted(error: any): void {
+        const now = Date.now();
+        if (now - this.lastDebugTimeoutWarningAt < 2000) {
+            return;
+        }
+        this.lastDebugTimeoutWarningAt = now;
+        console.warn("Debug request disrupted, skipping current frame:", error);
+    }
+
+    packet_process_debug(buf : Uint8Array)
+    {
+      const update = this.applyDebugPacket(buf);
+      if (update) {
+        this.dispatchDebugData(update.tick, update.updated_keys);
       }
     }
     packet_process_version(buf: Uint8Array): boolean {
@@ -1251,84 +1313,63 @@ export class LibampKeyboardController extends KeyboardController {
           console.error("Error loading config:", e);
       }
     }
-    async request_debug(): Promise<void> {
-        const total_keys = this.advanced_keys.length;
-        const page_num = Math.ceil(total_keys / DEBUG_KEYS_PER_PACKET);
-        
-        // 创建一个任务数组
-        const tasks: Promise<Uint8Array>[] = [];
+    private async requestDebugIds(ids: number[]): Promise<void> {
+        if (this.shouldSkipDebugRequest()) {
+            return;
+        }
+        if (this.isDebugRequestRunning) {
+            return;
+        }
+        this.isDebugRequestRunning = true;
+        try {
+            const total_keys = ids.length;
+            const page_num = Math.ceil(total_keys / DEBUG_KEYS_PER_PACKET);
+            const results: Uint8Array[] = [];
 
-        for (let i = 0; i < page_num; i++) {
-            let send_buf = new Uint8Array(64);
-            send_buf[0] = PacketCode.PacketCodeGet;
-            send_buf[1] = PacketData.PacketDataDebug;
+            for (let i = 0; i < page_num; i++) {
+                if (this.shouldSkipDebugRequest()) {
+                    break;
+                }
+                let send_buf = new Uint8Array(64);
+                send_buf[0] = PacketCode.PacketCodeGet;
+                send_buf[1] = PacketData.PacketDataDebug;
 
-            let page_length = (i + 1) * DEBUG_KEYS_PER_PACKET > total_keys ? total_keys % DEBUG_KEYS_PER_PACKET : DEBUG_KEYS_PER_PACKET;
-            send_buf[2] = page_length; // 告诉固件我要读几个
+                let page_length = (i + 1) * DEBUG_KEYS_PER_PACKET > total_keys ? total_keys % DEBUG_KEYS_PER_PACKET : DEBUG_KEYS_PER_PACKET;
+                send_buf[2] = page_length;
 
-            let dataView = new DataView(send_buf.buffer);
-            // 填充我要读的那些按键的 Index
-            for (let j = 0; j < page_length; j++) {
-                let key_index = i * DEBUG_KEYS_PER_PACKET + j;
-                dataView.setUint16(DEBUG_PACKET_HEADER_SIZE + j * DEBUG_ITEM_SIZE, key_index, true);
+                let dataView = new DataView(send_buf.buffer);
+                for (let j = 0; j < page_length; j++) {
+                    let key_index = ids[i * DEBUG_KEYS_PER_PACKET + j];
+                    dataView.setUint16(DEBUG_PACKET_HEADER_SIZE + j * DEBUG_ITEM_SIZE, key_index, true);
+                }
+
+                try {
+                    results.push(await this.enqueueCommand(send_buf, this.debugRequestTimeoutMs));
+                } catch (e) {
+                    this.warnDebugRequestDisrupted(e);
+                    break;
+                }
             }
 
-            // 关键：将发送任务加入数组，使用 enqueueCommand (记得你上一轮引入的队列方法)
-            // 如果你还没定义 enqueueCommand，请使用你现有的带队列的发送方法
-            tasks.push(this.enqueueCommand(send_buf));
+            this.processDebugResults(results);
+        } finally {
+            this.isDebugRequestRunning = false;
         }
+    }
 
-        // 等待所有包发送并接收完成
-        // 这样可以保证这一行代码执行完时，this.advanced_keys 里的数据已经是最新的一整帧了
-        const results = await Promise.all(tasks);
-        
-        // 处理回包数据 (虽然 enqueueCommand 内部可能处理了，但为了保险可以在这里统一再处理一次，或者依赖内部的 packet_process)
-        results.forEach(res => this.packet_process_debug(res));
+    async request_debug(): Promise<void> {
+        const ids = this.advanced_keys.map((_, index) => index);
+        await this.requestDebugIds(ids);
     }
     async request_debug_at(ids: number[]): Promise<void> {
+        if (this.shouldSkipDebugRequest()) {
+            return;
+        }
         // 如果传入的数组为空，直接返回，避免发送无用数据包
         if (!ids || ids.length === 0) {
             return;
         }
-
-        const total_keys = ids.length; // 总请求数为传入数组的长度
-        const page_num = Math.ceil(total_keys / DEBUG_KEYS_PER_PACKET);
-        
-        // 创建一个任务数组
-        const tasks: Promise<Uint8Array>[] = [];
-
-        for (let i = 0; i < page_num; i++) {
-            let send_buf = new Uint8Array(64);
-            // 假设 PacketCode 和 PacketData 已经在作用域或类成员中定义
-            send_buf[0] = PacketCode.PacketCodeGet;
-            send_buf[1] = PacketData.PacketDataDebug;
-
-            // 计算当前包实际要请求几个按键
-            let page_length = (i + 1) * DEBUG_KEYS_PER_PACKET > total_keys ? total_keys % DEBUG_KEYS_PER_PACKET : DEBUG_KEYS_PER_PACKET;
-            send_buf[2] = page_length; // 告诉固件我要读几个
-
-            let dataView = new DataView(send_buf.buffer);
-            
-            // 填充我要读的那些按键的 Index
-            for (let j = 0; j < page_length; j++) {
-                // 从 ids 数组中读取当前循环对应的具体按键 ID
-                let key_index = ids[i * DEBUG_KEYS_PER_PACKET + j];
-                dataView.setUint16(DEBUG_PACKET_HEADER_SIZE + j * DEBUG_ITEM_SIZE, key_index, true);
-            }
-
-            // 将发送任务加入数组，使用 enqueueCommand
-            tasks.push(this.enqueueCommand(send_buf));
-        }
-
-        // 等待所有包发送并接收完成
-        const results = await Promise.all(tasks);
-        
-        // 处理回包数据
-        results.forEach(res => {
-            if (res) {
-                this.packet_process_debug(res);
-            }
-        });
+        await this.requestDebugIds(ids);
     }
     start_debug(): void {
         let send_buf = new Uint8Array(64);
@@ -1383,7 +1424,6 @@ export class LibampKeyboardController extends KeyboardController {
             }
         }
     }
-
     async write_rgb_configs() {
         this.txBuffer[0] = PacketCode.PacketCodeSet;
         this.txBuffer[1] = PacketData.PacketDataRgbBaseConfig;
@@ -1709,6 +1749,7 @@ export class LibampKeyboardController extends KeyboardController {
 
     async set_profile_index(index: number) {
         this.profile_index = index;
+        this.profileSwitchReloadPending = true;
         const commandId = this.profile_index + 0x10;
 
         // 1. 准备指令
@@ -1723,9 +1764,10 @@ export class LibampKeyboardController extends KeyboardController {
         try {
             await this.enqueueCommand(this.txBuffer, 1000);
             console.log("MCU confirmed switch. Requesting data...");
-            //await this.request();
+            this.scheduleReload();
             
         } catch (e) {
+            this.profileSwitchReloadPending = false;
             console.error("Config switch failed or timed out:", e);
         }
     }

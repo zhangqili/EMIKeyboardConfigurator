@@ -271,6 +271,8 @@
     "dont_show_again" : "不再显示",
     "about" : "关于",
     "layout" : "布局",
+    "key_id" : "按键ID",
+    "send_event" : "发送事件",
     "key_press" : "按下",
     "key_release" : "释放",
     "keyboard_render_edit_layout" : "编辑布局",

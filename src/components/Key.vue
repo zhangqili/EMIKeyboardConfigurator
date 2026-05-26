@@ -38,21 +38,22 @@ const labels = computed(() => {
     case "PerformancePanel": {
       const advancedKey = advancedKeys.value[props.id];
       if (advancedKey != undefined) {
+        const config = advancedKey.config;
         labels = labels.map(() => "");
-        labels[0] = keyModeDisplayMap[advancedKey.mode];
-        switch (advancedKey.mode) {
+        labels[0] = keyModeDisplayMap[config.mode];
+        switch (config.mode) {
           case ekc.KeyMode.KeyAnalogNormalMode: {
-            labels[3] = `↓${Math.round(advancedKey.activation_value * 1000) / 10}\t↑${Math.round(advancedKey.deactivation_value * 1000) / 10}`;
+            labels[3] = `↓${Math.round(config.activation_value * 1000) / 10}\t↑${Math.round(config.deactivation_value * 1000) / 10}`;
             break;
           }
           case ekc.KeyMode.KeyAnalogRapidMode: {
-            labels[3] = `↓${Math.round(advancedKey.trigger_distance * 1000) / 10}\t↑${Math.round(advancedKey.release_distance * 1000) / 10}`;
-            labels[6] = `↧${Math.round(advancedKey.upper_deadzone * 1000) / 10}\t↥${Math.round(advancedKey.lower_deadzone * 1000) / 10}`;
+            labels[3] = `↓${Math.round(config.trigger_distance * 1000) / 10}\t↑${Math.round(config.release_distance * 1000) / 10}`;
+            labels[6] = `↧${Math.round(config.upper_deadzone * 1000) / 10}\t↥${Math.round(config.lower_deadzone * 1000) / 10}`;
             break;
           }
           case ekc.KeyMode.KeyAnalogSpeedMode: {
-            labels[3] = `↓${Math.round(advancedKey.trigger_speed * 1000) / 10}\t↑${Math.round(advancedKey.release_speed * 1000) / 10}`;
-            labels[6] = `↧${Math.round(advancedKey.upper_deadzone * 1000) / 10}\t↥${Math.round(advancedKey.lower_deadzone * 1000) / 10}`;
+            labels[3] = `↓${Math.round(config.trigger_speed * 1000) / 10}\t↑${Math.round(config.release_speed * 1000) / 10}`;
+            labels[6] = `↧${Math.round(config.upper_deadzone * 1000) / 10}\t↥${Math.round(config.lower_deadzone * 1000) / 10}`;
             break;
           }
           default: {

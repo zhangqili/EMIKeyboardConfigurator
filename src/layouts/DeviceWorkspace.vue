@@ -449,7 +449,12 @@ async function importConfig() {
     const configData = JSON.parse(await file.text()) as IConfig;
     
     if (props.deviceName == configData.device) {
-      advancedKeys.value.forEach((item, index) => { advancedKeys.value[index] = configData.advancedKeys[index]; });
+      advancedKeys.value.forEach((item, index) => {
+        const importedKey = configData.advancedKeys[index];
+        if (importedKey) {
+          advancedKeys.value[index] = ekc.normalizeAdvancedKey(importedKey as any);
+        }
+      });
       if (keymap.value != undefined) {
         keymap.value = keymap.value.map((item, index) => item.map((item1, index1) => configData.keymap[index][index1]));
       }
