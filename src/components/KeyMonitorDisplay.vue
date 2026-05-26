@@ -14,6 +14,7 @@ defineProps<{
     <n-card 
         size="small" 
         :bordered="true"
+        content-style="padding: 4px;"
     >
         <n-flex :size="8" style="min-height: 34px; align-items: center; position: relative;">
             

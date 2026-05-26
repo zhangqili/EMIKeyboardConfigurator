@@ -296,14 +296,15 @@ function handleMouseLeave(event : MouseEvent, index: number) {
           <template #2>
             <div style="display: flex; flex-direction: column; height: 100%; padding-left: 16px;">
                 
-                <ActiveKeysMonitor :data="tableData" style="margin-bottom: 12px; flex-shrink: 0;" />
-                <OsKeyMonitor style="margin-bottom: 12px; flex-shrink: 0;" />
+                <ActiveKeysMonitor :data="tableData" style="margin-bottom: 4px; flex-shrink: 0;" />
+                <OsKeyMonitor style="margin-bottom: 4px; flex-shrink: 0;" />
                 
                 <n-data-table 
                   :data="tableData" 
                   :columns="columns" 
                   :row-key="(row: DebugRow) => row.id"
                   :bordered="false" 
+                  :size="'small'"
                   flex-height
                   style="flex: 1; min-height: 0;"
                 />

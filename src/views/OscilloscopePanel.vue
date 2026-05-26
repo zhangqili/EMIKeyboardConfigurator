@@ -725,7 +725,7 @@ function renderCharts() {
                 showSymbol: false, 
                 itemStyle: { color }, 
                 lineStyle: { width: 1, type: 'dashed', opacity: 0.35 }, // 虚线 + 半透明
-                sampling: 'lttb',
+                //sampling: 'lttb',
             };
         }
         seriesCache[rawId].itemStyle.color = color;

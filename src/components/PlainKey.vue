@@ -92,24 +92,30 @@ const translateOffsetBottom = computed(() => props.selected ? 'translate(0px, 0p
 
 const sizeLabel = computed(() : CSSProperties => ({
   // 宽度和高度动态减去 shrinkOffset
-  width: usize.value * props.width - 12 - shrinkOffset.value + "px",
-  height: usize.value * props.height - 12 - shrinkOffset.value + "px",
-  maxWidth: usize.value * props.width - 12 - shrinkOffset.value + "px",
-  maxHeight: usize.value * props.height - 12 - shrinkOffset.value + "px",
+  //width: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  //height: usize.value * props.height - 12 - shrinkOffset.value + "px",
+  //maxWidth: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  //maxHeight: usize.value * props.height - 12 - shrinkOffset.value + "px",
+  width: usize.value * props.width - 12 + "px",
+  height: usize.value * props.height - 12 + "px",
+  maxWidth: usize.value * props.width - 12 + "px",
+  maxHeight: usize.value * props.height - 12 + "px",
   textWrap: "wrap",
   // 增加平滑的动画过渡
-  fontSize: props.selected ? '0.85em' : '1em',
+  //fontSize: props.selected ? '0.85em' : '1em',
   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
   // 应用位移补偿
-  transform: translateOffset.value
+  //transform: translateOffset.value
 }));
 
 const sizeLabel1 = computed(() : CSSProperties => ({
-  width: usize.value * props.width - 12 - shrinkOffset.value + "px",
-  maxWidth: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  //width: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  //maxWidth: usize.value * props.width - 12 - shrinkOffset.value + "px",
+  width: usize.value * props.width - 12 + "px",
+  maxWidth: usize.value * props.width - 12 + "px",
   textWrap: "wrap",
   height: "8px",
-  fontSize: props.selected ? '0.85em' : '1em',
+  //fontSize: props.selected ? '0.85em' : '1em',
   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
   transform: translateOffsetBottom.value
 }));

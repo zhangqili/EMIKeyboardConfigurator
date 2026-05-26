@@ -442,6 +442,7 @@ export class LibampKeyboardController extends KeyboardController {
         }
 
         this.isReloading = true;
+        this.dispatchEvent(new Event('updateDataStart'));
         try {
             do {
                 this.refreshAgain = false;

@@ -140,6 +140,7 @@ onMounted(async () => {
     await getController();
     renderKeyboardFromJson(layout_json);
     controller.value.addEventListener('updateData', (event: Event) => { updateData(); });
+    controller.value.addEventListener('updateDataStart', () => { waitingForUpdate.value = true; });
   }
 });
 
@@ -227,6 +228,7 @@ watch(() => props.deviceName, async (newName) => {
   await getController();
   renderKeyboardFromJson(layout_json);
   controller.value.addEventListener('updateData', (event: Event) => { updateData(); });
+  controller.value.addEventListener('updateDataStart', () => { waitingForUpdate.value = true; });
 }, { immediate: true });
 
 async function connect_device() {
