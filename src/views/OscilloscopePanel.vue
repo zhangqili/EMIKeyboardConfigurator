@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick, inject, type Ref } from 'vue';
-import { NCard, NFlex, NSpace, NSwitch, NSelect, NButton, NSlider } from 'naive-ui';
+import { NButton, NIcon, NInputNumber, NSelect, NSwitch, NTooltip } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
-import * as apis from '@/apis/api';
 import { useMainStore } from '@/store/main';
 import { storeToRefs } from 'pinia';
+import { ClearAllOutlined, StraightenOutlined } from '@vicons/material';
 
 import { connect, use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -233,18 +233,142 @@ const keyOptions = computed(() => {
 const windowSize = ref(8000);
 let latestTick = 0;
 let isRenderPending = false;
+function scheduleChartRender() {
+    if (!isRenderPending) {
+        isRenderPending = true;
+        requestAnimationFrame(renderCharts);
+    }
+}
 // --- 数据缓存字典 ---
 // 格式: { keyId: [[tick1, val1], [tick2, val2], ...] }
 const rawDataCache: Record<number, [number, number][]> = {};
 const filteredRawDataCache: Record<number, [number, number][]> = {};
 const valueDataCache: Record<number, [number, number][]> = {};
+type DigitalSample = [number, 0 | 1];
+const stateDataCache: Record<number, DigitalSample[]> = {};
+const reportStateDataCache: Record<number, DigitalSample[]> = {};
 
 const stateAreasCache: Record<number, { start: number, end: number | null }[]> = {};
 const lastStateCache: Record<number, boolean> = {};
+const seriesCache: Record<string, any> = {};
 
 // --- 图表配置 ---
 
 const chartRef = ref<any>(null);
+const oscilloscopeShellRef = ref<HTMLElement | null>(null);
+const chartPanelRef = ref<HTMLElement | null>(null);
+let chartResizeObserver: ResizeObserver | null = null;
+
+const GRID_LEFT = 60;
+const GRID_RIGHT = 40;
+const CHART_TOP_PADDING = 12;
+const GRID_GAP = 8;
+const X_SLIDER_BOTTOM = 12;
+const X_SLIDER_HEIGHT = 22;
+const X_AXIS_LABEL_RESERVE = 26;
+const STATE_GRID_TARGET_HEIGHT = 72;
+const STATE_GRID_MIN_HEIGHT = 48;
+const MIN_WAVE_GRID_HEIGHT = 36;
+const DIGITAL_TRACK_AMPLITUDE = 0.32;
+
+function buildChartLayout(chartHeight: number = 480) {
+    const compact = chartHeight < 260;
+    const topPadding = compact ? 6 : CHART_TOP_PADDING;
+    const gridGap = compact ? 4 : GRID_GAP;
+    const sliderBottom = compact ? 8 : X_SLIDER_BOTTOM;
+    const sliderHeight = compact ? 18 : X_SLIDER_HEIGHT;
+    const axisReserve = compact ? 20 : X_AXIS_LABEL_RESERVE;
+    const availableHeight = Math.max(
+        0,
+        chartHeight - topPadding - sliderBottom - sliderHeight - axisReserve - gridGap * 2
+    );
+    const enoughForPreferredState = availableHeight >= STATE_GRID_MIN_HEIGHT + MIN_WAVE_GRID_HEIGHT * 2;
+    const preferredStateHeight = Math.min(
+        STATE_GRID_TARGET_HEIGHT,
+        Math.max(STATE_GRID_MIN_HEIGHT, availableHeight - MIN_WAVE_GRID_HEIGHT * 2)
+    );
+    const stateHeight = enoughForPreferredState ? preferredStateHeight : STATE_GRID_MIN_HEIGHT;
+    const waveHeight = Math.max(1, (availableHeight - stateHeight) / 2);
+    const rawTop = topPadding;
+    const valueTop = rawTop + waveHeight + gridGap;
+    const stateTop = valueTop + waveHeight + gridGap;
+
+    return {
+        grids: [
+            { left: GRID_LEFT, right: GRID_RIGHT, top: rawTop, height: waveHeight },
+            { left: GRID_LEFT, right: GRID_RIGHT, top: valueTop, height: waveHeight },
+            { left: GRID_LEFT, right: GRID_RIGHT, top: stateTop, height: stateHeight }
+        ],
+        rawYSlider: { right: 15, top: rawTop, height: waveHeight, width: 16 },
+        valueYSlider: { right: 15, top: valueTop, height: waveHeight, width: 16 },
+        xSlider: { bottom: sliderBottom, height: sliderHeight }
+    };
+}
+
+function getChartHeight(): number {
+    const chart = chartRef.value?.chart || chartRef.value;
+    if (chart && typeof chart.getHeight === 'function') {
+        return chart.getHeight();
+    }
+    return chartPanelRef.value?.clientHeight || 480;
+}
+
+function preventBrowserZoomOnCtrlWheel(event: WheelEvent) {
+    if (event.ctrlKey) {
+        event.preventDefault();
+    }
+}
+
+function getStateTrackCount(): number {
+    return Math.max(2, oscilloscopeSelectedKeys.value.length * 2);
+}
+
+function formatStateTrackLabel(value: number | string): string {
+    const numericValue = Number(value);
+    const trackIndex = Math.round(numericValue);
+    if (!Number.isFinite(numericValue) || Math.abs(numericValue - trackIndex) > 0.001) {
+        return '';
+    }
+    const keyIndex = Math.floor(trackIndex / 2);
+    const keyId = oscilloscopeSelectedKeys.value[keyIndex];
+    if (keyId === undefined) {
+        return '';
+    }
+    return trackIndex % 2 === 0 ? `K${keyId} S` : `K${keyId} R`;
+}
+
+function getDigitalTrackValue(keyIndex: number, trackOffset: number, value: 0 | 1): number {
+    return keyIndex * 2 + trackOffset + (value ? DIGITAL_TRACK_AMPLITUDE : -DIGITAL_TRACK_AMPLITUDE);
+}
+
+function buildDigitalTrackData(samples: DigitalSample[] | undefined, keyIndex: number, trackOffset: number): [number, number][] {
+    if (!samples) {
+        return [];
+    }
+    return samples.map(([tick, value]) => [tick, getDigitalTrackValue(keyIndex, trackOffset, value)]);
+}
+
+function getCacheValueAtTick(cache: [number, number][] | undefined, tick: number, dataIndex?: number): number | null {
+    if (!cache) {
+        return null;
+    }
+    if (dataIndex !== undefined && cache[dataIndex] && cache[dataIndex][0] === tick) {
+        return cache[dataIndex][1];
+    }
+    const found = cache.find(d => d[0] === tick);
+    return found ? found[1] : null;
+}
+
+function formatStateHtml(value: number | null): string {
+    if (value === null) {
+        return '<span style="color: #777;">-</span>';
+    }
+    return value
+        ? '<span style="color: #18a058; font-weight: bold;">ON</span>'
+        : '<span style="color: #777;">OFF</span>';
+}
+
+const initialChartLayout = buildChartLayout();
 const chartOption = shallowRef({
     backgroundColor: 'transparent',
     animation: false,
@@ -262,74 +386,46 @@ const chartOption = shallowRef({
             if (!params.length) return '';
 
             // 获取当前鼠标所在位置的 tick (X轴数值) 和数据索引
-            const tick = params[0].value[0];
-            const dataIndex = params[0].dataIndex;
+            const firstPoint = params.find(param => Array.isArray(param.value));
+            if (!firstPoint) return '';
+            const tick = Number(firstPoint.value[0]);
+            const dataIndex = typeof firstPoint.dataIndex === 'number' ? firstPoint.dataIndex : undefined;
 
-            // 构建精美的提示框表格，新增 State 列
+            // 构建精美的提示框表格
             let html = `<div style="font-size: 12px; color: #999; margin-bottom: 6px;">Tick: ${tick}</div>`;
             html += `<table style="width:100%; border-collapse: collapse; font-size: 13px; text-align: left;">`;
             html += `<tr>
                         <td style="padding-right:16px;"></td>
-                        <td style="padding-right:16px; color:#888;">State</td> 
+                        <td style="padding-right:16px; color:#888;">State</td>
+                        <td style="padding-right:16px; color:#888;">Report State</td>
                         <td style="padding-right:16px; color:#888;">Raw</td>
                         <td style="padding-right:16px; color:#18a058;">Filtered</td> <td style="color:#888;">Value</td>
                      </tr>`;
-            // 遍历所有选中的按键，提取当前 tick 下的 State, Raw 和 Value
+            // 遍历所有选中的按键，提取当前 tick 下的 State, Report State, Raw 和 Value
             oscilloscopeSelectedKeys.value.forEach((id, index) => {
                 if (hiddenKeys.value.includes(id)) return;
 
                 const color = lineColors[index % lineColors.length];
-                let rawVal = '-';
-                let filteredRawVal = '-';
-                let valVal = '-';
-                let isPressed = false; // 记录当前状态
 
                 const rawCache = rawDataCache[id];
                 const fRawCache = filteredRawDataCache[id];
                 const valCache = valueDataCache[id];
-                const stateCache = stateAreasCache[id];
-
-                // --- 1. 获取 Raw 和 Value 数据 ---
-                // 极速匹配：利用 ECharts 给出的 dataIndex 直接从缓存中取值
-                if (rawCache && rawCache[dataIndex] && rawCache[dataIndex][0] === tick) {
-                    rawVal = rawCache[dataIndex][1].toString();
-                } else if (rawCache) {
-                    // 降级策略：如果索引错位，则回退到数组查找
-                    const r = rawCache.find(d => d[0] === tick);
-                    if (r) rawVal = r[1].toString();
-                }
-                if (fRawCache && fRawCache[dataIndex] && fRawCache[dataIndex][0] === tick) {
-                    filteredRawVal = fRawCache[dataIndex][1].toFixed(2); // 保留两位小数，看起来更专业
-                } else if (fRawCache) {
-                    const fr = fRawCache.find(d => d[0] === tick);
-                    if (fr) filteredRawVal = fr[1].toFixed(2);
-                }
-                if (valCache && valCache[dataIndex] && valCache[dataIndex][0] === tick) {
-                    valVal = valCache[dataIndex][1].toFixed(4);
-                } else if (valCache) {
-                    const v = valCache.find(d => d[0] === tick);
-                    if (v) valVal = v[1].toFixed(4);
-                }
-
-                // --- 2. 获取 State 状态 ---
-                if (stateCache) {
-                    // 判断当前的 tick 是否落在任何一个高亮区间内
-                    isPressed = stateCache.some(area =>
-                        tick >= area.start && (area.end === null || tick <= area.end)
-                    );
-                }
-
-                // 状态的视觉样式：按下时显示绿色加粗的 ON，松开时显示灰色的 OFF
-                const stateHtml = isPressed
-                    ? `<span style="color: #18a058; font-weight: bold;">ON</span>`
-                    : `<span style="color: #777;">OFF</span>`;
+                const raw = getCacheValueAtTick(rawCache, tick, dataIndex);
+                const filteredRaw = getCacheValueAtTick(fRawCache, tick, dataIndex);
+                const value = getCacheValueAtTick(valCache, tick, dataIndex);
+                const state = getCacheValueAtTick(stateDataCache[id], tick, dataIndex);
+                const reportState = getCacheValueAtTick(reportStateDataCache[id], tick, dataIndex);
+                const rawVal = raw === null ? '-' : raw.toString();
+                const filteredRawVal = filteredRaw === null ? '-' : filteredRaw.toFixed(2);
+                const valVal = value === null ? '-' : value.toFixed(4);
 
                     html += `<tr>
                     <td style="padding-right:16px;">
-                        <span style="display:inline-block; margin-right:6px; border-radius:50%; width:10px; height:10px; background-color:${color};"></span>
+                        <span style="display:inline-block; margin-right:6px; width:10px; height:10px; background-color:${color};"></span>
                         Key ${id}
                     </td>
-                    <td style="padding-right:16px;">${stateHtml}</td> 
+                    <td style="padding-right:16px;">${formatStateHtml(state)}</td>
+                    <td style="padding-right:16px;">${formatStateHtml(reportState)}</td>
                     <td style="padding-right:16px; font-weight:bold; color:#aaa;">${rawVal}</td> <td style="padding-right:16px; font-weight:bold;">${filteredRawVal}</td> <td style="font-weight:bold;">${valVal}</td>
                 </tr>`;
             });
@@ -338,10 +434,7 @@ const chartOption = shallowRef({
             return html;
         }
     },
-    grid: [
-        { left: 60, right: 40, top: '4%', bottom: '52%' },   // 上半部分 Raw
-        { left: 60, right: 40, top: '50%', bottom: 55 }   // 下半部分 Value
-    ],
+    grid: initialChartLayout.grids,
     xAxis: [
         {
             gridIndex: 0, // 绑定到上半部分
@@ -358,6 +451,17 @@ const chartOption = shallowRef({
             type: 'value',
             scale: true,
             splitLine: { show: false },
+            axisLabel: { show: false },
+            axisPointer: {
+                label: { show: false }
+            }
+        },
+        {
+            gridIndex: 2, // 绑定到底部 State 图
+            type: 'value',
+            scale: true,
+            splitLine: { show: false },
+            axisLine: { onZero: false },
             axisLabel: { formatter: (val: number) => val.toString() }
         }
     ],
@@ -378,6 +482,18 @@ const chartOption = shallowRef({
             max: 1.1,
             inverse: true,
             splitLine: { show: true }
+        },
+        {
+            gridIndex: 2,
+            type: 'value',
+            name: 'State',
+            min: -0.5,
+            max: getStateTrackCount() - 0.5,
+            minInterval: 1,
+            maxInterval: 1,
+            splitLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { formatter: formatStateTrackLabel }
         }
     ],
     dataZoom: [
@@ -385,7 +501,7 @@ const chartOption = shallowRef({
         {
             id: 'dz-inside', 
             type: 'inside', 
-            xAxisIndex: [0, 1],
+            xAxisIndex: [0, 1, 2],
             zoomOnMouseWheel: 'ctrl',
             moveOnMouseWheel: false,
             filterMode: 'none'
@@ -393,9 +509,9 @@ const chartOption = shallowRef({
         {
             id: 'dz-slider', 
             type: 'slider', 
-            xAxisIndex: [0, 1], 
-            bottom: 15,
-            height: 20,              // 稍微调窄一点，看起来更精致
+            xAxisIndex: [0, 1, 2],
+            bottom: initialChartLayout.xSlider.bottom,
+            height: initialChartLayout.xSlider.height,
             filterMode: 'none',
             showDataShadow: false,   // 【核心】：关闭滚动条里的背景波形
             showDetail: false,       // 关闭两端的文字提示
@@ -414,10 +530,10 @@ const chartOption = shallowRef({
             id: 'dz-y-slider-raw', 
             type: 'slider', 
             yAxisIndex: 0, 
-            right: 15, 
-            top: '4%',
-            bottom: '52%',
-            width: 16,               // 调窄垂直滚动条
+            right: initialChartLayout.rawYSlider.right,
+            top: initialChartLayout.rawYSlider.top,
+            height: initialChartLayout.rawYSlider.height,
+            width: initialChartLayout.rawYSlider.width,
             filterMode: 'none',
             showDataShadow: false,   // 【核心】：关闭背景波形
             showDetail: false,       // 关闭文字提示
@@ -436,10 +552,10 @@ const chartOption = shallowRef({
             id: 'dz-y-slider-val', 
             type: 'slider', 
             yAxisIndex: 1, 
-            right: 15, 
-            top: '50%', 
-            bottom: 55,
-            width: 16,               // 调窄垂直滚动条
+            right: initialChartLayout.valueYSlider.right,
+            top: initialChartLayout.valueYSlider.top,
+            height: initialChartLayout.valueYSlider.height,
+            width: initialChartLayout.valueYSlider.width,
             filterMode: 'none',
             showDataShadow: false,   // 【核心】：关闭背景波形
             showDetail: false,       // 关闭文字提示
@@ -449,6 +565,19 @@ const chartOption = shallowRef({
 });
 const lineColors = ['#ff2291', '#ffd700', '#38538a', '#ff4637'];
 
+const selectedKeyLegend = computed(() => {
+    return oscilloscopeSelectedKeys.value.map((id, index) => ({
+        id,
+        color: lineColors[index % lineColors.length],
+        hidden: hiddenKeys.value.includes(id)
+    }));
+});
+
+function getKeyColor(id: number): string {
+    const index = oscilloscopeSelectedKeys.value.indexOf(id);
+    return lineColors[(index >= 0 ? index : 0) % lineColors.length];
+}
+
 // 当选择的按键发生变化时，清理被移除按键的缓存数据
 watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
     const removedKeys = oldKeys.filter(k => !newKeys.includes(k));
@@ -456,8 +585,13 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
         delete rawDataCache[k];
         delete filteredRawDataCache[k]
         delete valueDataCache[k];
+        delete stateDataCache[k];
+        delete reportStateDataCache[k];
         delete stateAreasCache[k];
         delete lastStateCache[k];
+        [`raw_${k}`, `f_raw_${k}`, `val_${k}`, `state_${k}`, `report_state_${k}`].forEach(id => {
+            delete seriesCache[id];
+        });
         hiddenKeys.value = hiddenKeys.value.filter(id => id !== k);
     });
     if (isPolling.value && newKeys.length > 0) {
@@ -511,15 +645,21 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
             if (!rawDataCache[keyId]) rawDataCache[keyId] = [];
             if (!filteredRawDataCache[keyId]) filteredRawDataCache[keyId] = [];
             if (!valueDataCache[keyId]) valueDataCache[keyId] = [];
+            if (!stateDataCache[keyId]) stateDataCache[keyId] = [];
+            if (!reportStateDataCache[keyId]) reportStateDataCache[keyId] = [];
             if (!stateAreasCache[keyId]) stateAreasCache[keyId] = [];
 
             // 追加新数据
             rawDataCache[keyId].push([numericTick, targetKey.raw]);
             filteredRawDataCache[keyId].push([numericTick, targetKey.filtered_raw ?? targetKey.raw]);
             valueDataCache[keyId].push([numericTick, targetKey.value]);
+            const stateValue: 0 | 1 = targetKey.state ? 1 : 0;
+            const reportStateValue: 0 | 1 = targetKey.report_state ? 1 : 0;
+            stateDataCache[keyId].push([numericTick, stateValue]);
+            reportStateDataCache[keyId].push([numericTick, reportStateValue]);
 
             // --- 状态边缘检测与区间记录 ---
-            const isPressed = targetKey.state || (targetKey as any).report_state;
+            const isPressed = stateValue === 1 || reportStateValue === 1;
             const lastState = lastStateCache[keyId] || false;
 
             if (isPressed && !lastState) {
@@ -544,6 +684,12 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
             if (valueDataCache[keyId].length > bufferLimit) {
                 valueDataCache[keyId] = valueDataCache[keyId].slice(-windowSize.value);
             }
+            if (stateDataCache[keyId].length > bufferLimit) {
+                stateDataCache[keyId] = stateDataCache[keyId].slice(-windowSize.value);
+            }
+            if (reportStateDataCache[keyId].length > bufferLimit) {
+                reportStateDataCache[keyId] = reportStateDataCache[keyId].slice(-windowSize.value);
+            }
 
             // stateAreas 同样进行批量清理
             if (stateAreasCache[keyId].length > 50) { // markArea 通常不会太多，稍微堆积一点再清理
@@ -554,11 +700,11 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
         }
     });
 }
-const seriesCache: Record<string, any> = {};
-
 function renderCharts() {
     const maxTick = latestTick;
     const minTick = latestTick - windowSize.value;
+    const layout = buildChartLayout(getChartHeight());
+    const stateTrackCount = getStateTrackCount();
 
     const seriesData: any[] = [];
 
@@ -582,6 +728,8 @@ function renderCharts() {
                 sampling: 'lttb',
             };
         }
+        seriesCache[rawId].itemStyle.color = color;
+        seriesCache[rawId].lineStyle.color = color;
         seriesCache[rawId].data = isHidden ? [] : rawDataCache[id];
         seriesCache[rawId].markArea = undefined;
         //seriesCache[rawId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
@@ -596,6 +744,8 @@ function renderCharts() {
                 lineStyle: { width: 1, opacity: 1 }, // 实线，略粗
             };
         }
+        seriesCache[fRawId].itemStyle.color = color;
+        seriesCache[fRawId].lineStyle.color = color;
         seriesCache[fRawId].data = isHidden ? [] : filteredRawDataCache[id];
         seriesCache[fRawId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
         seriesData.push(seriesCache[fRawId]);
@@ -609,9 +759,54 @@ function renderCharts() {
                 //sampling: 'lttb', // 开启降采样
             };
         }
+        seriesCache[valId].itemStyle.color = color;
+        seriesCache[valId].lineStyle.color = color;
         seriesCache[valId].data = isHidden ? [] : valueDataCache[id];
         seriesCache[valId].markArea = isHidden ? undefined : { silent: true, itemStyle: { opacity: 0.25 }, data: markAreaData };
         seriesData.push(seriesCache[valId]);
+
+        const stateBase = getDigitalTrackValue(index, 0, 0);
+        const stateId = `state_${id}`;
+        if (!seriesCache[stateId]) {
+            seriesCache[stateId] = {
+                id: stateId,
+                name: `State ${id}`,
+                type: 'line',
+                step: 'end',
+                xAxisIndex: 2,
+                yAxisIndex: 2,
+                showSymbol: false,
+                itemStyle: { color },
+                lineStyle: { width: 1, color },
+            };
+        }
+        seriesCache[stateId].itemStyle.color = color;
+        seriesCache[stateId].lineStyle.color = color;
+        seriesCache[stateId].areaStyle = { color, opacity: 0.25, origin: stateBase };
+        seriesCache[stateId].data = isHidden ? [] : buildDigitalTrackData(stateDataCache[id], index, 0);
+        seriesData.push(seriesCache[stateId]);
+
+        const reportStateBase = getDigitalTrackValue(index, 1, 0);
+        const reportStateId = `report_state_${id}`;
+        if (!seriesCache[reportStateId]) {
+            seriesCache[reportStateId] = {
+                id: reportStateId,
+                name: `Report ${id}`,
+                type: 'line',
+                step: 'end',
+                xAxisIndex: 2,
+                yAxisIndex: 2,
+                showSymbol: false,
+                itemStyle: { color },
+                lineStyle: { width: 1, type: 'dashed', color },
+            };
+        }
+        seriesCache[reportStateId].itemStyle.color = color;
+        seriesCache[reportStateId].lineStyle.color = color;
+        seriesCache[reportStateId].areaStyle = { color, opacity: 0.25, origin: reportStateBase };
+        
+        seriesCache[reportStateId].data = isHidden ? [] : buildDigitalTrackData(reportStateDataCache[id], index, 1);
+        seriesData.push(seriesCache[reportStateId]);
     });
     if (isMeasuring.value) {
         [0, 1].forEach(grid => {
@@ -659,6 +854,44 @@ function renderCharts() {
         });
     }
     const updateOption: any = {
+        grid: layout.grids,
+        yAxis: [
+            { min: 0, max: 'dataMax' },
+            { min: -0.1, max: 1.1 },
+            {
+                min: -0.5,
+                max: stateTrackCount - 0.5,
+                axisLabel: { formatter: formatStateTrackLabel }
+            }
+        ],
+        dataZoom: [
+            {
+                id: 'dz-inside',
+                xAxisIndex: [0, 1, 2],
+                ...(isPolling.value ? { startValue: minTick, endValue: maxTick } : {})
+            },
+            {
+                id: 'dz-slider',
+                xAxisIndex: [0, 1, 2],
+                bottom: layout.xSlider.bottom,
+                height: layout.xSlider.height,
+                ...(isPolling.value ? { startValue: minTick, endValue: maxTick } : {})
+            },
+            {
+                id: 'dz-y-slider-raw',
+                right: layout.rawYSlider.right,
+                top: layout.rawYSlider.top,
+                height: layout.rawYSlider.height,
+                width: layout.rawYSlider.width
+            },
+            {
+                id: 'dz-y-slider-val',
+                right: layout.valueYSlider.right,
+                top: layout.valueYSlider.top,
+                height: layout.valueYSlider.height,
+                width: layout.valueYSlider.width
+            }
+        ],
         series: seriesData,
         tooltip: {
             backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.7)' : 'rgba(255, 255, 255, 0.85)',
@@ -668,16 +901,14 @@ function renderCharts() {
     };
 
     if (isPolling.value) {
-        updateOption.dataZoom = [
-            { id: 'dz-inside', startValue: minTick, endValue: maxTick },
-            { id: 'dz-slider', startValue: minTick, endValue: maxTick, bottom: 15, height: 24 }
-        ];
         updateOption.xAxis = [
+            { min: minTick, max: maxTick },
             { min: minTick, max: maxTick },
             { min: minTick, max: maxTick }
         ];
     } else {
         updateOption.xAxis = [
+            { min: 'dataMin', max: 'dataMax' },
             { min: 'dataMin', max: 'dataMax' },
             { min: 'dataMin', max: 'dataMax' }
         ];
@@ -711,9 +942,20 @@ const handleDebugDataUpdated = (event: Event) => {
 onMounted(() => {
     connect('osc_group');
     props.controller.addEventListener('updateDebugData', handleDebugDataUpdated);
+    oscilloscopeShellRef.value?.addEventListener('wheel', preventBrowserZoomOnCtrlWheel, {
+        passive: false,
+        capture: true
+    });
+    if (chartPanelRef.value && typeof ResizeObserver !== 'undefined') {
+        chartResizeObserver = new ResizeObserver(() => scheduleChartRender());
+        chartResizeObserver.observe(chartPanelRef.value);
+    }
 });
 
 onBeforeUnmount(() => {
+    chartResizeObserver?.disconnect();
+    chartResizeObserver = null;
+    oscilloscopeShellRef.value?.removeEventListener('wheel', preventBrowserZoomOnCtrlWheel, true);
     if (isPolling.value) {
         props.controller.stop_debug();
     }
@@ -727,6 +969,8 @@ function clearWaveform() {
         if (rawDataCache[id]) rawDataCache[id].length = 0;
         if (filteredRawDataCache[id]) filteredRawDataCache[id].length = 0;
         if (valueDataCache[id]) valueDataCache[id].length = 0;
+        if (stateDataCache[id]) stateDataCache[id].length = 0;
+        if (reportStateDataCache[id]) reportStateDataCache[id].length = 0;
         if (stateAreasCache[id]) stateAreasCache[id].length = 0; // 新增清理
         if (lastStateCache[id]) lastStateCache[id] = false;     // 新增清理
     });
@@ -735,7 +979,10 @@ function clearWaveform() {
     if (chartRef.value?.chart) {
         const emptySeries = oscilloscopeSelectedKeys.value.flatMap(id => [
             { id: `raw_${id}`, data: [] },
-            { id: `val_${id}`, data: [] }
+            { id: `f_raw_${id}`, data: [] },
+            { id: `val_${id}`, data: [] },
+            { id: `state_${id}`, data: [] },
+            { id: `report_state_${id}`, data: [] }
         ]);
         chartRef.value.chart.setOption({ series: emptySeries }, { replaceMerge: ['series'] });
     }
@@ -806,149 +1053,147 @@ const valAnalysisStats = computed(() => {
     if (!isMeasuring.value || measurePoints.value[1].length !== 2) return null;
     return calculateStats(valueDataCache, measurePoints.value[1]);
 });
+
+const rawAnalysisEntries = computed(() => {
+    return Object.entries(rawAnalysisStats.value ?? {}).map(([id, stats]) => ({
+        id: Number(id),
+        stats
+    }));
+});
+
+const valAnalysisEntries = computed(() => {
+    return Object.entries(valAnalysisStats.value ?? {}).map(([id, stats]) => ({
+        id: Number(id),
+        stats
+    }));
+});
 </script>
 
 <template>
-    <n-card style="height: 100%; display: flex; flex-direction: column;"
-        content-style="flex: 1; display: flex; flex-direction: column;">
+    <div ref="oscilloscopeShellRef" class="oscilloscope-shell" :class="{ 'is-dark': themeName === 'dark' }">
+        <div class="scope-toolbar">
+            <div class="toolbar-main">
+                <label class="debug-control">
+                    <span class="control-label">{{ t('oscilloscope_panel_enable_debug') }}</span>
+                    <n-switch v-model:value="isPolling" size="small" @update:value="togglePolling" />
+                </label>
 
-        <n-flex :align="'center'" :size="16" style="flex-shrink: 0;">
-            <div>{{ t('oscilloscope_panel_enable_debug') }}</div>
-            <n-switch v-model:value="isPolling" @update:value="togglePolling">
+                <n-select
+                    v-model:value="oscilloscopeSelectedKeys"
+                    class="key-select"
+                    multiple
+                    clearable
+                    size="small"
+                    :max-selected-count="4"
+                    :max-tag-count="4"
+                    :options="keyOptions"
+                    placeholder="Select keys"
+                />
 
-            </n-switch>
+                <label class="window-control">
+                    <span class="control-label">{{ t('oscilloscope_panel_buffer_length') }}</span>
+                    <n-input-number
+                        v-model:value="windowSize"
+                        class="window-input"
+                        size="small"
+                        :min="8000"
+                        :step="8000"
+                        :show-button="true"
+                    />
+                </label>
 
-            <n-select v-model:value="oscilloscopeSelectedKeys" multiple :max-selected-count="4" :options="keyOptions"
-                style="min-width: 260px; max-width: 400px; flex: 1;" placeholder="Select keys" />
+                <div class="toolbar-actions">
+                    <n-tooltip trigger="hover">
+                        <template #trigger>
+                            <n-button size="small" circle quaternary :disabled="oscilloscopeSelectedKeys.length === 0" @click="clearWaveform">
+                                <template #icon>
+                                    <n-icon><ClearAllOutlined /></n-icon>
+                                </template>
+                            </n-button>
+                        </template>
+                        {{ t('clear') }}
+                    </n-tooltip>
 
-            <n-flex :align="'center'" :size="8" :wrap="false">
-                <span style="white-space: nowrap;">{{ t('oscilloscope_panel_buffer_length') }}</span>
-                <n-input-number v-model:value="windowSize" :min="8000" :step="8000" />
-            </n-flex>
+                    <n-tooltip trigger="hover">
+                        <template #trigger>
+                            <n-button size="small" circle secondary :type="isMeasuring ? 'info' : 'default'" @click="toggleMeasureMode">
+                                <template #icon>
+                                    <n-icon><StraightenOutlined /></n-icon>
+                                </template>
+                            </n-button>
+                        </template>
+                        {{ isMeasuring ? t('oscilloscope_panel_exit_measuring') : t('oscilloscope_panel_measuring_tool') }}
+                    </n-tooltip>
+                </div>
 
-            <n-button @click="clearWaveform">{{ t('clear') }}</n-button>
-            
-            <n-button :type="isMeasuring ? 'info' : 'default'" @click="toggleMeasureMode">
-                {{ isMeasuring ? t('oscilloscope_panel_exit_measuring') : t('oscilloscope_panel_measuring_tool') }}
-            </n-button>
-            
-            <div style="margin-left: auto; display: flex; gap: 16px; align-items: center; padding-right: 12px;">
-                <div v-for="(id, index) in oscilloscopeSelectedKeys" :key="id"
-                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;"
-                    @click="toggleKeyVisibility(id)">
-
-                    <div :style="{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: hiddenKeys.includes(id) ? 'transparent' : lineColors[index % lineColors.length],
-                        border: `2px solid ${lineColors[index % lineColors.length]}`,
-                        transition: 'background-color 0.2s'
-                    }"></div>
-
-                    <span :style="{
-                        color: hiddenKeys.includes(id) ? '#777' : (themeName === 'dark' ? '#ccc' : '#333'),
-                        fontSize: '13px',
-                        textDecoration: hiddenKeys.includes(id) ? 'line-through' : 'none',
-                        transition: 'color 0.2s'
-                    }">Key {{ id }}</span>
+                <div v-if="selectedKeyLegend.length > 0" class="key-legend">
+                    <button
+                        v-for="item in selectedKeyLegend"
+                        :key="item.id"
+                        class="legend-chip"
+                        :class="{ 'is-hidden': item.hidden }"
+                        :style="{ '--key-color': item.color }"
+                        type="button"
+                        @click="toggleKeyVisibility(item.id)"
+                    >
+                        <span class="legend-dot"></span>
+                        <span class="legend-label">Key {{ item.id }}</span>
+                    </button>
                 </div>
             </div>
-        </n-flex>
+        </div>
 
-        <div style="position: relative; flex: 1; width: 100%; height: 100%;">
-            
-            <div v-if="isMeasuring && measurePoints[0].length === 2"
-                 :style="{
-                     position: 'absolute', top: '16px', left: '80px', zIndex: 10, pointerEvents: 'none',
-                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-                     padding: '8px 12px', borderRadius: '6px', backdropFilter: 'blur(4px)',
-                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                 }">
-                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '6px' }">Raw Measurement</div>
-                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
-                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[0][1].x - measurePoints[0][0].x).toFixed(0) }}</span> Ticks
-                 </div>
-                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
-                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[0][1].y - measurePoints[0][0].y).toFixed(0) }}</span>
-                 </div>
-            </div>
-
-            <div v-if="isMeasuring && measurePoints[1].length === 2"
-                 :style="{
-                     position: 'absolute', top: '52%', left: '80px', zIndex: 10, pointerEvents: 'none',
-                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-                     padding: '8px 12px', borderRadius: '6px', backdropFilter: 'blur(4px)',
-                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                 }">
-                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '6px' }">Value Measurement</div>
-                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
-                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[1][1].x - measurePoints[1][0].x).toFixed(0) }}</span> Ticks
-                 </div>
-                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333' }">
-                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[1][1].y - measurePoints[1][0].y).toFixed(3) }}</span>
-                 </div>
-            </div>
-            <!-- Raw 图表测量与分析浮窗 -->
-<div v-if="isMeasuring && measurePoints[0].length === 2"
-                 :style="{
-                     position: 'absolute', top: '16px', left: '80px', zIndex: 10, pointerEvents: 'none',
-                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-                     padding: '12px', borderRadius: '6px', backdropFilter: 'blur(8px)',
-                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '320px'
-                 }">
-                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '8px', borderBottom: '1px solid #555', paddingBottom: '4px' }">
-                    Raw Measurement & Analysis
-                 </div>
-                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333', marginBottom: '10px' }">
-                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[0][1].x - measurePoints[0][0].x).toFixed(0) }}</span> Ticks
-                     <span style="margin: 0 8px; color: #666">|</span>
-                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[0][1].y - measurePoints[0][0].y).toFixed(0) }}</span>
-                 </div>
-                 <!-- 遍历显示每个未隐藏按键的噪声数据 -->
-                 <div v-if="rawAnalysisStats" v-for="(stats, id) in rawAnalysisStats" :key="id" :style="{ fontSize: '12px', marginTop: '8px', borderLeft: `2px solid ${lineColors[oscilloscopeSelectedKeys.indexOf(Number(id)) % lineColors.length]}`, paddingLeft: '8px' }">
-                     <div :style="{ color: themeName === 'dark' ? '#eee' : '#333', fontWeight: 'bold', marginBottom: '4px' }">Key {{ id }}</div>
-                     <div style="display: flex; flex-wrap: wrap; gap: 8px 12px;">
-                         <span style="color:#ff4637;" title="Peak-to-Peak Noise">Vpp: <b>{{ stats.vpp.toFixed(0) }}</b></span>
-                         <span style="color:#18a058;" title="Root Mean Square Noise">RMS: <b>{{ stats.rms.toFixed(2) }}</b></span>
-                         <span style="color:#d03050;" title="Max Step Noise (相邻点最大差值)">Max Δ: <b>{{ stats.maxDelta.toFixed(0) }}</b></span>
-                         <span style="color:#f0a020;" title="Crest Factor (波峰因数)">CF: <b>{{ stats.crestFactor.toFixed(2) }}</b></span>
-                     </div>
-                 </div>
+        <div ref="chartPanelRef" class="chart-panel">
+            <div v-if="isMeasuring && measurePoints[0].length === 2" class="measurement-panel measurement-panel--raw">
+                <div class="measurement-title">Raw Measurement & Analysis</div>
+                <div class="measurement-deltas">
+                    <span>ΔX: <b class="delta-x">{{ Math.abs(measurePoints[0][1].x - measurePoints[0][0].x).toFixed(0) }}</b> Ticks</span>
+                    <span>ΔY: <b class="delta-y">{{ Math.abs(measurePoints[0][1].y - measurePoints[0][0].y).toFixed(0) }}</b></span>
+                </div>
+                <div v-if="rawAnalysisEntries.length > 0" class="analysis-list">
+                    <div
+                        v-for="entry in rawAnalysisEntries"
+                        :key="entry.id"
+                        class="analysis-row"
+                        :style="{ borderLeftColor: getKeyColor(entry.id) }"
+                    >
+                        <div class="analysis-key">Key {{ entry.id }}</div>
+                        <div class="analysis-values">
+                            <span class="metric metric-vpp" title="Peak-to-Peak Noise">Vpp: <b>{{ entry.stats.vpp.toFixed(0) }}</b></span>
+                            <span class="metric metric-rms" title="Root Mean Square Noise">RMS: <b>{{ entry.stats.rms.toFixed(2) }}</b></span>
+                            <span class="metric metric-step" title="Max Step Noise">Max Δ: <b>{{ entry.stats.maxDelta.toFixed(0) }}</b></span>
+                            <span class="metric metric-cf" title="Crest Factor">CF: <b>{{ entry.stats.crestFactor.toFixed(2) }}</b></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Value 图表测量与分析浮窗 -->
-            <div v-if="isMeasuring && measurePoints[1].length === 2"
-                 :style="{
-                     position: 'absolute', top: '52%', left: '80px', zIndex: 10, pointerEvents: 'none',
-                     background: themeName === 'dark' ? 'rgba(30, 30, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                     border: themeName === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-                     padding: '12px', borderRadius: '6px', backdropFilter: 'blur(8px)',
-                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '320px'
-                 }">
-                 <div :style="{ fontSize: '12px', color: themeName === 'dark' ? '#999' : '#666', marginBottom: '8px', borderBottom: '1px solid #555', paddingBottom: '4px' }">
-                    Value Measurement & Analysis
-                 </div>
-                 <div :style="{ fontSize: '13px', color: themeName === 'dark' ? '#eee' : '#333', marginBottom: '10px' }">
-                     ΔX: <span style="font-weight:bold; color:#00e5ff">{{ Math.abs(measurePoints[1][1].x - measurePoints[1][0].x).toFixed(0) }}</span> Ticks
-                     <span style="margin: 0 8px; color: #666">|</span>
-                     ΔY: <span style="font-weight:bold; color:#ffaa00">{{ Math.abs(measurePoints[1][1].y - measurePoints[1][0].y).toFixed(3) }}</span>
-                 </div>
-                 <!-- 遍历显示每个未隐藏按键的噪声数据 -->
-                 <div v-if="valAnalysisStats" v-for="(stats, id) in valAnalysisStats" :key="id" :style="{ fontSize: '12px', marginTop: '8px', borderLeft: `2px solid ${lineColors[oscilloscopeSelectedKeys.indexOf(Number(id)) % lineColors.length]}`, paddingLeft: '8px' }">
-                     <div :style="{ color: themeName === 'dark' ? '#eee' : '#333', fontWeight: 'bold', marginBottom: '4px' }">Key {{ id }}</div>
-                     <div style="display: flex; flex-wrap: wrap; gap: 8px 12px;">
-                         <span style="color:#ff4637;" title="Peak-to-Peak Noise">Vpp: <b>{{ stats.vpp.toFixed(4) }}</b></span>
-                         <span style="color:#18a058;" title="Root Mean Square Noise">RMS: <b>{{ stats.rms.toFixed(4) }}</b></span>
-                         <span style="color:#d03050;" title="Max Step Noise (相邻点最大差值)">Max Δ: <b>{{ stats.maxDelta.toFixed(4) }}</b></span>
-                         <span style="color:#f0a020;" title="Crest Factor (波峰因数)">CF: <b>{{ stats.crestFactor.toFixed(2) }}</b></span>
-                     </div>
-                 </div>
+            <div v-if="isMeasuring && measurePoints[1].length === 2" class="measurement-panel measurement-panel--value">
+                <div class="measurement-title">Value Measurement & Analysis</div>
+                <div class="measurement-deltas">
+                    <span>ΔX: <b class="delta-x">{{ Math.abs(measurePoints[1][1].x - measurePoints[1][0].x).toFixed(0) }}</b> Ticks</span>
+                    <span>ΔY: <b class="delta-y">{{ Math.abs(measurePoints[1][1].y - measurePoints[1][0].y).toFixed(3) }}</b></span>
+                </div>
+                <div v-if="valAnalysisEntries.length > 0" class="analysis-list">
+                    <div
+                        v-for="entry in valAnalysisEntries"
+                        :key="entry.id"
+                        class="analysis-row"
+                        :style="{ borderLeftColor: getKeyColor(entry.id) }"
+                    >
+                        <div class="analysis-key">Key {{ entry.id }}</div>
+                        <div class="analysis-values">
+                            <span class="metric metric-vpp" title="Peak-to-Peak Noise">Vpp: <b>{{ entry.stats.vpp.toFixed(4) }}</b></span>
+                            <span class="metric metric-rms" title="Root Mean Square Noise">RMS: <b>{{ entry.stats.rms.toFixed(4) }}</b></span>
+                            <span class="metric metric-step" title="Max Step Noise">Max Δ: <b>{{ entry.stats.maxDelta.toFixed(4) }}</b></span>
+                            <span class="metric metric-cf" title="Crest Factor">CF: <b>{{ entry.stats.crestFactor.toFixed(2) }}</b></span>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             <v-chart ref="chartRef" :theme="themeName" :option="chartOption" :update-options="{ replaceMerge: ['series'] }"
+                class="scope-chart"
                 @zr:click="handleChartClick"
                 @zr:mousedown="handleChartMouseDown"
                 @zr:mousemove="handleChartMouseMove"
@@ -956,8 +1201,274 @@ const valAnalysisStats = computed(() => {
                 autoresize 
                 :style="{ 
                     cursor: isMeasuring ? (isHoveringPoint || dragInfo !== null ? 'move' : 'crosshair') : 'default', 
-                    width: '100%', height: '100%' 
                 }" />
         </div>
-    </n-card>
+    </div>
 </template>
+
+<style scoped>
+.oscilloscope-shell {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #20242c;
+}
+
+.oscilloscope-shell.is-dark {
+    color: #d9dee8;
+}
+
+.scope-toolbar {
+    flex: 0 0 auto;
+    padding: 6px 8px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    border: 1px solid rgba(30, 38, 52, 0.1);
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.is-dark .scope-toolbar {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(24, 27, 34, 0.78);
+}
+
+.toolbar-main {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px 8px;
+    align-items: center;
+    min-width: 0;
+}
+
+.debug-control,
+.window-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+}
+
+.control-label {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.key-select {
+    min-width: 180px;
+    flex: 1 1 260px;
+}
+
+.window-input {
+    width: 108px;
+}
+
+.toolbar-actions {
+    display: inline-flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.key-legend {
+    margin-left: auto;
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 4px;
+    overflow-x: auto;
+    min-width: 120px;
+    scrollbar-width: thin;
+}
+
+.legend-chip {
+    flex: 0 0 auto;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 7px;
+    color: inherit;
+    border: 1px solid rgba(30, 38, 52, 0.12);
+    background: rgba(255, 255, 255, 0.62);
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.16s ease, background-color 0.16s ease, opacity 0.16s ease;
+}
+
+.is-dark .legend-chip {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-chip:hover {
+    border-color: var(--key-color);
+    background: color-mix(in srgb, var(--key-color) 10%, transparent);
+}
+
+.legend-chip.is-hidden {
+    opacity: 0.54;
+}
+
+.legend-dot {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
+    border: 2px solid var(--key-color);
+    background: var(--key-color);
+}
+
+.legend-chip.is-hidden .legend-dot {
+    background: transparent;
+}
+
+.legend-label {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.legend-chip.is-hidden .legend-label {
+    text-decoration: line-through;
+}
+
+.chart-panel {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(30, 38, 52, 0.1);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 249, 252, 0.52));
+}
+
+.is-dark .chart-panel {
+    border-color: rgba(255, 255, 255, 0.09);
+    background: linear-gradient(180deg, rgba(21, 24, 30, 0.78), rgba(16, 18, 23, 0.62));
+}
+
+.scope-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.measurement-panel {
+    position: absolute;
+    left: 72px;
+    z-index: 10;
+    min-width: min(360px, calc(100% - 104px));
+    max-width: min(560px, calc(100% - 104px));
+    padding: 12px;
+    pointer-events: none;
+    border: 1px solid rgba(30, 38, 52, 0.12);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+.is-dark .measurement-panel {
+    border-color: rgba(255, 255, 255, 0.11);
+    background: rgba(26, 29, 36, 0.9);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.measurement-panel--raw {
+    top: 16px;
+}
+
+.measurement-panel--value {
+    top: calc(50% + 16px);
+}
+
+.measurement-title {
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    color: #697386;
+    border-bottom: 1px solid rgba(30, 38, 52, 0.12);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.is-dark .measurement-title {
+    color: #9aa4b5;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.measurement-deltas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.delta-x {
+    color: #007c89;
+}
+
+.delta-y {
+    color: #c76a00;
+}
+
+.analysis-list {
+    display: grid;
+    gap: 8px;
+}
+
+.analysis-row {
+    padding-left: 8px;
+    border-left: 2px solid;
+}
+
+.analysis-key {
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.analysis-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: 12px;
+}
+
+.metric-vpp {
+    color: #d03050;
+}
+
+.metric-rms {
+    color: #18a058;
+}
+
+.metric-step {
+    color: #c04b8e;
+}
+
+.metric-cf {
+    color: #c87500;
+}
+
+@media (max-width: 960px) {
+    .toolbar-main {
+        min-width: max-content;
+    }
+
+    .key-select,
+    .window-input {
+        width: auto;
+    }
+
+    .toolbar-actions {
+        justify-content: flex-start;
+    }
+
+    .measurement-panel {
+        left: 56px;
+        min-width: min(320px, calc(100% - 80px));
+        max-width: calc(100% - 80px);
+    }
+}
+</style>
