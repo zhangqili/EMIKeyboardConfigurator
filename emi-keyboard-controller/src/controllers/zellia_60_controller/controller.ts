@@ -1,7 +1,43 @@
 import { LibampKeyboardController } from '../libamp_keyboard_controller/controller';
 import { IAdvancedKey, IKeyboardController, IRGBConfig, KeyMode, CalibrationMode, RGBMode, Keycode, KeyModifier, AdvancedKey, KeyboardController, DynamicKey, RGBBaseConfig, detectHIDDevice } from '../../interface';
 
-const layout = `[[{"x":2.25},"~\\n\`","!\\n1","@\\n2","#\\n3","$\\n4","%\\n5","^\\n6","&\\n7","*\\n8","(\\n9",")\\n0","_\\n-","+\\n=",{"w":2},"Backspace",{"a":7},"",""],[{"x":2.25,"a":4,"w":1.5},"Tab","Q","W","E","R","T","Y","U","I","O","P","{\\n[","}\\n]",{"w":1.5},"|\\n\\\\"   ],   [     {       "x": 2.25,       "w": 1.75     },     "CapsLock",     "A",     "S",     "D",     "F",     "G",     "H",     "J",     "K",     "L",     ":\\n;",     "\\"\\n'",{"w":2.25},"Enter"],[{"a":7,"w":1.25},"","",{"a":4,"w":2.25},"Shift","Z","X","C","V","B","N","M","<\\n,",">\\n.","?\\n/",{"w":2.75},"Shift",{"a":7,"w":1.75},"",""],[{"x":2.25,"a":4,"w":1.5},"Ctrl","Win",{"w":1.5},"Alt",{"a":7,"w":7},"",{"a":4,"w":1.5},"Alt","Win",{"w":1.5},"Ctrl"],[{"x":6.25,"a":7,"w":3.5},"",{"w":3.5},""]]`;
+const layout = `[
+    [
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",
+        {"w":2}, "13\\n\\n\\n0,0",
+        {"x":-2}, "14\\n\\n\\n0,1", "15\\n\\n\\n0,1"
+    ],
+    [
+        {"a":4,"w":1.5}, "16",
+        "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28",
+        {"w":1.5}, "29"
+    ],
+    [
+        {"w":1.75}, "30",
+        "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41",
+        {"w":2.25}, "42"
+    ],
+    [
+        {"w":2.25}, "45\\n\\n\\n1,0",
+        {"x":-2.25,"a":4,"w":1.25}, "43\\n\\n\\n1,1",
+        "44\\n\\n\\n1,1",
+        {"a":4}, "46", "47", "48", "49", "50", "51", "52", "53", "54", "55",
+        {"w":2.75}, "56\\n\\n\\n2,0",
+        {"x":-2.75,"a":4,"w":1.75}, "57\\n\\n\\n2,1",
+        "58\\n\\n\\n2,1"
+    ],
+    [
+        {"a":4,"w":1.5}, "59",
+        "60",
+        {"w":1.5}, "61",
+        {"a":4,"w":7}, "62\\n\\n\\n3,0",
+        {"x":-7,"w":3.5}, "66\\n\\n\\n3,1",
+        {"w":3.5}, "67\\n\\n\\n3,1",
+        {"a":4,"w":1.5}, "63",
+        "64",
+        {"w":1.5}, "65"
+    ]
+]`;
 
 export class Zellia60Controller extends LibampKeyboardController {
     ADVANCED_KEY_NUM: number = 68;
@@ -23,6 +59,15 @@ export class Zellia60Controller extends LibampKeyboardController {
 
     get_layout_json(): string {
         return layout;
+    }
+
+    get_layout_labels(): string[][] {
+        return [
+            ["Spilt backspace"],
+            ["Spilt left shift"],
+            ["Spilt enter"],
+            ["7u space bar", "7u spilt space bar"],
+        ];
     }
 
 
