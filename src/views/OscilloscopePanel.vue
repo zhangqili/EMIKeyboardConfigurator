@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, shallowRef, watch, computed, nextTick, inject, type Ref } from 'vue';
-import { NButton, NIcon, NInputNumber, NSelect, NSwitch, NTooltip } from 'naive-ui';
+import { NButton, NCollapse, NCollapseItem, NIcon, NInputNumber, NSelect, NSwitch, NTooltip } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { useMainStore } from '@/store/main';
 import { storeToRefs } from 'pinia';
@@ -13,6 +13,35 @@ import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkA
 import VChart from 'vue-echarts';
 import * as ekc from 'emi-keyboard-controller'
 import { KeyConfig } from '@/apis/utils';
+import { calculateStats } from './oscilloscope/analysis';
+import {
+    buildChartLayout,
+    buildDigitalTrackData,
+    formatStateHtml,
+    getCacheValueAtTick,
+    getDigitalTrackValue,
+    type DigitalSample
+} from './oscilloscope/chart';
+import {
+    SPECTRUM_ESTIMATION_ALPHA,
+    SPECTRUM_ESTIMATION_MAX_RATE_HZ,
+    SPECTRUM_ESTIMATION_MIN_INTERVAL_MS,
+    SPECTRUM_ESTIMATION_MIN_RATE_HZ,
+    SPECTRUM_ESTIMATION_MIN_TICK_DELTA,
+    SPECTRUM_FALLBACK_SAMPLE_RATE_HZ,
+    SPECTRUM_QUALITY_WARNING_THRESHOLD,
+    buildUniformSpectrumWindow,
+    calculateSpectrum,
+    formatFrequency,
+    formatFrequencyShort,
+    formatPercent,
+    formatSampleRate,
+    formatSpectrumMagnitude,
+    quantizeSpectrumSampleRate,
+    type SpectrumPeakInfo,
+    type SpectrumScale,
+    type SpectrumSource
+} from './oscilloscope/spectrum';
 
 // 引入 LegendComponent 以便显示图例区分不同按键
 use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent]);
@@ -69,6 +98,7 @@ function toggleKeyVisibility(id: number) {
         isRenderPending = true;
         requestAnimationFrame(renderCharts);
     }
+    scheduleSpectrumRender();
 }
 const isMeasuring = ref(false);
 const measurePoints = ref<Record<number, {x: number, y: number}[]>>({ 0: [], 1: [] });
@@ -244,7 +274,6 @@ function scheduleChartRender() {
 const rawDataCache: Record<number, [number, number][]> = {};
 const filteredRawDataCache: Record<number, [number, number][]> = {};
 const valueDataCache: Record<number, [number, number][]> = {};
-type DigitalSample = [number, 0 | 1];
 const stateDataCache: Record<number, DigitalSample[]> = {};
 const reportStateDataCache: Record<number, DigitalSample[]> = {};
 
@@ -252,58 +281,69 @@ const stateAreasCache: Record<number, { start: number, end: number | null }[]> =
 const lastStateCache: Record<number, boolean> = {};
 const seriesCache: Record<string, any> = {};
 
+const isSpectrumEnabled = ref(false);
+const spectrumSource = ref<SpectrumSource>('filtered_raw');
+const spectrumFftSize = ref(2048);
+const spectrumScale = ref<SpectrumScale>('db');
+const spectrumChartRef = ref<any>(null);
+const spectrumPeakInfo = ref<SpectrumPeakInfo[]>([]);
+const spectrumSampleRateHz = ref(SPECTRUM_FALLBACK_SAMPLE_RATE_HZ);
+let spectrumRawSampleRateEstimateHz = SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+const isSpectrumSampleRateEstimated = ref(false);
+const spectrumSettingsExpandedNames = ref<string[]>([]);
+let isSpectrumRenderPending = false;
+let spectrumRateAnchorTick: number | null = null;
+let spectrumRateAnchorTimeMs: number | null = null;
+let lastSpectrumRateTick: number | null = null;
+
+const spectrumSourceOptions = computed(() => [
+    { label: t('oscilloscope_panel_spectrum_source_filtered_raw'), value: 'filtered_raw' },
+    { label: t('oscilloscope_panel_spectrum_source_raw'), value: 'raw' },
+    { label: t('oscilloscope_panel_spectrum_source_value'), value: 'value' }
+]);
+
+const spectrumFftSizeOptions = [
+    { label: '1024', value: 1024 },
+    { label: '2048', value: 2048 },
+    { label: '4096', value: 4096 }
+];
+
+const spectrumScaleOptions = computed(() => [
+    { label: t('oscilloscope_panel_spectrum_scale_db'), value: 'db' },
+    { label: t('oscilloscope_panel_spectrum_scale_linear'), value: 'linear' }
+]);
+
 // --- 图表配置 ---
 
 const chartRef = ref<any>(null);
+const spectrumOption = shallowRef({
+    backgroundColor: 'transparent',
+    animation: false,
+    tooltip: {
+        trigger: 'axis',
+        transitionDuration: 0,
+        formatter: spectrumTooltipFormatter
+    },
+    grid: { left: 56, right: 18, top: 8, bottom: 26 },
+    xAxis: {
+        type: 'value',
+        name: 'Hz',
+        min: 0,
+        max: SPECTRUM_FALLBACK_SAMPLE_RATE_HZ / 2,
+        splitLine: { show: false },
+        axisLabel: { formatter: formatFrequencyShort }
+    },
+    yAxis: {
+        type: 'value',
+        name: 'dB',
+        scale: true,
+        splitLine: { show: true }
+    },
+    series: []
+});
 const oscilloscopeShellRef = ref<HTMLElement | null>(null);
 const chartPanelRef = ref<HTMLElement | null>(null);
 let chartResizeObserver: ResizeObserver | null = null;
-
-const GRID_LEFT = 60;
-const GRID_RIGHT = 40;
-const CHART_TOP_PADDING = 12;
-const GRID_GAP = 8;
-const X_SLIDER_BOTTOM = 12;
-const X_SLIDER_HEIGHT = 22;
-const X_AXIS_LABEL_RESERVE = 26;
-const STATE_GRID_TARGET_HEIGHT = 72;
-const STATE_GRID_MIN_HEIGHT = 48;
-const MIN_WAVE_GRID_HEIGHT = 36;
-const DIGITAL_TRACK_AMPLITUDE = 0.32;
-
-function buildChartLayout(chartHeight: number = 480) {
-    const compact = chartHeight < 260;
-    const topPadding = compact ? 6 : CHART_TOP_PADDING;
-    const gridGap = compact ? 4 : GRID_GAP;
-    const sliderBottom = compact ? 8 : X_SLIDER_BOTTOM;
-    const sliderHeight = compact ? 18 : X_SLIDER_HEIGHT;
-    const axisReserve = compact ? 20 : X_AXIS_LABEL_RESERVE;
-    const availableHeight = Math.max(
-        0,
-        chartHeight - topPadding - sliderBottom - sliderHeight - axisReserve - gridGap * 2
-    );
-    const enoughForPreferredState = availableHeight >= STATE_GRID_MIN_HEIGHT + MIN_WAVE_GRID_HEIGHT * 2;
-    const preferredStateHeight = Math.min(
-        STATE_GRID_TARGET_HEIGHT,
-        Math.max(STATE_GRID_MIN_HEIGHT, availableHeight - MIN_WAVE_GRID_HEIGHT * 2)
-    );
-    const stateHeight = enoughForPreferredState ? preferredStateHeight : STATE_GRID_MIN_HEIGHT;
-    const waveHeight = Math.max(1, (availableHeight - stateHeight) / 2);
-    const rawTop = topPadding;
-    const valueTop = rawTop + waveHeight + gridGap;
-    const stateTop = valueTop + waveHeight + gridGap;
-
-    return {
-        grids: [
-            { left: GRID_LEFT, right: GRID_RIGHT, top: rawTop, height: waveHeight },
-            { left: GRID_LEFT, right: GRID_RIGHT, top: valueTop, height: waveHeight },
-            { left: GRID_LEFT, right: GRID_RIGHT, top: stateTop, height: stateHeight }
-        ],
-        rawYSlider: { right: 15, top: rawTop, height: waveHeight, width: 16 },
-        valueYSlider: { right: 15, top: valueTop, height: waveHeight, width: 16 },
-        xSlider: { bottom: sliderBottom, height: sliderHeight }
-    };
-}
 
 function getChartHeight(): number {
     const chart = chartRef.value?.chart || chartRef.value;
@@ -335,37 +375,6 @@ function formatStateTrackLabel(value: number | string): string {
         return '';
     }
     return trackIndex % 2 === 0 ? `K${keyId} S` : `K${keyId} R`;
-}
-
-function getDigitalTrackValue(keyIndex: number, trackOffset: number, value: 0 | 1): number {
-    return keyIndex * 2 + trackOffset + (value ? DIGITAL_TRACK_AMPLITUDE : -DIGITAL_TRACK_AMPLITUDE);
-}
-
-function buildDigitalTrackData(samples: DigitalSample[] | undefined, keyIndex: number, trackOffset: number): [number, number][] {
-    if (!samples) {
-        return [];
-    }
-    return samples.map(([tick, value]) => [tick, getDigitalTrackValue(keyIndex, trackOffset, value)]);
-}
-
-function getCacheValueAtTick(cache: [number, number][] | undefined, tick: number, dataIndex?: number): number | null {
-    if (!cache) {
-        return null;
-    }
-    if (dataIndex !== undefined && cache[dataIndex] && cache[dataIndex][0] === tick) {
-        return cache[dataIndex][1];
-    }
-    const found = cache.find(d => d[0] === tick);
-    return found ? found[1] : null;
-}
-
-function formatStateHtml(value: number | null): string {
-    if (value === null) {
-        return '<span style="color: #777;">-</span>';
-    }
-    return value
-        ? '<span style="color: #18a058; font-weight: bold;">ON</span>'
-        : '<span style="color: #777;">OFF</span>';
 }
 
 const initialChartLayout = buildChartLayout();
@@ -578,6 +587,214 @@ function getKeyColor(id: number): string {
     return lineColors[(index >= 0 ? index : 0) % lineColors.length];
 }
 
+function getSpectrumCache(keyId: number): [number, number][] | undefined {
+    if (spectrumSource.value === 'raw') {
+        return rawDataCache[keyId];
+    }
+    if (spectrumSource.value === 'value') {
+        return valueDataCache[keyId];
+    }
+    return filteredRawDataCache[keyId];
+}
+
+function resetSpectrumSampleRateEstimator(resetRate = true) {
+    spectrumRateAnchorTick = null;
+    spectrumRateAnchorTimeMs = null;
+    lastSpectrumRateTick = null;
+    isSpectrumSampleRateEstimated.value = false;
+    if (resetRate) {
+        spectrumRawSampleRateEstimateHz = SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+        spectrumSampleRateHz.value = SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+    }
+}
+
+function updateSpectrumSampleRateEstimate(tick: number) {
+    if (!isSpectrumEnabled.value || !Number.isFinite(tick)) {
+        return;
+    }
+
+    const now = performance.now();
+    if (lastSpectrumRateTick !== null && tick < lastSpectrumRateTick) {
+        resetSpectrumSampleRateEstimator();
+    } else if (lastSpectrumRateTick !== null && tick === lastSpectrumRateTick) {
+        return;
+    }
+
+    lastSpectrumRateTick = tick;
+    if (spectrumRateAnchorTick === null || spectrumRateAnchorTimeMs === null) {
+        spectrumRateAnchorTick = tick;
+        spectrumRateAnchorTimeMs = now;
+        return;
+    }
+
+    const tickDelta = tick - spectrumRateAnchorTick;
+    const timeDeltaMs = now - spectrumRateAnchorTimeMs;
+    if (tickDelta < SPECTRUM_ESTIMATION_MIN_TICK_DELTA || timeDeltaMs < SPECTRUM_ESTIMATION_MIN_INTERVAL_MS) {
+        return;
+    }
+
+    const estimatedRate = tickDelta * 1000 / timeDeltaMs;
+    if (estimatedRate >= SPECTRUM_ESTIMATION_MIN_RATE_HZ && estimatedRate <= SPECTRUM_ESTIMATION_MAX_RATE_HZ) {
+        spectrumRawSampleRateEstimateHz = isSpectrumSampleRateEstimated.value
+            ? spectrumRawSampleRateEstimateHz * (1 - SPECTRUM_ESTIMATION_ALPHA) + estimatedRate * SPECTRUM_ESTIMATION_ALPHA
+            : estimatedRate;
+        spectrumSampleRateHz.value = quantizeSpectrumSampleRate(spectrumRawSampleRateEstimateHz);
+        isSpectrumSampleRateEstimated.value = true;
+    }
+
+    spectrumRateAnchorTick = tick;
+    spectrumRateAnchorTimeMs = now;
+}
+
+function spectrumTooltipFormatter(params: any[]) {
+    if (!Array.isArray(params) || params.length === 0) {
+        return '';
+    }
+    const firstPoint = params.find(param => Array.isArray(param.value));
+    if (!firstPoint) {
+        return '';
+    }
+
+    const frequency = Number(firstPoint.value[0]);
+    let html = `<div style="font-size: 12px; color: #999; margin-bottom: 6px;">${formatFrequency(frequency)}</div>`;
+    html += '<table style="width:100%; border-collapse: collapse; font-size: 13px; text-align: left;">';
+    params.forEach(param => {
+        if (!Array.isArray(param.value)) {
+            return;
+        }
+        html += `<tr>
+            <td style="padding-right:16px;">
+                <span style="display:inline-block; margin-right:6px; width:10px; height:10px; background-color:${param.color};"></span>
+                ${param.seriesName}
+            </td>
+            <td style="font-weight:bold;">${formatSpectrumMagnitude(Number(param.value[1]), spectrumScale.value)}</td>
+        </tr>`;
+    });
+    html += '</table>';
+    return html;
+}
+
+function buildSpectrumSeries() {
+    const peaks: SpectrumPeakInfo[] = [];
+    const series: any[] = [];
+    const fftSize = spectrumFftSize.value;
+    const sampleRateHz = spectrumSampleRateHz.value || SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+
+    oscilloscopeSelectedKeys.value.forEach((id, index) => {
+        if (hiddenKeys.value.includes(id)) {
+            return;
+        }
+
+        const color = lineColors[index % lineColors.length];
+        const cache = getSpectrumCache(id);
+        const spectrumWindow = buildUniformSpectrumWindow(cache, latestTick, fftSize);
+        if (!spectrumWindow) {
+            peaks.push({
+                id,
+                frequency: null,
+                magnitude: null,
+                color,
+                coverage: 0,
+                maxGapTicks: fftSize,
+                status: 'waiting'
+            });
+            return;
+        }
+
+        const spectrum = calculateSpectrum(spectrumWindow.values, sampleRateHz, fftSize, spectrumScale.value);
+        if (!spectrum) {
+            peaks.push({
+                id,
+                frequency: null,
+                magnitude: null,
+                color,
+                coverage: spectrumWindow.coverage,
+                maxGapTicks: spectrumWindow.maxGapTicks,
+                status: 'waiting'
+            });
+            return;
+        }
+
+        peaks.push({
+            id,
+            frequency: spectrum.peakFrequency,
+            magnitude: spectrum.peakMagnitude,
+            color,
+            coverage: spectrumWindow.coverage,
+            maxGapTicks: spectrumWindow.maxGapTicks,
+            status: 'ready'
+        });
+        series.push({
+            id: `spectrum_${id}`,
+            name: `Key ${id}`,
+            type: 'line',
+            showSymbol: false,
+            data: spectrum.data,
+            itemStyle: { color },
+            lineStyle: { width: 1, color },
+            emphasis: { focus: 'series' }
+        });
+    });
+
+    spectrumPeakInfo.value = peaks;
+    return series;
+}
+
+function renderSpectrumChart() {
+    if (!isSpectrumEnabled.value) {
+        spectrumPeakInfo.value = [];
+        return;
+    }
+
+    const series = buildSpectrumSeries();
+    const sampleRateHz = spectrumSampleRateHz.value || SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+    const option: any = {
+        tooltip: {
+            backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.82)' : 'rgba(255, 255, 255, 0.92)',
+            borderColor: themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 1,
+            formatter: spectrumTooltipFormatter
+        },
+        xAxis: {
+            min: 0,
+            max: sampleRateHz / 2,
+            axisLabel: { formatter: formatFrequencyShort }
+        },
+        yAxis: {
+            name: spectrumScale.value === 'db' ? 'dB' : '',
+            scale: true
+        },
+        series
+    };
+
+    spectrumOption.value = {
+        ...spectrumOption.value,
+        ...option
+    };
+
+    const chart = spectrumChartRef.value?.chart || spectrumChartRef.value;
+    if (chart && typeof chart.setOption === 'function') {
+        chart.setOption(option, {
+            replaceMerge: ['series'],
+            lazyUpdate: true
+        });
+    }
+}
+
+function scheduleSpectrumRender() {
+    if (!isSpectrumEnabled.value) {
+        spectrumPeakInfo.value = [];
+        return;
+    }
+    if (!isSpectrumRenderPending) {
+        isSpectrumRenderPending = true;
+        requestAnimationFrame(() => {
+            isSpectrumRenderPending = false;
+            renderSpectrumChart();
+        });
+    }
+}
+
 // 当选择的按键发生变化时，清理被移除按键的缓存数据
 watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
     const removedKeys = oldKeys.filter(k => !newKeys.includes(k));
@@ -601,10 +818,26 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
         isRenderPending = true;
         requestAnimationFrame(renderCharts);
     }
+    scheduleSpectrumRender();
+});
+
+watch(isSpectrumEnabled, enabled => {
+    resetSpectrumSampleRateEstimator();
+    if (!enabled) {
+        spectrumPeakInfo.value = [];
+        spectrumSettingsExpandedNames.value = [];
+        return;
+    }
+    nextTick(scheduleSpectrumRender);
+});
+
+watch([spectrumSource, spectrumFftSize, spectrumScale], () => {
+    nextTick(scheduleSpectrumRender);
 });
 
 async function togglePolling(val: boolean) {
     if (val) {
+        resetSpectrumSampleRateEstimator();
         await props.controller.start_debug();
         if (oscilloscopeSelectedKeys.value.length > 0) {
             props.controller.request_debug_at(oscilloscopeSelectedKeys.value);
@@ -617,6 +850,7 @@ async function togglePolling(val: boolean) {
             isRenderPending = true;
             requestAnimationFrame(renderCharts);
         }
+        scheduleSpectrumRender();
     }
 }
 watch(themeName, () => {
@@ -626,11 +860,15 @@ watch(themeName, () => {
             isRenderPending = true;
             requestAnimationFrame(renderCharts);
         }
+        scheduleSpectrumRender();
     });
 });
 // --- 数据同步与节流渲染 ---
 function processDataSync(currentTick: number, updatedKeys: number[]) {
     const numericTick = Number(currentTick);
+    if (numericTick < latestTick) {
+        resetSpectrumSampleRateEstimator();
+    }
     latestTick = numericTick;
     const minHistoryTick = numericTick - windowSize.value;
 
@@ -923,6 +1161,10 @@ function renderCharts() {
         });
     }
 
+    if (isSpectrumEnabled.value) {
+        renderSpectrumChart();
+    }
+
     isRenderPending = false;
 }
 // --- 事件监听 ---
@@ -931,6 +1173,7 @@ const handleDebugDataUpdated = (event: Event) => {
     const currentTick = customEvent.detail.tick;
     const updatedKeys = customEvent.detail.updated_keys as number[];
 
+    updateSpectrumSampleRateEstimate(Number(currentTick));
     processDataSync(currentTick, updatedKeys);
 
     if (!isRenderPending) {
@@ -965,6 +1208,7 @@ onBeforeUnmount(() => {
 });
 
 function clearWaveform() {
+    resetSpectrumSampleRateEstimator();
     oscilloscopeSelectedKeys.value.forEach(id => {
         if (rawDataCache[id]) rawDataCache[id].length = 0;
         if (filteredRawDataCache[id]) filteredRawDataCache[id].length = 0;
@@ -986,72 +1230,18 @@ function clearWaveform() {
         ]);
         chartRef.value.chart.setOption({ series: emptySeries }, { replaceMerge: ['series'] });
     }
+    renderSpectrumChart();
 }
-
-// --- 噪声与波形分析计算 ---
-// 计算指定区间内数据的峰峰值(Vpp)、有效值(RMS)、最大跳变(Max Δ)和波峰因数(CF)
-const calculateStats = (cache: Record<number, [number, number][]>, pts: {x: number, y: number}[]) => {
-    if (pts.length !== 2) return null;
-    
-    // 获取两个游标的 X 轴范围 (Tick 区间)
-    const startX = Math.min(pts[0].x, pts[1].x);
-    const endX = Math.max(pts[0].x, pts[1].x);
-    
-    const stats: Record<number, { vpp: number, rms: number, mean: number, count: number, maxDelta: number, crestFactor: number}> = {};
-
-    oscilloscopeSelectedKeys.value.forEach(id => {
-        if (hiddenKeys.value.includes(id)) return;
-        const data = cache[id];
-        if (!data || data.length === 0) return;
-
-        // 提取该区间内的所有 Y 值
-        const rangeValues = data
-            .filter(d => d[0] >= startX && d[0] <= endX)
-            .map(d => d[1]);
-
-        if (rangeValues.length === 0) return;
-
-        const max = Math.max(...rangeValues);
-        const min = Math.min(...rangeValues);
-        const vpp = max - min; // 峰峰值噪声
-
-        const sum = rangeValues.reduce((a, b) => a + b, 0);
-        const mean = sum / rangeValues.length; // 平均值（直流偏置基准）
-
-        // 计算 RMS (均方根)：交流耦合后的纯噪声有效值
-        const variance = rangeValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / rangeValues.length;
-        const rms = Math.sqrt(variance);
-
-        // 1. 计算相邻点最大差值 (Max Step Noise)
-        let maxDelta = 0;
-        for (let i = 1; i < rangeValues.length; i++) {
-            const delta = Math.abs(rangeValues[i] - rangeValues[i - 1]);
-            if (delta > maxDelta) maxDelta = delta;
-        }
-
-        // 2. 计算波峰因数 (Crest Factor) = 最大绝对偏差 / RMS
-        let maxDeviation = 0;
-        for (let i = 0; i < rangeValues.length; i++) {
-            const dev = Math.abs(rangeValues[i] - mean);
-            if (dev > maxDeviation) maxDeviation = dev;
-        }
-        const crestFactor = rms > 0 ? (maxDeviation / rms) : 0;
-
-        stats[id] = { vpp, rms, mean, count: rangeValues.length, maxDelta, crestFactor };
-    });
-
-    return stats;
-};
 
 // 监听 measurePoints，自动计算 Raw 和 Value 两个图表的统计结果
 const rawAnalysisStats = computed(() => {
     if (!isMeasuring.value || measurePoints.value[0].length !== 2) return null;
-    return calculateStats(rawDataCache, measurePoints.value[0]);
+    return calculateStats(rawDataCache, oscilloscopeSelectedKeys.value, hiddenKeys.value, measurePoints.value[0]);
 });
 
 const valAnalysisStats = computed(() => {
     if (!isMeasuring.value || measurePoints.value[1].length !== 2) return null;
-    return calculateStats(valueDataCache, measurePoints.value[1]);
+    return calculateStats(valueDataCache, oscilloscopeSelectedKeys.value, hiddenKeys.value, measurePoints.value[1]);
 });
 
 const rawAnalysisEntries = computed(() => {
@@ -1100,6 +1290,11 @@ const valAnalysisEntries = computed(() => {
                         :step="8000"
                         :show-button="true"
                     />
+                </label>
+
+                <label class="spectrum-control">
+                    <span class="control-label">{{ t('oscilloscope_panel_spectrum') }}</span>
+                    <n-switch v-model:value="isSpectrumEnabled" size="small" />
                 </label>
 
                 <div class="toolbar-actions">
@@ -1203,6 +1398,85 @@ const valAnalysisEntries = computed(() => {
                     cursor: isMeasuring ? (isHoveringPoint || dragInfo !== null ? 'move' : 'crosshair') : 'default', 
                 }" />
         </div>
+
+        <div
+            v-if="isSpectrumEnabled"
+            class="spectrum-panel"
+            :class="{ 'is-settings-open': spectrumSettingsExpandedNames.length > 0 }"
+        >
+            <n-collapse v-model:expanded-names="spectrumSettingsExpandedNames" class="spectrum-settings">
+                <n-collapse-item name="settings" :title="t('oscilloscope_panel_spectrum_settings')">
+                    <div class="spectrum-settings-grid">
+                        <label class="spectrum-setting-control">
+                            <span class="control-label">{{ t('oscilloscope_panel_spectrum_source') }}</span>
+                            <n-select
+                                v-model:value="spectrumSource"
+                                class="spectrum-source-select"
+                                size="small"
+                                :options="spectrumSourceOptions"
+                            />
+                        </label>
+                        <label class="spectrum-setting-control">
+                            <span class="control-label">{{ t('oscilloscope_panel_spectrum_fft_size') }}</span>
+                            <n-select
+                                v-model:value="spectrumFftSize"
+                                class="spectrum-size-select"
+                                size="small"
+                                :options="spectrumFftSizeOptions"
+                            />
+                        </label>
+                        <label class="spectrum-setting-control">
+                            <span class="control-label">{{ t('oscilloscope_panel_spectrum_scale') }}</span>
+                            <n-select
+                                v-model:value="spectrumScale"
+                                class="spectrum-scale-select"
+                                size="small"
+                                :options="spectrumScaleOptions"
+                            />
+                        </label>
+                    </div>
+                </n-collapse-item>
+            </n-collapse>
+            <div class="spectrum-header">
+                <span class="spectrum-title">{{ t('oscilloscope_panel_spectrum') }}</span>
+                <span class="spectrum-rate" :class="{ 'is-estimating': !isSpectrumSampleRateEstimated }">
+                    {{ t('oscilloscope_panel_spectrum_sample_rate') }} {{ formatSampleRate(spectrumSampleRateHz) }}
+                </span>
+                <div class="spectrum-peaks">
+                    <span
+                        v-for="peak in spectrumPeakInfo"
+                        :key="peak.id"
+                        class="spectrum-peak"
+                        :class="{
+                            'is-warning': peak.status === 'ready' && peak.coverage < SPECTRUM_QUALITY_WARNING_THRESHOLD,
+                            'is-waiting': peak.status === 'waiting'
+                        }"
+                        :style="{ '--key-color': peak.color }"
+                    >
+                        <span class="spectrum-peak-dot"></span>
+                        <template v-if="peak.status === 'ready' && peak.frequency !== null">
+                            Key {{ peak.id }} {{ t('oscilloscope_panel_spectrum_peak') }} {{ formatFrequency(peak.frequency) }}
+                            · {{ t('oscilloscope_panel_spectrum_quality') }} {{ formatPercent(peak.coverage) }}
+                            · {{ t('oscilloscope_panel_spectrum_gap') }} {{ peak.maxGapTicks }}t
+                        </template>
+                        <template v-else>
+                            Key {{ peak.id }} {{ t('oscilloscope_panel_spectrum_waiting') }}
+                        </template>
+                    </span>
+                    <span v-if="spectrumPeakInfo.length === 0" class="spectrum-empty">
+                        {{ t('oscilloscope_panel_spectrum_waiting') }}
+                    </span>
+                </div>
+            </div>
+            <v-chart
+                ref="spectrumChartRef"
+                :theme="themeName"
+                :option="spectrumOption"
+                :update-options="{ replaceMerge: ['series'] }"
+                class="spectrum-chart"
+                autoresize
+            />
+        </div>
     </div>
 </template>
 
@@ -1243,7 +1517,8 @@ const valAnalysisEntries = computed(() => {
 }
 
 .debug-control,
-.window-control {
+.window-control,
+.spectrum-control {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1263,6 +1538,18 @@ const valAnalysisEntries = computed(() => {
 
 .window-input {
     width: 108px;
+}
+
+.spectrum-source-select {
+    width: 128px;
+}
+
+.spectrum-size-select {
+    width: 82px;
+}
+
+.spectrum-scale-select {
+    width: 82px;
 }
 
 .toolbar-actions {
@@ -1351,6 +1638,159 @@ const valAnalysisEntries = computed(() => {
 .scope-chart {
     width: 100%;
     height: 100%;
+}
+
+.spectrum-panel {
+    flex: 0 0 160px;
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(30, 38, 52, 0.1);
+    background: rgba(255, 255, 255, 0.74);
+}
+
+.spectrum-panel.is-settings-open {
+    flex-basis: 216px;
+}
+
+.is-dark .spectrum-panel {
+    border-color: rgba(255, 255, 255, 0.09);
+    background: rgba(20, 23, 29, 0.76);
+}
+
+.spectrum-settings {
+    flex: 0 0 auto;
+    border-bottom: 1px solid rgba(30, 38, 52, 0.1);
+}
+
+.is-dark .spectrum-settings {
+    border-bottom-color: rgba(255, 255, 255, 0.09);
+}
+
+.spectrum-settings :deep(.n-collapse-item) {
+    margin: 0;
+}
+
+.spectrum-settings :deep(.n-collapse-item__header) {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.spectrum-settings :deep(.n-collapse-item__content-inner) {
+    padding: 0 8px 7px;
+}
+
+.spectrum-settings-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+}
+
+.spectrum-setting-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.spectrum-header {
+    flex: 0 0 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 0 8px;
+    border-bottom: 1px solid rgba(30, 38, 52, 0.1);
+}
+
+.is-dark .spectrum-header {
+    border-bottom-color: rgba(255, 255, 255, 0.09);
+}
+
+.spectrum-title {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 700;
+    color: #697386;
+}
+
+.is-dark .spectrum-title {
+    color: #9aa4b5;
+}
+
+.spectrum-rate {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: #4f5b6d;
+    white-space: nowrap;
+}
+
+.spectrum-rate.is-estimating {
+    color: #8a93a3;
+}
+
+.is-dark .spectrum-rate {
+    color: #b8c0cc;
+}
+
+.is-dark .spectrum-rate.is-estimating {
+    color: #8892a3;
+}
+
+.spectrum-peaks {
+    min-width: 0;
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.spectrum-peak,
+.spectrum-empty {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #3b4351;
+    white-space: nowrap;
+}
+
+.is-dark .spectrum-peak,
+.is-dark .spectrum-empty {
+    color: #c2cad8;
+}
+
+.spectrum-empty {
+    color: #8a93a3;
+}
+
+.spectrum-peak.is-warning {
+    color: #c87500;
+}
+
+.is-dark .spectrum-peak.is-warning {
+    color: #f0a020;
+}
+
+.spectrum-peak.is-waiting {
+    color: #8a93a3;
+}
+
+.spectrum-peak-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    background: var(--key-color);
+}
+
+.spectrum-chart {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
 }
 
 .measurement-panel {
@@ -1461,8 +1901,23 @@ const valAnalysisEntries = computed(() => {
         width: auto;
     }
 
+    .spectrum-source-select,
+    .spectrum-size-select,
+    .spectrum-scale-select {
+        width: auto;
+        min-width: 86px;
+    }
+
     .toolbar-actions {
         justify-content: flex-start;
+    }
+
+    .spectrum-panel {
+        flex-basis: 140px;
+    }
+
+    .spectrum-panel.is-settings-open {
+        flex-basis: 220px;
     }
 
     .measurement-panel {
