@@ -1097,7 +1097,9 @@ export abstract class KeyboardController implements IKeyboardController, EventTa
         return this.advanced_keys;
     }
     set_advanced_keys(keys: IAdvancedKey[]): void {
-        this.advanced_keys = keys.map(key => normalizeAdvancedKey(key));
+        const normalizedKeys = keys.map(key => normalizeAdvancedKey(key));
+        keys.splice(0, keys.length, ...normalizedKeys);
+        this.advanced_keys = keys;
     }
     get_rgb_base_config(): IRGBBaseConfig {
         return this.rgb_base_config;

@@ -298,7 +298,7 @@ export class LibampKeyboardController extends KeyboardController {
             case PacketCode.PacketCodeSet:
                 switch (buf[1]) {
                     case PacketData.PacketDataAdvancedKey:
-                        return 22;
+                        return 26;
                     case PacketData.PacketDataRgbBaseConfig:
                         return 15;
                     case PacketData.PacketDataRgbConfig:
@@ -725,6 +725,8 @@ export class LibampKeyboardController extends KeyboardController {
             config.release_speed = dataView.getUint16(6 + 2 * 5, true)/65535;
             config.upper_deadzone = dataView.getUint16(6 + 2 * 6, true)/65535;
             config.lower_deadzone = dataView.getUint16(6 + 2 * 7, true)/65535;
+            config.upper_bound = dataView.getUint16(6 + 2 * 8, true);
+            config.lower_bound = dataView.getUint16(6 + 2 * 9, true);
             console.log(this.advanced_keys[key_index]);
         }
         else (buf[0] == PacketCode.PacketCodeSet)
@@ -741,6 +743,8 @@ export class LibampKeyboardController extends KeyboardController {
             dataView.setUint16(6 + 2 * 5, config.release_speed*65535, true);
             dataView.setUint16(6 + 2 * 6, config.upper_deadzone*65535, true);
             dataView.setUint16(6 + 2 * 7, config.lower_deadzone*65535, true);
+            dataView.setUint16(6 + 2 * 8, config.upper_bound, true);
+            dataView.setUint16(6 + 2 * 9, config.lower_bound, true);
         }
     }   
 
