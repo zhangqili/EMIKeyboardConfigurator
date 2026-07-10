@@ -8,8 +8,8 @@ import { ClearAllOutlined, StraightenOutlined } from '@vicons/material';
 
 import { connect, use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart } from 'echarts/charts';
-import { TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent } from 'echarts/components';
+import { HeatmapChart, LineChart } from 'echarts/charts';
+import { AxisPointerComponent, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent, VisualMapComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
 import * as ekc from 'emi-keyboard-controller'
 import { KeyConfig } from '@/apis/utils';
@@ -42,9 +42,32 @@ import {
     type SpectrumScale,
     type SpectrumSource
 } from './oscilloscope/spectrum';
+import {
+    WATERFALL_AVERAGE_WINDOW_FRAME_COUNTS,
+    WATERFALL_FRAME_RATE_HZ,
+    WATERFALL_FREQUENCY_BUCKET_COUNT,
+    WATERFALL_MAX_BUFFER_FRAMES,
+    WATERFALL_MAX_FRAMES,
+    WATERFALL_MIN_BUFFER_FRAMES,
+    WATERFALL_VISIBLE_ROWS,
+    appendWaterfallFrame,
+    calibrateWaterfallColorRange,
+    cloneWaterfallFrame,
+    createWaterfallAverageAccumulator,
+    createWaterfallFrame,
+    isWaterfallCaptureReady,
+    isWaterfallFrameCompatible,
+    normalizeWaterfallBufferSize,
+    resizeWaterfallHistory,
+    shouldCaptureWaterfallFrame,
+    type WaterfallAverageSpectrum,
+    type WaterfallAverageWindow,
+    type WaterfallColorRange,
+    type WaterfallFrame
+} from './oscilloscope/waterfall';
 
 // 引入 LegendComponent 以便显示图例区分不同按键
-use([CanvasRenderer, LineChart, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent]);
+use([CanvasRenderer, LineChart, HeatmapChart, AxisPointerComponent, TitleComponent, TooltipComponent, GridComponent, LegendComponent, MarkAreaComponent, DataZoomComponent, MarkLineComponent, VisualMapComponent]);
 
 const { t } = useI18n();
 const store = useMainStore();
@@ -296,6 +319,26 @@ let spectrumRateAnchorTick: number | null = null;
 let spectrumRateAnchorTimeMs: number | null = null;
 let lastSpectrumRateTick: number | null = null;
 
+type SpectrumView = 'spectrum' | 'waterfall';
+type WaterfallDisplayMode = 'heatmap' | 'average';
+
+const spectrumView = ref<SpectrumView>('spectrum');
+const waterfallChartRef = ref<any>(null);
+const waterfallAnalysisKey = ref<number | null>(null);
+const waterfallFrames = shallowRef<WaterfallFrame[]>([]);
+const waterfallColorRange = ref<WaterfallColorRange | null>(null);
+const selectedWaterfallFrame = shallowRef<WaterfallFrame | null>(null);
+const isWaterfallPaused = ref(false);
+const isWaterfallAutoScroll = ref(true);
+const isWaterfallWaitingForQuality = ref(false);
+const waterfallDisplayMode = ref<WaterfallDisplayMode>('heatmap');
+const waterfallAverageWindow = ref<WaterfallAverageWindow>('all');
+const waterfallBufferSize = ref(WATERFALL_MAX_FRAMES);
+const waterfallAverageAccumulator = createWaterfallAverageAccumulator();
+const waterfallAverageSpectrum = shallowRef<WaterfallAverageSpectrum | null>(null);
+let lastWaterfallCaptureTick: number | null = null;
+let isWaterfallRenderPending = false;
+
 const spectrumSourceOptions = computed(() => [
     { label: t('oscilloscope_panel_spectrum_source_filtered_raw'), value: 'filtered_raw' },
     { label: t('oscilloscope_panel_spectrum_source_raw'), value: 'raw' },
@@ -303,6 +346,7 @@ const spectrumSourceOptions = computed(() => [
 ]);
 
 const spectrumFftSizeOptions = [
+    { label: '512', value: 512 },
     { label: '1024', value: 1024 },
     { label: '2048', value: 2048 },
     { label: '4096', value: 4096 }
@@ -311,6 +355,26 @@ const spectrumFftSizeOptions = [
 const spectrumScaleOptions = computed(() => [
     { label: t('oscilloscope_panel_spectrum_scale_db'), value: 'db' },
     { label: t('oscilloscope_panel_spectrum_scale_linear'), value: 'linear' }
+]);
+
+const waterfallAnalysisKeyOptions = computed(() => {
+    return oscilloscopeSelectedKeys.value.map(id => ({ label: `Key ${id}`, value: id }));
+});
+
+const waterfallBufferDuration = computed(() => {
+    const seconds = waterfallBufferSize.value / WATERFALL_FRAME_RATE_HZ;
+    return `${seconds % 1 === 0 ? seconds.toFixed(0) : seconds.toFixed(1)}s`;
+});
+
+const waterfallAverageWindowOptions = computed(() => [
+    {
+        label: t('oscilloscope_panel_waterfall_average_all_buffer'),
+        value: 'all' as const
+    },
+    ...WATERFALL_AVERAGE_WINDOW_FRAME_COUNTS.map(count => ({
+        label: t('oscilloscope_panel_waterfall_average_recent_frames', { count }),
+        value: count
+    }))
 ]);
 
 // --- 图表配置 ---
@@ -322,6 +386,11 @@ const spectrumOption = shallowRef({
     tooltip: {
         trigger: 'axis',
         transitionDuration: 0,
+        showDelay: 0,
+        hideDelay: 0,
+        confine: true,
+        position: positionTooltipAtCursor,
+        axisPointer: { type: 'line', snap: true, animation: false },
         formatter: spectrumTooltipFormatter
     },
     grid: { left: 56, right: 18, top: 8, bottom: 26 },
@@ -338,6 +407,44 @@ const spectrumOption = shallowRef({
         name: 'dB',
         scale: true,
         splitLine: { show: true }
+    },
+    series: []
+});
+const waterfallOption = shallowRef<any>({
+    backgroundColor: 'transparent',
+    animation: false,
+    tooltip: {
+        trigger: 'item',
+        transitionDuration: 0,
+        showDelay: 0,
+        hideDelay: 0,
+        confine: true,
+        position: positionTooltipAtCursor,
+        axisPointer: { animation: false },
+        formatter: waterfallTooltipFormatter
+    },
+    grid: { left: 64, right: 78, top: 12, bottom: 28 },
+    xAxis: {
+        type: 'category',
+        data: [],
+        name: 'Hz',
+        splitLine: { show: false }
+    },
+    yAxis: {
+        type: 'category',
+        data: [],
+        name: 'Tick',
+        splitLine: { show: false }
+    },
+    visualMap: {
+        type: 'continuous',
+        min: 0,
+        max: 1,
+        calculable: false,
+        orient: 'vertical',
+        right: 6,
+        top: 'center',
+        seriesIndex: 0
     },
     series: []
 });
@@ -387,6 +494,8 @@ const chartOption = shallowRef({
     tooltip: {
         trigger: 'axis',
         transitionDuration: 0, // 取消跟随鼠标的延迟动画
+        showDelay: 0,
+        hideDelay: 0,
         axisPointer: {
             type: 'cross',
             animation: false,
@@ -674,7 +783,427 @@ function spectrumTooltipFormatter(params: any[]) {
     return html;
 }
 
+function positionTooltipAtCursor(point: number[], _params: any, _dom: any, _rect: any, size: any): [number, number] {
+    const cursorX = Array.isArray(point) ? Number(point[0]) : 0;
+    const cursorY = Array.isArray(point) ? Number(point[1]) : 0;
+    const [contentWidth = 0, contentHeight = 0] = size?.contentSize ?? [];
+    const [viewWidth = Number.POSITIVE_INFINITY, viewHeight = Number.POSITIVE_INFINITY] = size?.viewSize ?? [];
+    return [
+        Math.max(8, Math.min(cursorX + 12, viewWidth - contentWidth - 8)),
+        Math.max(8, Math.min(cursorY + 12, viewHeight - contentHeight - 8))
+    ];
+}
+
+function getWaterfallBucketRange(frame: WaterfallFrame, bucketIndex: number): [number, number] {
+    const binCount = frame.fullMagnitudes.length;
+    if (binCount === 0 || frame.bucketMagnitudes.length === 0) {
+        return [0, frame.sampleRateHz / 2];
+    }
+
+    const bucketCount = frame.bucketMagnitudes.length;
+    const startIndex = Math.min(binCount - 1, Math.floor(bucketIndex * binCount / bucketCount));
+    const endIndex = Math.min(binCount - 1, Math.max(startIndex, Math.ceil((bucketIndex + 1) * binCount / bucketCount) - 1));
+    return [
+        frame.fullMagnitudes[startIndex]?.[0] ?? 0,
+        frame.fullMagnitudes[endIndex]?.[0] ?? frame.sampleRateHz / 2
+    ];
+}
+
+function formatWaterfallTooltip(frame: WaterfallFrame, startFrequency: number, endFrequency: number, magnitude: number) {
+    const frequencyRange = startFrequency === endFrequency
+        ? formatFrequency(startFrequency)
+        : `${formatFrequency(startFrequency)} – ${formatFrequency(endFrequency)}`;
+    return `<div style="font-size:12px; color:#999; margin-bottom:6px;">Key ${frame.keyId} · ${t('oscilloscope_panel_waterfall_tick')} ${frame.tick}</div>
+        <table style="border-collapse:collapse; font-size:13px; text-align:left;">
+            <tr><td style="padding-right:14px; color:#888;">${t('oscilloscope_panel_waterfall_frequency_range')}</td><td style="font-weight:bold;">${frequencyRange}</td></tr>
+            <tr><td style="padding-right:14px; color:#888;">${frame.scale === 'db' ? 'dB' : t('oscilloscope_panel_spectrum_scale_linear')}</td><td style="font-weight:bold;">${formatSpectrumMagnitude(magnitude, frame.scale)}</td></tr>
+            <tr><td style="padding-right:14px; color:#888;">${t('oscilloscope_panel_spectrum_quality')}</td><td>${formatPercent(frame.coverage)}</td></tr>
+            <tr><td style="padding-right:14px; color:#888;">${t('oscilloscope_panel_spectrum_gap')}</td><td>${frame.maxGapTicks}t</td></tr>
+        </table>`;
+}
+
+function formatWaterfallAverageTooltip(
+    average: WaterfallAverageSpectrum,
+    frequency: number,
+    magnitude: number
+) {
+    const scale = average.configuration.scale;
+    return `<div style="font-size:12px; color:#999; margin-bottom:6px;">Key ${average.configuration.keyId} · ${t('oscilloscope_panel_waterfall_tick')} ${average.firstTick} – ${average.lastTick} · ${t('oscilloscope_panel_waterfall_average_frame_count', { count: average.frameCount })}</div>
+        <table style="border-collapse:collapse; font-size:13px; text-align:left;">
+            <tr><td style="padding-right:14px; color:#888;">Hz</td><td style="font-weight:bold;">${formatFrequency(frequency)}</td></tr>
+            <tr><td style="padding-right:14px; color:#888;">${scale === 'db' ? 'dB' : t('oscilloscope_panel_spectrum_scale_linear')}</td><td style="font-weight:bold;">${formatSpectrumMagnitude(magnitude, scale)}</td></tr>
+        </table>`;
+}
+
+function waterfallTooltipFormatter(params: any) {
+    const point = Array.isArray(params)
+        ? params.find(param => Array.isArray(param?.value))
+        : params;
+    const value = point?.value;
+    if (!Array.isArray(value)) {
+        return '';
+    }
+
+    if (point?.seriesType === 'line' && waterfallDisplayMode.value === 'average') {
+        const average = waterfallAverageSpectrum.value;
+        const frequency = Number(value[0]);
+        const magnitude = Number(value[1]);
+        if (!average || !Number.isFinite(frequency) || !Number.isFinite(magnitude)) {
+            return '';
+        }
+        return formatWaterfallAverageTooltip(average, frequency, magnitude);
+    }
+
+    const bucketIndex = Number(value[0]);
+    const frameIndex = Number(value[1]);
+    const magnitude = Number(value[2]);
+    const frame = waterfallFrames.value[frameIndex];
+    if (!frame || !Number.isFinite(bucketIndex) || !Number.isFinite(magnitude)) {
+        return '';
+    }
+
+    const [startFrequency, endFrequency] = getWaterfallBucketRange(frame, bucketIndex);
+    return formatWaterfallTooltip(frame, startFrequency, endFrequency, magnitude);
+}
+
+function refreshWaterfallAverageSpectrum() {
+    waterfallAverageSpectrum.value = waterfallAverageAccumulator.get(waterfallAverageWindow.value);
+}
+
+function resetWaterfallHistory() {
+    waterfallFrames.value = [];
+    waterfallAverageAccumulator.clear();
+    waterfallAverageSpectrum.value = null;
+    waterfallColorRange.value = null;
+    selectedWaterfallFrame.value = null;
+    isWaterfallWaitingForQuality.value = false;
+    isWaterfallAutoScroll.value = true;
+    lastWaterfallCaptureTick = null;
+    scheduleWaterfallRender();
+}
+
+function clearWaterfallHistory() {
+    resetWaterfallHistory();
+}
+
+function resetWaterfallColorScale() {
+    waterfallColorRange.value = null;
+    selectedWaterfallFrame.value = null;
+    scheduleWaterfallRender();
+    scheduleSpectrumRender();
+}
+
+function returnToLiveSpectrum() {
+    selectedWaterfallFrame.value = null;
+    scheduleSpectrumRender();
+}
+
+function scheduleWaterfallRender() {
+    if (!isSpectrumEnabled.value || isWaterfallRenderPending) {
+        return;
+    }
+    isWaterfallRenderPending = true;
+    requestAnimationFrame(() => {
+        isWaterfallRenderPending = false;
+        renderWaterfallChart();
+    });
+}
+
+function renderWaterfallChart() {
+    const frames = waterfallFrames.value;
+    const latestFrame = frames[frames.length - 1];
+    const averageSpectrum = waterfallAverageSpectrum.value;
+    const bucketCount = latestFrame?.bucketMagnitudes.length || WATERFALL_FREQUENCY_BUCKET_COUNT;
+    const colorRange = waterfallColorRange.value;
+    const axisColor = themeName.value === 'dark' ? '#aeb8c8' : '#596579';
+    const splitLineColor = themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'rgba(30, 38, 52, 0.1)';
+    const tooltip = {
+        backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.88)' : 'rgba(255, 255, 255, 0.94)',
+        borderColor: themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        borderWidth: 1,
+        transitionDuration: 0,
+        showDelay: 0,
+        hideDelay: 0,
+        confine: true,
+        position: positionTooltipAtCursor,
+        axisPointer: { type: 'line', snap: true, animation: false },
+        formatter: waterfallTooltipFormatter
+    };
+
+    const option: any = waterfallDisplayMode.value === 'average'
+        ? buildWaterfallAverageOption(averageSpectrum, latestFrame, axisColor, splitLineColor, tooltip)
+        : buildWaterfallHeatmapOption(frames, latestFrame, bucketCount, colorRange, axisColor, splitLineColor, tooltip);
+
+    waterfallOption.value = {
+        ...waterfallOption.value,
+        ...option
+    };
+    const chart = waterfallChartRef.value?.chart || waterfallChartRef.value;
+    if (chart && typeof chart.setOption === 'function') {
+        chart.setOption(option, {
+            replaceMerge: ['series', 'xAxis', 'yAxis', 'visualMap', 'dataZoom'],
+            lazyUpdate: true
+        });
+    }
+}
+
+function buildWaterfallHeatmapOption(
+    frames: WaterfallFrame[],
+    latestFrame: WaterfallFrame | undefined,
+    bucketCount: number,
+    colorRange: WaterfallColorRange | null,
+    axisColor: string,
+    splitLineColor: string,
+    tooltip: any
+) {
+    const heatmapData: [number, number, number][] = [];
+    frames.forEach((frame, frameIndex) => {
+        frame.bucketMagnitudes.forEach((magnitude, bucketIndex) => {
+            if (Number.isFinite(magnitude)) {
+                heatmapData.push([bucketIndex, frameIndex, magnitude]);
+            }
+        });
+    });
+    const firstVisibleFrame = frames[Math.max(0, frames.length - WATERFALL_VISIBLE_ROWS)];
+    const followLatest = isWaterfallAutoScroll.value && firstVisibleFrame && latestFrame;
+
+    return {
+        tooltip: {
+            ...tooltip,
+            trigger: 'item'
+        },
+        xAxis: {
+            type: 'category',
+            data: Array.from({ length: bucketCount }, (_, index) => index),
+            name: 'Hz',
+            nameTextStyle: { color: axisColor },
+            axisLine: { lineStyle: { color: splitLineColor } },
+            axisLabel: {
+                color: axisColor,
+                interval: Math.max(0, Math.floor(bucketCount / 6) - 1),
+                formatter: (value: number | string) => {
+                    if (!latestFrame) return '';
+                    const [startFrequency, endFrequency] = getWaterfallBucketRange(latestFrame, Number(value));
+                    return formatFrequencyShort((startFrequency + endFrequency) / 2);
+                }
+            },
+            splitLine: { show: false }
+        },
+        yAxis: {
+            type: 'category',
+            data: frames.map(frame => frame.tick),
+            name: t('oscilloscope_panel_waterfall_tick'),
+            inverse: true,
+            nameTextStyle: { color: axisColor },
+            axisLine: { lineStyle: { color: splitLineColor } },
+            axisLabel: {
+                color: axisColor,
+                interval: Math.max(0, Math.floor(Math.max(frames.length, 1) / 6) - 1)
+            },
+            splitLine: { show: false }
+        },
+        dataZoom: [
+            {
+                id: 'waterfall-y-inside',
+                type: 'inside',
+                yAxisIndex: 0,
+                filterMode: 'none',
+                ...(followLatest ? { startValue: firstVisibleFrame.tick, endValue: latestFrame.tick } : {})
+            },
+            {
+                id: 'waterfall-y-slider',
+                type: 'slider',
+                yAxisIndex: 0,
+                right: 64,
+                top: 14,
+                bottom: 28,
+                width: 10,
+                filterMode: 'none',
+                showDataShadow: false,
+                showDetail: false,
+                ...(followLatest ? { startValue: firstVisibleFrame.tick, endValue: latestFrame.tick } : {})
+            }
+        ],
+        visualMap: {
+            type: 'continuous',
+            min: colorRange?.min ?? 0,
+            max: colorRange?.max ?? 1,
+            calculable: false,
+            orient: 'vertical',
+            right: 6,
+            top: 'center',
+            textStyle: { color: axisColor },
+            borderColor: splitLineColor,
+            seriesIndex: 0,
+            inRange: {
+                color: ['#2c105c', '#274b9f', '#1f9e89', '#73d055', '#fde725']
+            }
+        },
+        series: [{
+            id: 'waterfall',
+            name: t('oscilloscope_panel_spectrum_view_waterfall'),
+            type: 'heatmap',
+            data: heatmapData,
+            progressive: 20000,
+            animation: false,
+            emphasis: { itemStyle: { borderColor: themeName.value === 'dark' ? '#ffffff' : '#111827', borderWidth: 1 } }
+        }]
+    };
+}
+
+function buildWaterfallAverageOption(
+    averageSpectrum: WaterfallAverageSpectrum | null,
+    latestFrame: WaterfallFrame | undefined,
+    axisColor: string,
+    splitLineColor: string,
+    tooltip: any
+) {
+    const configuration = averageSpectrum?.configuration ?? latestFrame;
+    return {
+        tooltip: {
+            ...tooltip,
+            trigger: 'axis',
+            axisPointer: { type: 'line', snap: true, animation: false }
+        },
+        xAxis: {
+            type: 'value',
+            name: 'Hz',
+            min: 0,
+            max: configuration?.sampleRateHz ? configuration.sampleRateHz / 2 : undefined,
+            nameTextStyle: { color: axisColor },
+            axisLine: { lineStyle: { color: splitLineColor } },
+            axisLabel: { color: axisColor, formatter: formatFrequencyShort },
+            splitLine: { show: false }
+        },
+        yAxis: {
+            type: 'value',
+            name: configuration?.scale === 'db' ? 'dB' : '',
+            scale: true,
+            nameTextStyle: { color: axisColor },
+            axisLine: { lineStyle: { color: splitLineColor } },
+            axisLabel: { color: axisColor },
+            splitLine: { show: true, lineStyle: { color: splitLineColor } }
+        },
+        dataZoom: [],
+        visualMap: { show: false },
+        series: averageSpectrum ? [{
+            id: 'waterfall-average',
+            name: t('oscilloscope_panel_waterfall_display_average'),
+            type: 'line',
+            data: averageSpectrum.data,
+            showSymbol: false,
+            connectNulls: false,
+            animation: false,
+            lineStyle: { width: 1.5, color: '#14b8a6' },
+            emphasis: { focus: 'series', lineStyle: { width: 2 } }
+        }] : []
+    };
+}
+
+function captureWaterfallFrame(currentTick: number, updatedKeys: number[]) {
+    const keyId = waterfallAnalysisKey.value;
+    if (!isSpectrumEnabled.value || isWaterfallPaused.value || keyId === null || !updatedKeys.includes(keyId)) {
+        return;
+    }
+
+    const sampleRateHz = spectrumSampleRateHz.value || SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+    const configuration = {
+        keyId,
+        sampleRateHz,
+        fftSize: spectrumFftSize.value,
+        source: spectrumSource.value,
+        scale: spectrumScale.value
+    };
+    const firstFrame = waterfallFrames.value[0];
+    if (firstFrame && !isWaterfallFrameCompatible(firstFrame, configuration)) {
+        resetWaterfallHistory();
+    }
+
+    if (!shouldCaptureWaterfallFrame(currentTick, lastWaterfallCaptureTick, sampleRateHz)) {
+        return;
+    }
+    // Consume this capture interval even when the window is not ready, avoiding
+    // repeated FFT work for every debug event during an invalid interval.
+    lastWaterfallCaptureTick = currentTick;
+
+    const spectrumWindow = buildUniformSpectrumWindow(getSpectrumCache(keyId), currentTick, spectrumFftSize.value);
+    if (!spectrumWindow || !isWaterfallCaptureReady(isSpectrumSampleRateEstimated.value, spectrumWindow.coverage)) {
+        isWaterfallWaitingForQuality.value = true;
+        return;
+    }
+
+    const spectrum = calculateSpectrum(spectrumWindow.values, sampleRateHz, spectrumFftSize.value, spectrumScale.value);
+    if (!spectrum) {
+        isWaterfallWaitingForQuality.value = true;
+        return;
+    }
+
+    const frame = createWaterfallFrame({
+        ...configuration,
+        tick: currentTick,
+        coverage: spectrumWindow.coverage,
+        maxGapTicks: spectrumWindow.maxGapTicks,
+        fullMagnitudes: spectrum.data
+    });
+    waterfallFrames.value = appendWaterfallFrame(waterfallFrames.value, frame, waterfallBufferSize.value);
+    waterfallAverageAccumulator.append(frame, waterfallBufferSize.value);
+    refreshWaterfallAverageSpectrum();
+    isWaterfallWaitingForQuality.value = false;
+    if (waterfallColorRange.value === null) {
+        waterfallColorRange.value = calibrateWaterfallColorRange(frame);
+    }
+    scheduleWaterfallRender();
+}
+
+function handleWaterfallClick(params: any) {
+    if (waterfallDisplayMode.value !== 'heatmap' || params?.componentType !== 'series' || !Array.isArray(params.value)) {
+        return;
+    }
+    const frameIndex = Number(params.value[1]);
+    const frame = waterfallFrames.value[frameIndex];
+    if (!frame) {
+        return;
+    }
+
+    selectedWaterfallFrame.value = cloneWaterfallFrame(frame);
+    isWaterfallPaused.value = true;
+    spectrumView.value = 'spectrum';
+    nextTick(scheduleSpectrumRender);
+}
+
 function buildSpectrumSeries() {
+    const selectedFrame = selectedWaterfallFrame.value;
+    if (selectedFrame) {
+        const color = getKeyColor(selectedFrame.keyId);
+        let peakFrequency = 0;
+        let peakMagnitude = Number.NEGATIVE_INFINITY;
+        selectedFrame.fullMagnitudes.forEach(([frequency, magnitude], index) => {
+            if (index > 0 && magnitude > peakMagnitude) {
+                peakFrequency = frequency;
+                peakMagnitude = magnitude;
+            }
+        });
+        spectrumPeakInfo.value = [{
+            id: selectedFrame.keyId,
+            frequency: Number.isFinite(peakFrequency) ? peakFrequency : null,
+            magnitude: Number.isFinite(peakMagnitude) ? peakMagnitude : null,
+            color,
+            coverage: selectedFrame.coverage,
+            maxGapTicks: selectedFrame.maxGapTicks,
+            status: selectedFrame.fullMagnitudes.length > 0 ? 'ready' : 'waiting'
+        }];
+        return [{
+            id: 'spectrum-waterfall-selection',
+            name: `Key ${selectedFrame.keyId} · Tick ${selectedFrame.tick}`,
+            type: 'line',
+            showSymbol: false,
+            data: selectedFrame.fullMagnitudes,
+            itemStyle: { color },
+            lineStyle: { width: 1, color },
+            emphasis: { focus: 'series' }
+        }];
+    }
+
     const peaks: SpectrumPeakInfo[] = [];
     const series: any[] = [];
     const fftSize = spectrumFftSize.value;
@@ -747,12 +1276,23 @@ function renderSpectrumChart() {
     }
 
     const series = buildSpectrumSeries();
-    const sampleRateHz = spectrumSampleRateHz.value || SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+    const selectedFrame = selectedWaterfallFrame.value;
+    const sampleRateHz = selectedFrame?.sampleRateHz || spectrumSampleRateHz.value || SPECTRUM_FALLBACK_SAMPLE_RATE_HZ;
+    const scale = selectedFrame?.scale || spectrumScale.value;
     const option: any = {
         tooltip: {
+            show: true,
+            trigger: 'axis',
+            triggerOn: 'mousemove|click',
             backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.82)' : 'rgba(255, 255, 255, 0.92)',
             borderColor: themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             borderWidth: 1,
+            transitionDuration: 0,
+            showDelay: 0,
+            hideDelay: 0,
+            confine: true,
+            position: positionTooltipAtCursor,
+            axisPointer: { show: true, type: 'line', snap: true, animation: false },
             formatter: spectrumTooltipFormatter
         },
         xAxis: {
@@ -761,7 +1301,7 @@ function renderSpectrumChart() {
             axisLabel: { formatter: formatFrequencyShort }
         },
         yAxis: {
-            name: spectrumScale.value === 'db' ? 'dB' : '',
+            name: scale === 'db' ? 'dB' : '',
             scale: true
         },
         series
@@ -821,8 +1361,19 @@ watch(oscilloscopeSelectedKeys, (newKeys, oldKeys) => {
     scheduleSpectrumRender();
 });
 
+watch(oscilloscopeSelectedKeys, newKeys => {
+    if (waterfallAnalysisKey.value === null || !newKeys.includes(waterfallAnalysisKey.value)) {
+        waterfallAnalysisKey.value = newKeys[0] ?? null;
+    }
+}, { immediate: true });
+
+watch(waterfallAnalysisKey, () => {
+    resetWaterfallHistory();
+});
+
 watch(isSpectrumEnabled, enabled => {
     resetSpectrumSampleRateEstimator();
+    resetWaterfallHistory();
     if (!enabled) {
         spectrumPeakInfo.value = [];
         spectrumSettingsExpandedNames.value = [];
@@ -832,7 +1383,55 @@ watch(isSpectrumEnabled, enabled => {
 });
 
 watch([spectrumSource, spectrumFftSize, spectrumScale], () => {
-    nextTick(scheduleSpectrumRender);
+    resetWaterfallHistory();
+    nextTick(() => {
+        scheduleSpectrumRender();
+        scheduleWaterfallRender();
+    });
+});
+
+watch(spectrumSampleRateHz, sampleRateHz => {
+    const firstFrame = waterfallFrames.value[0];
+    if (firstFrame && firstFrame.sampleRateHz !== sampleRateHz) {
+        resetWaterfallHistory();
+    }
+});
+
+watch(waterfallBufferSize, value => {
+    const normalizedSize = normalizeWaterfallBufferSize(value);
+    if (normalizedSize !== value) {
+        waterfallBufferSize.value = normalizedSize;
+        return;
+    }
+    waterfallFrames.value = resizeWaterfallHistory(waterfallFrames.value, normalizedSize);
+    waterfallAverageAccumulator.rebuild(waterfallFrames.value);
+    refreshWaterfallAverageSpectrum();
+    scheduleWaterfallRender();
+});
+
+watch(waterfallAverageWindow, () => {
+    refreshWaterfallAverageSpectrum();
+    scheduleWaterfallRender();
+});
+
+watch([waterfallDisplayMode, isWaterfallAutoScroll], () => {
+    scheduleWaterfallRender();
+});
+
+function handleWaterfallDataZoom() {
+    if (waterfallDisplayMode.value === 'heatmap') {
+        isWaterfallAutoScroll.value = false;
+    }
+}
+
+watch(spectrumView, view => {
+    nextTick(() => {
+        if (view === 'waterfall') {
+            renderWaterfallChart();
+        } else {
+            renderSpectrumChart();
+        }
+    });
 });
 
 async function togglePolling(val: boolean) {
@@ -861,6 +1460,7 @@ watch(themeName, () => {
             requestAnimationFrame(renderCharts);
         }
         scheduleSpectrumRender();
+        scheduleWaterfallRender();
     });
 });
 // --- 数据同步与节流渲染 ---
@@ -868,6 +1468,7 @@ function processDataSync(currentTick: number, updatedKeys: number[]) {
     const numericTick = Number(currentTick);
     if (numericTick < latestTick) {
         resetSpectrumSampleRateEstimator();
+        resetWaterfallHistory();
     }
     latestTick = numericTick;
     const minHistoryTick = numericTick - windowSize.value;
@@ -1135,6 +1736,10 @@ function renderCharts() {
             backgroundColor: themeName.value === 'dark' ? 'rgba(30, 30, 34, 0.7)' : 'rgba(255, 255, 255, 0.85)',
             borderColor: themeName.value === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             borderWidth: 1,
+            transitionDuration: 0,
+            showDelay: 0,
+            hideDelay: 0,
+            axisPointer: { type: 'cross', animation: false },
         }
     };
 
@@ -1175,6 +1780,7 @@ const handleDebugDataUpdated = (event: Event) => {
 
     updateSpectrumSampleRateEstimate(Number(currentTick));
     processDataSync(currentTick, updatedKeys);
+    captureWaterfallFrame(Number(currentTick), updatedKeys);
 
     if (!isRenderPending) {
         isRenderPending = true;
@@ -1209,6 +1815,7 @@ onBeforeUnmount(() => {
 
 function clearWaveform() {
     resetSpectrumSampleRateEstimator();
+    resetWaterfallHistory();
     oscilloscopeSelectedKeys.value.forEach(id => {
         if (rawDataCache[id]) rawDataCache[id].length = 0;
         if (filteredRawDataCache[id]) filteredRawDataCache[id].length = 0;
@@ -1402,7 +2009,10 @@ const valAnalysisEntries = computed(() => {
         <div
             v-if="isSpectrumEnabled"
             class="spectrum-panel"
-            :class="{ 'is-settings-open': spectrumSettingsExpandedNames.length > 0 }"
+            :class="{
+                'is-settings-open': spectrumSettingsExpandedNames.length > 0,
+                'is-waterfall': spectrumView === 'waterfall'
+            }"
         >
             <n-collapse v-model:expanded-names="spectrumSettingsExpandedNames" class="spectrum-settings">
                 <n-collapse-item name="settings" :title="t('oscilloscope_panel_spectrum_settings')">
@@ -1434,14 +2044,51 @@ const valAnalysisEntries = computed(() => {
                                 :options="spectrumScaleOptions"
                             />
                         </label>
+                        <label v-if="spectrumView === 'waterfall'" class="spectrum-setting-control waterfall-buffer-control">
+                            <span class="control-label">{{ t('oscilloscope_panel_waterfall_buffer_frames') }}</span>
+                            <n-input-number
+                                v-model:value="waterfallBufferSize"
+                                class="waterfall-buffer-input"
+                                size="small"
+                                :min="WATERFALL_MIN_BUFFER_FRAMES"
+                                :max="WATERFALL_MAX_BUFFER_FRAMES"
+                                :step="WATERFALL_FRAME_RATE_HZ"
+                                :show-button="true"
+                            />
+                            <span class="waterfall-buffer-duration">{{ waterfallBufferDuration }}</span>
+                        </label>
                     </div>
                 </n-collapse-item>
             </n-collapse>
             <div class="spectrum-header">
                 <span class="spectrum-title">{{ t('oscilloscope_panel_spectrum') }}</span>
+                <div class="spectrum-view-switch" role="group" :aria-label="t('oscilloscope_panel_spectrum')">
+                    <n-button
+                        size="tiny"
+                        :type="spectrumView === 'spectrum' ? 'primary' : 'default'"
+                        @click="spectrumView = 'spectrum'"
+                    >
+                        {{ t('oscilloscope_panel_spectrum_view_spectrum') }}
+                    </n-button>
+                    <n-button
+                        size="tiny"
+                        :type="spectrumView === 'waterfall' ? 'primary' : 'default'"
+                        @click="spectrumView = 'waterfall'"
+                    >
+                        {{ t('oscilloscope_panel_spectrum_view_waterfall') }}
+                    </n-button>
+                </div>
                 <span class="spectrum-rate" :class="{ 'is-estimating': !isSpectrumSampleRateEstimated }">
                     {{ t('oscilloscope_panel_spectrum_sample_rate') }} {{ formatSampleRate(spectrumSampleRateHz) }}
                 </span>
+                <n-button
+                    v-if="selectedWaterfallFrame"
+                    size="tiny"
+                    tertiary
+                    @click="returnToLiveSpectrum"
+                >
+                    {{ t('oscilloscope_panel_waterfall_return_live') }}
+                </n-button>
                 <div class="spectrum-peaks">
                     <span
                         v-for="peak in spectrumPeakInfo"
@@ -1468,14 +2115,92 @@ const valAnalysisEntries = computed(() => {
                     </span>
                 </div>
             </div>
-            <v-chart
-                ref="spectrumChartRef"
-                :theme="themeName"
-                :option="spectrumOption"
-                :update-options="{ replaceMerge: ['series'] }"
-                class="spectrum-chart"
-                autoresize
-            />
+            <template v-if="spectrumView === 'spectrum'">
+                <v-chart
+                    ref="spectrumChartRef"
+                    :theme="themeName"
+                    :option="spectrumOption"
+                    :update-options="{ replaceMerge: ['series'] }"
+                    class="spectrum-chart"
+                    autoresize
+                />
+            </template>
+            <template v-else>
+                <div class="waterfall-toolbar">
+                    <label class="waterfall-key-control">
+                        <span class="control-label">{{ t('oscilloscope_panel_waterfall_analysis_key') }}</span>
+                        <n-select
+                            v-model:value="waterfallAnalysisKey"
+                            class="waterfall-key-select"
+                            size="tiny"
+                            :options="waterfallAnalysisKeyOptions"
+                            :disabled="waterfallAnalysisKeyOptions.length === 0"
+                        />
+                    </label>
+                    <div class="waterfall-display-control" role="group" :aria-label="t('oscilloscope_panel_waterfall_display_mode')">
+                        <span class="control-label">{{ t('oscilloscope_panel_waterfall_display_mode') }}</span>
+                        <n-button
+                            size="tiny"
+                            :type="waterfallDisplayMode === 'heatmap' ? 'primary' : 'default'"
+                            @click="waterfallDisplayMode = 'heatmap'"
+                        >
+                            {{ t('oscilloscope_panel_waterfall_display_heatmap') }}
+                        </n-button>
+                        <n-button
+                            size="tiny"
+                            :type="waterfallDisplayMode === 'average' ? 'primary' : 'default'"
+                            @click="waterfallDisplayMode = 'average'"
+                        >
+                            {{ t('oscilloscope_panel_waterfall_display_average') }}
+                        </n-button>
+                    </div>
+                    <label v-if="waterfallDisplayMode === 'average'" class="waterfall-average-control">
+                        <span class="control-label">{{ t('oscilloscope_panel_waterfall_average_range') }}</span>
+                        <n-select
+                            v-model:value="waterfallAverageWindow"
+                            class="waterfall-average-select"
+                            size="tiny"
+                            :options="waterfallAverageWindowOptions"
+                        />
+                    </label>
+                    <label v-if="waterfallDisplayMode === 'heatmap'" class="waterfall-scroll-control">
+                        <span class="control-label">{{ t('oscilloscope_panel_waterfall_auto_scroll') }}</span>
+                        <n-switch v-model:value="isWaterfallAutoScroll" size="small" />
+                    </label>
+                    <div class="waterfall-actions">
+                        <n-button size="tiny" @click="isWaterfallPaused = !isWaterfallPaused">
+                            {{ isWaterfallPaused ? t('oscilloscope_panel_waterfall_resume') : t('oscilloscope_panel_waterfall_pause') }}
+                        </n-button>
+                        <n-button size="tiny" @click="clearWaterfallHistory">
+                            {{ t('oscilloscope_panel_waterfall_clear_history') }}
+                        </n-button>
+                        <n-button v-if="waterfallDisplayMode === 'heatmap'" size="tiny" @click="resetWaterfallColorScale">
+                            {{ t('oscilloscope_panel_waterfall_reset_scale') }}
+                        </n-button>
+                    </div>
+                    <span v-if="waterfallDisplayMode === 'average'" class="waterfall-status">
+                        {{ waterfallAverageSpectrum
+                            ? t('oscilloscope_panel_waterfall_average_frame_count', { count: waterfallAverageSpectrum.frameCount })
+                            : t('oscilloscope_panel_waterfall_average_waiting') }}
+                        <template v-if="waterfallAverageSpectrum && isWaterfallWaitingForQuality">
+                            · {{ t('oscilloscope_panel_waterfall_waiting_quality') }}
+                        </template>
+                    </span>
+                    <span v-else-if="waterfallFrames.length === 0 || isWaterfallWaitingForQuality" class="waterfall-status">
+                        {{ t('oscilloscope_panel_waterfall_waiting_quality') }}
+                    </span>
+                </div>
+                <v-chart
+                    ref="waterfallChartRef"
+                    :theme="themeName"
+                    :option="waterfallOption"
+                    :update-options="{ replaceMerge: ['series'] }"
+                    class="waterfall-chart"
+                    autoresize
+                    @click="handleWaterfallClick"
+                    @datazoom="handleWaterfallDataZoom"
+                />
+            </template>
         </div>
     </div>
 </template>
@@ -1484,9 +2209,11 @@ const valAnalysisEntries = computed(() => {
 .oscilloscope-shell {
     height: 100%;
     min-height: 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow-x: hidden;
     color: #20242c;
 }
 
@@ -1624,7 +2351,9 @@ const valAnalysisEntries = computed(() => {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     width: 100%;
+    box-sizing: border-box;
     overflow: hidden;
     border: 1px solid rgba(30, 38, 52, 0.1);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 249, 252, 0.52));
@@ -1643,6 +2372,7 @@ const valAnalysisEntries = computed(() => {
 .spectrum-panel {
     flex: 0 0 160px;
     min-height: 132px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1652,6 +2382,15 @@ const valAnalysisEntries = computed(() => {
 
 .spectrum-panel.is-settings-open {
     flex-basis: 216px;
+}
+
+.spectrum-panel.is-waterfall {
+    flex-basis: 300px;
+    min-height: 260px;
+}
+
+.spectrum-panel.is-waterfall.is-settings-open {
+    flex-basis: 356px;
 }
 
 .is-dark .spectrum-panel {
@@ -1702,6 +2441,17 @@ const valAnalysisEntries = computed(() => {
     min-width: 0;
     padding: 0 8px;
     border-bottom: 1px solid rgba(30, 38, 52, 0.1);
+}
+
+.spectrum-view-switch {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 2px;
+}
+
+.spectrum-view-switch :deep(.n-button) {
+    padding-right: 7px;
+    padding-left: 7px;
 }
 
 .is-dark .spectrum-header {
@@ -1788,6 +2538,73 @@ const valAnalysisEntries = computed(() => {
 }
 
 .spectrum-chart {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+}
+
+.waterfall-toolbar {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    min-height: 30px;
+    padding: 4px 8px;
+    border-bottom: 1px solid rgba(30, 38, 52, 0.1);
+}
+
+.is-dark .waterfall-toolbar {
+    border-bottom-color: rgba(255, 255, 255, 0.09);
+}
+
+.waterfall-key-control,
+.waterfall-display-control,
+.waterfall-average-control,
+.waterfall-scroll-control,
+.waterfall-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.waterfall-key-select {
+    width: 104px;
+}
+
+.waterfall-average-select {
+    width: 142px;
+}
+
+.waterfall-buffer-control {
+    gap: 5px;
+}
+
+.waterfall-buffer-input {
+    width: 112px;
+}
+
+.waterfall-buffer-duration {
+    color: #8a93a3;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.waterfall-actions {
+    flex-wrap: wrap;
+}
+
+.waterfall-status {
+    min-width: 0;
+    flex: 1 1 160px;
+    overflow: hidden;
+    color: #8a93a3;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.waterfall-chart {
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -1918,6 +2735,24 @@ const valAnalysisEntries = computed(() => {
 
     .spectrum-panel.is-settings-open {
         flex-basis: 220px;
+    }
+
+    .spectrum-panel.is-waterfall {
+        flex-basis: 260px;
+        min-height: 230px;
+    }
+
+    .spectrum-panel.is-waterfall.is-settings-open {
+        flex-basis: 340px;
+    }
+
+    .waterfall-toolbar {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .waterfall-status {
+        flex-basis: 100%;
     }
 
     .measurement-panel {

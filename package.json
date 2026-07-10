@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "cd emi-keyboard-controller && pnpm install && pnpm run build && cd .. && vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fontsource/noto-sans-mono": "^5.2.10",
@@ -41,6 +42,7 @@
     "naive-ui": "^2.40.2",
     "typescript": "^5.6.3",
     "vite": "^6.0.1",
+    "vitest": "^2.1.9",
     "vite-plugin-pwa": "^1.1.0",
     "vue-tsc": "^2.1.10"
   }
