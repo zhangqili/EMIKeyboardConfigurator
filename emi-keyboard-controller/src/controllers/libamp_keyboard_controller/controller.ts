@@ -928,7 +928,7 @@ export class LibampKeyboardController extends KeyboardController {
                     dataView.setUint8(4+12+2,dynamic_key_stroke.key_control[2]);
                     dataView.setUint8(4+12+3,dynamic_key_stroke.key_control[3]);
                     dataView.setUint16(4+16,dynamic_key_stroke.press_begin_distance*65535,true);
-                    dataView.setUint16(4+28,dynamic_key_stroke.press_fully_distance*65535,true);
+                    dataView.setUint16(4+18,dynamic_key_stroke.press_fully_distance*65535,true);
                     dataView.setUint16(4+20,dynamic_key_stroke.release_begin_distance*65535,true);
                     dataView.setUint16(4+22,dynamic_key_stroke.release_fully_distance*65535,true);
                     dataView.setUint16(4+24,dynamic_key_stroke.target_keys_location[0].id,true);

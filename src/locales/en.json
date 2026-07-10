@@ -44,6 +44,9 @@
     "main_webhid_detect_title" : "Your browser doesn't support WebHID",
     "main_webhid_detect_content" : "Please use a browser with Chromium >= 89 to access your device.",
 
+    "main_development_warning_title": "Keyboard Under Development",
+    "main_development_warning_content": "This keyboard is still under development. Changes to the firmware or configurator may cause some features to stop working. If you encounter a problem, please flash the latest firmware first.",
+
     "main_new_version_title" : "New version detected",
     "main_new_version_content" : "",
     "main_refresh_now" : "Refresh Now",

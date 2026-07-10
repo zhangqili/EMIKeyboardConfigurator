@@ -234,6 +234,13 @@ function triggerHotplugCheck() {
 }
 
 onMounted(async () => {
+  notification.warning({
+    title: t('main_development_warning_title'),
+    content: t('main_development_warning_content'),
+    duration: 5000,
+    keepAliveOnHover: true
+  });
+
   if (navigator.userAgent.toLowerCase().includes("linux") && localStorage.getItem('dontShowLinuxDetect') != 'true') {
     const linux_detect_notification = notification.warning({
       title: t('main_linux_detect_title'),
