@@ -1394,19 +1394,157 @@ export class LibampKeyboardController extends KeyboardController {
         send_buf[6] = 1;
         void this.enqueueCommand(send_buf, 1000);
     }
+
+    async send_advanced_key_packet(index: number, advanced_key: IAdvancedKey): Promise<void> {
+        const send_buf = new Uint8Array(64);
+        const dataView = new DataView(send_buf.buffer);
+        const config = advanced_key.config;
+
+        send_buf[0] = PacketCode.PacketCodeSet;
+        send_buf[1] = PacketData.PacketDataAdvancedKey;
+        dataView.setUint16(2, index, true);
+        send_buf[4] = config.mode;
+        send_buf[5] = config.calibration_mode;
+        dataView.setUint16(6, config.activation_value * 65535, true);
+        dataView.setUint16(8, config.deactivation_value * 65535, true);
+        dataView.setUint16(10, config.trigger_distance * 65535, true);
+        dataView.setUint16(12, config.release_distance * 65535, true);
+        dataView.setUint16(14, config.trigger_speed * 65535, true);
+        dataView.setUint16(16, config.release_speed * 65535, true);
+        dataView.setUint16(18, config.upper_deadzone * 65535, true);
+        dataView.setUint16(20, config.lower_deadzone * 65535, true);
+        dataView.setUint16(22, config.upper_bound, true);
+        dataView.setUint16(24, config.lower_bound, true);
+
+        await this.enqueueCommand(send_buf);
+    }
+
+    async send_keymap_packet(layer: number, start: number, length: number, keymap: number[]): Promise<void> {
+        const maxKeycodesPerPacket = Math.floor((AMP_FRAME_MAX_PAYLOAD - 4) / 2);
+        if (!Number.isInteger(length) || length < 0 || length > maxKeycodesPerPacket) {
+            throw new RangeError(`Keymap packet length must be between 0 and ${maxKeycodesPerPacket}`);
+        }
+        if (keymap.length !== length) {
+            throw new RangeError(`Keymap packet length ${length} does not match ${keymap.length} keycodes`);
+        }
+
+        const send_buf = new Uint8Array(64);
+        const dataView = new DataView(send_buf.buffer);
+        send_buf[0] = PacketCode.PacketCodeSet;
+        send_buf[1] = PacketData.PacketDataKeymap;
+        send_buf[2] = layer;
+        dataView.setUint16(3, start, true);
+        send_buf[5] = length;
+        keymap.forEach((keycode, offset) => {
+            dataView.setUint16(6 + offset * 2, keycode, true);
+        });
+
+        await this.enqueueCommand(send_buf);
+    }
+
+    async send_dynamic_key_packet(index: number, dynamic_key: IDynamicKey): Promise<void> {
+        const send_buf = new Uint8Array(64);
+        const dataView = new DataView(send_buf.buffer);
+        const targetKeyId = (targetIndex: number): number => {
+            const target = dynamic_key.target_keys_location[targetIndex];
+            if (!target) {
+                throw new Error(`Dynamic key ${index} is missing target key ${targetIndex}`);
+            }
+            return target.id;
+        };
+
+        send_buf[0] = PacketCode.PacketCodeSet;
+        send_buf[1] = PacketData.PacketDataDynamicKey;
+        send_buf[2] = index;
+        dataView.setUint32(4, dynamic_key.type, true);
+
+        switch (dynamic_key.type) {
+            case DynamicKeyType.DynamicKeyStroke: {
+                const item = dynamic_key as DynamicKeyStroke4x4;
+                dataView.setUint16(8, item.bindings[0], true);
+                dataView.setUint16(10, item.bindings[1], true);
+                dataView.setUint16(12, item.bindings[2], true);
+                dataView.setUint16(14, item.bindings[3], true);
+                dataView.setUint8(16, item.key_control[0]);
+                dataView.setUint8(17, item.key_control[1]);
+                dataView.setUint8(18, item.key_control[2]);
+                dataView.setUint8(19, item.key_control[3]);
+                dataView.setUint16(20, item.press_begin_distance * 65535, true);
+                dataView.setUint16(22, item.press_fully_distance * 65535, true);
+                dataView.setUint16(24, item.release_begin_distance * 65535, true);
+                dataView.setUint16(26, item.release_fully_distance * 65535, true);
+                dataView.setUint16(28, targetKeyId(0), true);
+                break;
+            }
+            case DynamicKeyType.DynamicKeyModTap: {
+                const item = dynamic_key as DynamicKeyModTap;
+                dataView.setUint16(8, item.bindings[0], true);
+                dataView.setUint16(10, item.bindings[1], true);
+                dataView.setUint32(12, item.duration, true);
+                dataView.setUint16(16, targetKeyId(0), true);
+                break;
+            }
+            case DynamicKeyType.DynamicKeyToggleKey: {
+                const item = dynamic_key as DynamicKeyToggleKey;
+                dataView.setUint16(8, item.bindings[0], true);
+                dataView.setUint16(10, targetKeyId(0), true);
+                break;
+            }
+            case DynamicKeyType.DynamicKeyMutex: {
+                const item = dynamic_key as DynamicKeyMutex;
+                dataView.setUint16(8, item.bindings[0], true);
+                dataView.setUint16(10, item.bindings[1], true);
+                dataView.setUint16(12, targetKeyId(0), true);
+                dataView.setUint16(14, targetKeyId(1), true);
+                dataView.setUint8(16, item.mode);
+                break;
+            }
+        }
+
+        await this.enqueueCommand(send_buf);
+    }
+
+    async send_rgb_base_packet(rgb_base_config: IRGBBaseConfig): Promise<void> {
+        const send_buf = new Uint8Array(64);
+        const dataView = new DataView(send_buf.buffer);
+        send_buf[0] = PacketCode.PacketCodeSet;
+        send_buf[1] = PacketData.PacketDataRgbBaseConfig;
+        send_buf[2] = rgb_base_config.mode;
+        send_buf[3] = rgb_base_config.rgb.red;
+        send_buf[4] = rgb_base_config.rgb.green;
+        send_buf[5] = rgb_base_config.rgb.blue;
+        send_buf[6] = rgb_base_config.secondary_rgb.red;
+        send_buf[7] = rgb_base_config.secondary_rgb.green;
+        send_buf[8] = rgb_base_config.secondary_rgb.blue;
+        dataView.setUint16(9, rgb_base_config.speed, true);
+        dataView.setUint16(11, rgb_base_config.direction % 65536, true);
+        send_buf[13] = rgb_base_config.density % 256;
+        send_buf[14] = rgb_base_config.brightness % 256;
+
+        await this.enqueueCommand(send_buf);
+    }
+
+    async send_rgb_packet(index: number, rgb_config: IRGBConfig): Promise<void> {
+        const send_buf = new Uint8Array(64);
+        const dataView = new DataView(send_buf.buffer);
+        send_buf[0] = PacketCode.PacketCodeSet;
+        send_buf[1] = PacketData.PacketDataRgbConfig;
+        send_buf[2] = 1;
+        dataView.setUint16(3, index, true);
+        send_buf[5] = rgb_config.mode;
+        send_buf[6] = rgb_config.rgb.red;
+        send_buf[7] = rgb_config.rgb.green;
+        send_buf[8] = rgb_config.rgb.blue;
+        dataView.setUint16(9, rgb_config.speed, true);
+
+        await this.enqueueCommand(send_buf);
+    }
     
     async write_advanced_keys() {
-        this.txBuffer.fill(0);
-        this.txBuffer[0] = PacketCode.PacketCodeSet;
-        this.txBuffer[1] = PacketData.PacketDataAdvancedKey;
-        let dataView = new DataView(this.txBuffer.buffer);
-        
         for(let index = 0; index < this.advanced_keys.length; index++) {
             const item = this.advanced_keys[index];
-            dataView.setUint16(2, index, true);
-            this.packet_process(this.txBuffer);
             try {
-                await this.enqueueCommand(this.txBuffer);
+                await this.send_advanced_key_packet(index, item);
             } catch (e) {
                 console.error(`Failed to set Advanced Key ${index}`, e);
             }
@@ -1430,13 +1568,8 @@ export class LibampKeyboardController extends KeyboardController {
         }
     }
     async write_rgb_configs() {
-        this.txBuffer[0] = PacketCode.PacketCodeSet;
-        this.txBuffer[1] = PacketData.PacketDataRgbBaseConfig;
-        
-        this.packet_process(this.txBuffer); 
-        
         try {
-            await this.enqueueCommand(this.txBuffer);
+            await this.send_rgb_base_packet(this.rgb_base_config);
         } catch (e) {
             console.error("Failed to send RGB Base Config", e);
         }
@@ -1504,24 +1637,12 @@ export class LibampKeyboardController extends KeyboardController {
         }
     }
     async write_keymap() {const layer_page_length = 16;
-        this.txBuffer.fill(0);
-        this.txBuffer[0] = PacketCode.PacketCodeSet;
-        this.txBuffer[1] = PacketData.PacketDataKeymap;
-        let dataView = new DataView(this.txBuffer.buffer);
-
         for (let i = 0; i < this.keymap.length; i++) {
             const layer = this.keymap[i];
             for (let index = 0; index < layer.length; index += layer_page_length) {
-                let layer_seg_len = (index + layer_page_length > layer.length) ? (layer.length - index) : layer_page_length;
-                
-                this.txBuffer[2] = i; // layer
-                dataView.setUint16(3, index, true); // start address
-                this.txBuffer[5] = layer_seg_len; // length
-
-                this.packet_process(this.txBuffer);
-
+                const layer_segment = layer.slice(index, index + layer_page_length);
                 try {
-                    await this.enqueueCommand(this.txBuffer);
+                    await this.send_keymap_packet(i, index, layer_segment.length, layer_segment);
                 } catch (e) {
                     console.error("Failed to send Keymap", e);
                 }
@@ -1557,17 +1678,9 @@ export class LibampKeyboardController extends KeyboardController {
     }
 
     async write_dynamic_keys() {
-        this.txBuffer.fill(0);
-        this.txBuffer[0] = PacketCode.PacketCodeSet;
-        this.txBuffer[1] = PacketData.PacketDataDynamicKey;
-        
         for (let i = 0; i < this.dynamic_keys.length; i++) {
-            this.txBuffer.fill(0, 2); 
-            this.txBuffer[2] = i; 
-            this.packet_process(this.txBuffer);
-
             try {
-                await this.enqueueCommand(this.txBuffer);
+                await this.send_dynamic_key_packet(i, this.dynamic_keys[i]);
             } catch (e) {
                 console.error(`Failed to send Dynamic Key ${i}`, e);
             }
